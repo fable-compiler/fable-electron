@@ -27,6 +27,8 @@ To get started with the bindings, simply:
 
 You can also use `electron` to access everything, but consider using only `main` or `renderer`.
 
+By convention, class constructors are accessible as static `Create` members. For example, to instantiate a `BrowserWindow`, you call `main.BrowserWindow.Create()`.
+
 Helpers
 -------
 
