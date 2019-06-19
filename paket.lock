@@ -1,0 +1,26 @@
+STORAGE: NONE
+RESTRICTION: == netstandard2.0
+NUGET
+  remote: https://api.nuget.org/v3/index.json
+    Fable.Browser.Blob (1.0)
+      Fable.Core (>= 3.0)
+      FSharp.Core (>= 4.5.2)
+    Fable.Browser.Dom (1.0)
+      Fable.Browser.Blob (>= 1.0)
+      Fable.Browser.Event (>= 1.0)
+      Fable.Browser.WebStorage (>= 1.0)
+      Fable.Core (>= 3.0)
+      FSharp.Core (>= 4.5.2)
+    Fable.Browser.Event (1.0)
+      Fable.Core (>= 3.0)
+      FSharp.Core (>= 4.5.2)
+    Fable.Browser.WebStorage (1.0)
+      Fable.Browser.Event (>= 1.0)
+      Fable.Core (>= 3.0)
+      FSharp.Core (>= 4.5.2)
+    Fable.Core (3.0)
+      FSharp.Core (>= 4.5.2)
+    Fable.Node (1.0)
+      Fable.Core (>= 3.0.0-beta-006)
+      FSharp.Core (>= 4.5.2)
+    FSharp.Core (4.5.2) - redirects: force

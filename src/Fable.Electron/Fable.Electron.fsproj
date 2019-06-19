@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.0.0-beta-01</Version>
+    <Authors>Christer van der Meeren</Authors>
+    <Description>Fable bindings and helpers for Electron 5.0.</Description>
+    <PackageLicenseUrl>https://github.com/fable-compiler/fable-electron/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/fable-compiler/fable-electron</PackageProjectUrl>
+    <PackageTags>fable electron bindings</PackageTags>
+    <PackageReleaseNotes>Updated bindings for Electron 5.0</PackageReleaseNotes>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="paket.references" />
+    <Compile Include="Electron.fs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <Content Include="*.fsproj; *.fs" PackagePath="fable\" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>
