@@ -1759,38 +1759,61 @@ type BrowserWindow =
   abstract webContents: WebContents with get, set
 
 type BrowserWindowStatic =
+  /// Instantiates a BrowserWindow.
   [<EmitConstructor>] abstract Create: ?options: BrowserWindowOptions -> BrowserWindow
-  /// Adds DevTools extension located at path, and returns extension's name. The
-  /// extension will be remembered so you only need to call this API once, this
-  /// API is not for programming use. If you try to add an extension that has
-  /// already been loaded, this method will not return and instead log a warning
-  /// to the console. The method will also not return if the extension's
-  /// manifest is missing or incomplete. Note: This API cannot be called before
-  /// the ready event of the app module is emitted.
-  abstract addDevToolsExtension: path: string -> unit
-  /// Adds Chrome extension located at path, and returns extension's name. The
-  /// method will also not return if the extension's manifest is missing or
-  /// incomplete. Note: This API cannot be called before the ready event of the
-  /// app module is emitted.
-  abstract addExtension: path: string -> unit
-  abstract fromBrowserView: browserView: BrowserView -> BrowserWindow option
-  abstract fromId: id: int -> BrowserWindow
-  abstract fromWebContents: webContents: WebContents -> BrowserWindow
+  /// Returns all opened browser windows.
   abstract getAllWindows: unit -> BrowserWindow []
-  /// To check if a DevTools extension is installed you can run the following:
-  /// Note: This API cannot be called before the ready event of the app module
+  /// Returns the window that is focused in this application.
+  abstract getFocusedWindow: unit -> BrowserWindow option
+  /// Returns the window that owns the given webContents.
+  abstract fromWebContents: webContents: WebContents -> BrowserWindow
+  /// Returns the window that owns the given browserView, or None if the given
+  /// view is not attached to any window.
+  abstract fromBrowserView: browserView: BrowserView -> BrowserWindow option
+  /// Returns the window with the given id.
+  abstract fromId: id: int -> BrowserWindow option
+  /// Adds Chrome extension located at `path`, and returns extension's name. The
+  /// method will also not return if the extension's manifest is missing or
+  /// incomplete.
+  ///
+  /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
-  abstract getDevToolsExtensions: unit -> obj
-  /// Note: This API cannot be called before the ready event of the app module
+  abstract addExtension: path: string -> unit
+  /// Remove a Chrome extension by name.
+  ///
+  /// Note: This API cannot be called before the `ready` event of the app module
+  /// is emitted.
+  abstract removeExtension: name: string -> unit
+  /// Returns an object where the keys are the extension names and each value is
+  /// an object containing `name` and `version` properties.
+  ///
+  /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
   abstract getExtensions: unit -> obj
-  abstract getFocusedWindow: unit -> BrowserWindow option
-  /// Remove a DevTools extension by name. Note: This API cannot be called
-  /// before the ready event of the app module is emitted.
+  /// Adds DevTools extension located at `path`, and returns extension's name.
+  ///
+  /// The extension will be remembered so you only need to call this API once,
+  /// this API is not for programming use. If you try to add an extension that
+  /// has already been loaded, this method will not return and instead log a
+  /// warning to the console.
+  ///
+  /// The method will also not return if the extension's manifest is missing or
+  /// incomplete.
+  ///
+  /// Note: This API cannot be called before the `ready` event of the app module
+  /// is emitted.
+  abstract addDevToolsExtension: path: string -> unit
+  /// Remove a DevTools extension by name.
+  ///
+  /// Note: This API cannot be called before the `ready` event of the app module
+  /// is emitted.
   abstract removeDevToolsExtension: name: string -> unit
-  /// Remove a Chrome extension by name. Note: This API cannot be called before
-  /// the ready event of the app module is emitted.
-  abstract removeExtension: name: string -> unit
+  /// Returns an object where the keys are the extension names and each value is
+  /// an object containing `name` and `version` properties.
+  ///
+  /// Note: This API cannot be called before the `ready` event of the app module
+  /// is emitted.
+  abstract getDevToolsExtensions: unit -> obj
 
 type BrowserWindowProxy =
   inherit EventEmitter<BrowserWindowProxy>
@@ -4775,21 +4798,50 @@ type BrowserViewOptions =
 
 [<StringEnum; RequireQualifiedAccess>]
 type TitleBarStyle =
+  /// Results in the standard gray opaque Mac title bar.
   | Default
+  /// Results in a hidden title bar and a full size content window, yet the
+  /// title bar still has the standard window controls ("traffic lights") in the
+  /// top left.
   | Hidden
+  /// Results in a hidden title bar with an alternative look where the traffic
+  /// light buttons are slightly more inset from the window edge.
   | HiddenInset
+  /// Draw custom close, and minimize buttons on macOS frameless windows. These
+  /// buttons will not display unless hovered over in the top left of the
+  /// window. These custom buttons prevent issues with mouse events that occur
+  /// with the standard window toolbar buttons. Note: This option is currently
+  /// experimental.
   | CustomButtonsOnHover
+
+[<StringEnum; RequireQualifiedAccess>]
+type BrowserWindowStyle =
+  /// [Linux, macOS] On macOS, places the window at the desktop background
+  /// window level (kCGDesktopWindowLevel - 1). Note that desktop window will
+  /// not receive focus, keyboard or mouse events, but you can use
+  /// globalShortcut to receive input sparingly.
+  | Desktop
+  /// [Linux]
+  | Dock
+  /// [Linux; Windows]
+  | Toolbar
+  /// [Linux]
+  | Splash
+  /// [Linux]
+  | Notification
+  /// [macOS] adds metal gradient appearance (NSTexturedBackgroundWindowMask)
+  | Textured
 
 type BrowserWindowOptions =
   /// Window's width in pixels. Default is 800.
   abstract width: int with get, set
   /// Window's height in pixels. Default is 600.
   abstract height: int with get, set
-  /// ( if y is used) Window's left offset from screen. Default is to center the
-  /// window.
+  /// Window's left offset from screen. Required if `y` is used. Default is to
+  /// center the window.
   abstract x: int with get, set
-  /// ( if x is used) Window's top offset from screen. Default is to center the
-  /// window.
+  /// Window's top offset from screen. Required if `x` is used. Default is to
+  /// center the window.
   abstract y: int with get, set
   /// The width and height would be used as web page's size, which means the
   /// actual window's size will include window frame's size and be slightly
@@ -4841,8 +4893,9 @@ type BrowserWindowOptions =
   abstract skipTaskbar: bool with get, set
   /// The kiosk mode. Default is false.
   abstract kiosk: bool with get, set
-  /// Default window title. Default is "Electron". If the HTML tag is defined in
-  /// the HTML file loaded by loadURL(), this property will be ignored.
+  /// Default window title. Default is "Electron". If the HTML tag `<title>` is
+  /// defined in the HTML file loaded by loadURL(), this property will be
+  /// ignored.
   abstract title: string with get, set
   /// The window icon. On Windows it is recommended to use ICO icons to get best
   /// visual effects, you can also leave it undefined so the executable's icon
@@ -4850,7 +4903,7 @@ type BrowserWindowOptions =
   abstract icon: U2<NativeImage, string> with get, set
   /// Whether window should be shown when created. Default is true.
   abstract show: bool with get, set
-  /// Specify false to create a . Default is true.
+  /// Specify false to create a frameless window. Default is true.
   abstract frame: bool with get, set
   /// Specify parent window. Default is null.
   abstract parent: BrowserWindow option with get, set
@@ -4879,24 +4932,22 @@ type BrowserWindowOptions =
   /// Forces using dark theme for the window, only works on some GTK+3 desktop
   /// environments. Default is false.
   abstract darkTheme: bool with get, set
-  /// Makes the window . Default is false.
+  /// Makes the window transparent. Default is false.
   abstract transparent: bool with get, set
-  /// The type of window, default is normal window. See more about this below.
-  abstract ``type``: string with get, set
-  /// The style of window title bar. Default is default. Possible values are:
+  /// The type of window.
+  abstract ``type``: BrowserWindowStyle with get, set
+  /// The style of window title bar. Default is TitleBarStyle.Default.
   abstract titleBarStyle: TitleBarStyle with get, set
   /// Shows the title in the title bar in full screen mode on macOS for all
   /// titleBarStyle options. Default is false.
   abstract fullscreenWindowTitle: bool with get, set
-  /// Use WS_THICKFRAME style for frameless windows on Windows, which adds
+  /// Use `WS_THICKFRAME` style for frameless windows on Windows, which adds
   /// standard window frame. Setting it to false will remove window shadow and
   /// window animations. Default is true.
   abstract thickFrame: bool with get, set
-  /// Add a type of vibrancy effect to the window, only on macOS. Can be
-  /// appearance-based, light, dark, titlebar, selection, menu, popover,
-  /// sidebar, medium-light or ultra-dark. Please note that using frame: false
-  /// in combination with a vibrancy value requires that you use a non-default
-  /// titleBarStyle as well.
+  /// Add a type of vibrancy effect to the window, only on macOS. Please note
+  /// that using frame: false in combination with a vibrancy value requires that
+  /// you use a non-default titleBarStyle as well.
   abstract vibrancy: VibrancyType with get, set
   /// Controls the behavior on macOS when option-clicking the green stoplight
   /// button on the toolbar or by clicking the Window > Zoom menu item. If true,
@@ -6220,7 +6271,7 @@ type WebPreferences =
   /// Whether node integration is enabled. Default is false.
   abstract nodeIntegration: bool with get, set
   /// Whether node integration is enabled in web workers. Default is false. More
-  /// about this can be found in .
+  /// about this can be found here: https://electronjs.org/docs/tutorial/multithreading
   abstract nodeIntegrationInWorker: bool with get, set
   /// Experimental option for enabling NodeJS support in sub-frames such as
   /// iframes. All your preloads will load for every iframe, you can use
@@ -6230,29 +6281,30 @@ type WebPreferences =
   /// page. This script will always have access to node APIs no matter whether
   /// node integration is turned on or off. The value should be the absolute
   /// file path to the script. When node integration is turned off, the preload
-  /// script can reintroduce Node global symbols back to the global scope. See
-  /// example .
+  /// script can reintroduce Node global symbols back to the global scope.
   abstract preload: string with get, set
   /// If set, this will sandbox the renderer associated with the window, making
   /// it compatible with the Chromium OS-level sandbox and disabling the Node.js
-  /// engine. This is not the same as the nodeIntegration option and the APIs
+  /// engine. This is not the same as the `nodeIntegration` option and the APIs
   /// available to the preload script are more limited. Read more about the
-  /// option . This option is currently experimental and may change or be
+  /// option here: https://electronjs.org/docs/api/sandbox-option.
+  ///
+  /// Note: This option is currently experimental and may change or be
   /// removed in future Electron releases.
   abstract sandbox: bool with get, set
-  /// Whether to enable the module. Default is true.
+  /// Whether to enable the `remote` module. Default is true.
   abstract enableRemoteModule: bool with get, set
   /// Sets the session used by the page. Instead of passing the Session object
-  /// directly, you can also choose to use the partition option instead, which
+  /// directly, you can also choose to use the `partition` option instead, which
   /// accepts a partition string. When both session and partition are provided,
   /// session will be preferred. Default is the default session.
   abstract session: Session with get, set
   /// Sets the session used by the page according to the session's partition
-  /// string. If partition starts with persist:, the page will use a persistent
-  /// session available to all pages in the app with the same partition. If
-  /// there is no persist: prefix, the page will use an in-memory session. By
-  /// assigning the same partition, multiple pages can share the same session.
-  /// Default is the default session.
+  /// string. If partition starts with `persist:`, the page will use a
+  /// persistent session available to all pages in the app with the same
+  /// partition. If there is no persist: prefix, the page will use an in-memory
+  /// session. By assigning the same partition, multiple pages can share the
+  /// same session. Default is the default session.
   abstract partition: string with get, set
   /// When specified, web pages with the same affinity will run in the same
   /// renderer process. Note that due to reusing the renderer process, certain
@@ -6286,13 +6338,15 @@ type WebPreferences =
   abstract experimentalFeatures: bool with get, set
   /// Enables scroll bounce (rubber banding) effect on macOS. Default is false.
   abstract scrollBounce: bool with get, set
-  /// A list of feature strings separated by ,, like
-  /// CSSVariables,KeyboardEventKey to enable. The full list of supported
-  /// feature strings can be found in the file.
+  /// A list of feature strings to enable separated by comma, like
+  /// CSSVariables,KeyboardEventKey. The full list of supported feature strings
+  /// can be found here:
+  /// https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
   abstract enableBlinkFeatures: string with get, set
-  /// A list of feature strings separated by ,, like
-  /// CSSVariables,KeyboardEventKey to disable. The full list of supported
-  /// feature strings can be found in the file.
+  /// A list of feature strings to disable separated by comma, like
+  /// CSSVariables,KeyboardEventKey. The full list of supported feature strings
+  /// can be found here:
+  /// https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
   abstract disableBlinkFeatures: string with get, set
   /// Sets the default font for the font-family.
   abstract defaultFontFamily: DefaultFontFamily with get, set
@@ -6305,10 +6359,11 @@ type WebPreferences =
   /// Defaults to ISO-8859-1.
   abstract defaultEncoding: string with get, set
   /// Whether to throttle animations and timers when the page becomes
-  /// background. This also affects the . Defaults to true.
+  /// background. This also affects the Page Visibility API. Defaults to true.
   abstract backgroundThrottling: bool with get, set
   /// Whether to enable offscreen rendering for the browser window. Defaults to
-  /// false. See the for more details.
+  /// false. See here for more details:
+  /// https://electronjs.org/docs/tutorial/offscreen-rendering
   abstract offscreen: bool with get, set
   /// Whether to run Electron APIs and the specified preload script in a
   /// separate JavaScript context. Defaults to false. The context that the
@@ -6319,12 +6374,13 @@ type WebPreferences =
   /// available in the preload script and not the loaded page. This option
   /// should be used when loading potentially untrusted remote content to ensure
   /// the loaded content cannot tamper with the preload script and any Electron
-  /// APIs being used. This option uses the same technique used by . You can
-  /// access this context in the dev tools by selecting the 'Electron Isolated
-  /// Context' entry in the combo box at the top of the Console tab.
+  /// APIs being used. This option uses the same technique used by Chrome
+  /// Content Scripts. You can access this context in the dev tools by selecting
+  /// the 'Electron Isolated Context' entry in the combo box at the top of the
+  /// Console tab.
   abstract contextIsolation: bool with get, set
   /// Whether to use native window.open(). Defaults to false. Child windows will
-  /// always have node integration disabled. This option is currently
+  /// always have node integration disabled. Note: This option is currently
   /// experimental.
   abstract nativeWindowOpen: bool with get, set
   /// A list of strings that will be appended to process.argv in the renderer
@@ -6341,9 +6397,7 @@ type WebPreferences =
   /// Whether dragging and dropping a file or link onto the page causes a
   /// navigation. Default is false.
   abstract navigateOnDragDrop: bool with get, set
-  /// Autoplay policy to apply to content in the window, can be
-  /// no-user-gesture-required, user-gesture-required,
-  /// document-user-activation-required. Defaults to no-user-gesture-required.
+  /// Autoplay policy to apply to content in the window.
   abstract autoplayPolicy: AutoplayPolicy with get, set
 
 type DefaultFontFamily =
