@@ -66,7 +66,7 @@ type IpcMainEvent =
   abstract sender: WebContents with get, set
   /// A function that will send an IPC message to the renderer frame that sent
   /// the original message that you are currently handling. You should use this
-  /// method to "reply" to the sent message in order to guaruntee the reply will
+  /// method to "reply" to the sent message in order to guarantee the reply will
   /// go to the correct process and frame.
   abstract reply: channel: string * [<ParamArray>] args: obj [] -> unit
 
@@ -367,7 +367,7 @@ type App =
   /// See onBeforeQuit.
   [<Emit "$0.removeListener('before-quit',$1)">] abstract removeListenerBeforeQuit: listener: (Event -> unit) -> App
   /// Emitted when all windows have been closed and the application will quit.
-  /// Calling `event.preventDefault()` will prevent the default behaviour, which
+  /// Calling `event.preventDefault()` will prevent the default behavior, which
   /// is terminating the application. See the description of `the
   /// window-all-closed` event for the differences between the `will-quit` and
   /// `window-all-closed` events.
@@ -623,7 +623,7 @@ type App =
   [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// See onLogin.
   [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
-  /// Emitted when the gpu process crashes or is killed.
+  /// Emitted when the GPU process crashes or is killed.
   ///
   /// Extra parameters:
   ///
@@ -981,7 +981,7 @@ type App =
   ///
   /// Parameters: - type: Uniquely identifies the activity. Maps to
   /// NSUserActivity.activityType. - userInfo: App-specific state to store for
-  /// use by another device. - webpageURL: The webpage to load in a browser if
+  /// use by another device. - webpageURL: The web page to load in a browser if
   /// no suitable app is installed on the resuming device. The scheme must be
   /// http or https.
   abstract setUserActivity: ``type``: string * userInfo: obj option * ?webpageURL: string -> unit
@@ -1013,10 +1013,10 @@ type App =
   abstract disableHardwareAcceleration: unit -> unit
   /// By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
   /// domain basis if the GPU processes crashes too frequently. This function
-  /// disables that behaviour. This method can only be called before app is
+  /// disables that behavior. This method can only be called before app is
   /// ready.
   abstract disableDomainBlockingFor3DAPIs: unit -> unit
-  /// Returns objects that correspond to memory and cpu usage statistics of all
+  /// Returns objects that correspond to memory and CPU usage statistics of all
   /// the processes associated with the app.
   abstract getAppMetrics: unit -> ProcessMetric []
   /// Returns the Graphics Feature Status from chrome://gpu/.
