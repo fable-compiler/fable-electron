@@ -1073,62 +1073,75 @@ type App =
 
 type AutoUpdater =
   inherit EventEmitter<AutoUpdater>
-  /// This event is emitted after a user calls quitAndInstall(). When this API is
-  /// called, the before-quit event is not emitted before all windows are closed. As a
-  /// result you should listen to this event if you wish to perform actions before the
-  /// windows are closed while a process is quitting, as well as listening to
-  /// before-quit.
-  [<Emit "$0.on('before-quit-for-update',$1)">] abstract onBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
-  [<Emit "$0.once('before-quit-for-update',$1)">] abstract onceBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
-  [<Emit "$0.addListener('before-quit-for-update',$1)">] abstract addListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
-  [<Emit "$0.removeListener('before-quit-for-update',$1)">] abstract removeListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
-  /// Emitted when checking if an update has started.
+  /// Emitted when there is an error while updating.
+  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Event -> Error -> unit) -> AutoUpdater
+  /// Emitted when checking if an update exists has started.
   [<Emit "$0.on('checking-for-update',$1)">] abstract onCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.once('checking-for-update',$1)">] abstract onceCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.addListener('checking-for-update',$1)">] abstract addListenerCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.removeListener('checking-for-update',$1)">] abstract removeListenerCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
-  /// Emitted when there is an error while updating.
-  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Error -> unit) -> AutoUpdater
-  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Error -> unit) -> AutoUpdater
-  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Error -> unit) -> AutoUpdater
-  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Error -> unit) -> AutoUpdater
-  /// Emitted when there is an available update. The update is downloaded
-  /// automatically.
+  /// Emitted when there is an available update. The update is downloaded automatically.
   [<Emit "$0.on('update-available',$1)">] abstract onUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.once('update-available',$1)">] abstract onceUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.addListener('update-available',$1)">] abstract addListenerUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.removeListener('update-available',$1)">] abstract removeListenerUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
-  /// Emitted when an update has been downloaded. On Windows only releaseName is
-  /// available. Note: It is not strictly necessary to handle this event. A
-  /// successfully downloaded update will still be applied the next time the
-  /// application starts.
-  [<Emit "$0.on('update-downloaded',$1)">] abstract onUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
-  [<Emit "$0.once('update-downloaded',$1)">] abstract onceUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
-  [<Emit "$0.addListener('update-downloaded',$1)">] abstract addListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
-  [<Emit "$0.removeListener('update-downloaded',$1)">] abstract removeListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
   /// Emitted when there is no available update.
   [<Emit "$0.on('update-not-available',$1)">] abstract onUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.once('update-not-available',$1)">] abstract onceUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.addListener('update-not-available',$1)">] abstract addListenerUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
   [<Emit "$0.removeListener('update-not-available',$1)">] abstract removeListenerUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
-  /// Asks the server whether there is an update. You must call setFeedURL before
-  /// using this API.
-  abstract checkForUpdates: unit -> unit
-  abstract getFeedURL: unit -> string
-  /// Restarts the app and installs the update after it has been downloaded. It should
-  /// only be called after update-downloaded has been emitted. Under the hood calling
-  /// autoUpdater.quitAndInstall() will close all application windows first, and
-  /// automatically call app.quit() after all windows have been closed. Note: It is
-  /// not strictly necessary to call this function to apply an update, as a
-  /// successfully downloaded update will always be applied the next time the
+  /// Emitted when an update has been downloaded.
+  ///
+  /// On Windows only `releaseName` is available.
+  ///
+  /// Note: It is not strictly necessary to handle this event. A
+  /// successfully downloaded update will still be applied the next time the
   /// application starts.
-  abstract quitAndInstall: unit -> unit
+  ///
+  /// Extra parameters:
+  ///
+  ///   - releaseNotes
+  ///   - releaseName
+  ///   - releaseDate
+  ///   - updateUrl
+  [<Emit "$0.on('update-downloaded',$1)">] abstract onUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  [<Emit "$0.once('update-downloaded',$1)">] abstract onceUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('update-downloaded',$1)">] abstract addListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('update-downloaded',$1)">] abstract removeListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  /// This event is emitted after a user calls quitAndInstall().
+  ///
+  /// When this API is called, the `before-quit` event is not emitted before all
+  /// windows are closed. As a result you should listen to this event if you wish
+  /// to perform actions before the windows are closed while a process is quitting,
+  /// as well as listening to `before-quit`.
+  [<Emit "$0.on('before-quit-for-update',$1)">] abstract onBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.once('before-quit-for-update',$1)">] abstract onceBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('before-quit-for-update',$1)">] abstract addListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('before-quit-for-update',$1)">] abstract removeListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
   /// Sets the url and initialize the auto updater.
   abstract setFeedURL: options: AutoOpdateFeedOptions -> unit
+  /// Returns the current update feed URL.
+  abstract getFeedURL: unit -> string
+  /// Asks the server whether there is an update. You must call `setFeedURL` before
+  /// using this API.
+  abstract checkForUpdates: unit -> unit
+  /// Restarts the app and installs the update after it has been downloaded. It should
+  /// only be called after `update-downloaded` has been emitted.
+  ///
+  /// Under the hood calling autoUpdater.quitAndInstall() will close all application
+  /// windows first, and automatically call app.quit() after all windows have been closed.
+  ///
+  /// Note: It is not strictly necessary to call this function to apply an update,
+  /// as a successfully downloaded update will always be applied the next time the
+  /// application starts.
+  abstract quitAndInstall: unit -> unit
 
 type BluetoothDevice =
-  abstract deviceId: string with get, set
   abstract deviceName: string with get, set
+  abstract deviceId: string with get, set
 
 type BrowserView =
   inherit EventEmitter<BrowserView>
@@ -4994,16 +5007,16 @@ type EnableNetworkEmulationOptions =
   abstract uploadThroughput: float with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
-type AutoOpdateFeedServerType =
+type AutoUpdateFeedServerType =
   | Json
   | Default
 
 type AutoOpdateFeedOptions =
   abstract url: string with get, set
-  /// HTTP request headers.
+  /// [macOS] HTTP request headers.
   abstract headers: obj with get, set
-  /// Either json or default, see the README for more information.
-  abstract serverType: AutoOpdateFeedServerType with get, set
+  /// [macOS] See the Squirrel.Mac README for more information: https://github.com/Squirrel/Squirrel.Mac
+  abstract serverType: AutoUpdateFeedServerType with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type FileIconSize =
