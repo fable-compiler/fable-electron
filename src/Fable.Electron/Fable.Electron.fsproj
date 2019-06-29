@@ -16,6 +16,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
   </PropertyGroup>
+  <PropertyGroup>
+    <NpmDependencies>
+      <NpmPackage Name="electron" Version=">= 5.0 lt 6" DevDependency="true" ResolutionStrategy="max" />
+    </NpmDependencies>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="paket.references" />
     <Compile Include="Electron.fs" />
