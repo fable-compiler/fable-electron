@@ -1143,25 +1143,37 @@ type BluetoothDevice =
   abstract deviceName: string with get, set
   abstract deviceId: string with get, set
 
+/// A BrowserView can be used to embed additional web content into a BrowserWindow.
+/// It is like a child window, except that it is positioned relative to its owning window.
 type BrowserView =
   inherit EventEmitter<BrowserView>
-  /// Force closing the view, the unload and beforeunload events won't be emitted for
+  /// A WebContents object owned by this view.
+  abstract webContents: WebContents with get, set
+  /// An integer representing the unique ID of the view.
+  abstract id: int with get, set
+  /// Force closing the view, the `unload` and `beforeunload` events won't be emitted for
   /// the web page. After you're done with a view, call this function in order to free
   /// memory and other resources as soon as possible.
   abstract destroy: unit -> unit
+  /// Indicates whether the view is destroyed.
   abstract isDestroyed: unit -> bool
+  /// Sets whether the view's height and/or width will grow and shrink together with the window.
   abstract setAutoResize: options: AutoResizeOptions -> unit
-  abstract setBackgroundColor: color: string -> unit
   /// Resizes and moves the view to the supplied bounds relative to the window.
   abstract setBounds: bounds: Rectangle -> unit
-  abstract id: int with get, set
-  abstract webContents: WebContents with get, set
+  /// Sets the background color. Accepted formats: #aarrggbb, #rrggbb, #argb, #rgb.
+  abstract setBackgroundColor: color: string -> unit
 
 type BrowserViewStatic =
+  /// Instantiates a BrowserWindow.
   [<EmitConstructor>] abstract Create: ?options: BrowserViewOptions -> BrowserView
-  abstract fromId: id: int -> BrowserView
-  abstract fromWebContents: webContents: WebContents -> BrowserView option
+  /// Returns all opened BrowserViews.
   abstract getAllViews: unit -> BrowserView []
+  /// Returns the BrowserView that owns the given webContents or None if
+  /// the contents are not owned by a BrowserView.
+  abstract fromWebContents: webContents: WebContents -> BrowserView option
+  /// Returns the BrowserView with the given id.
+  abstract fromId: id: int -> BrowserView option
 
 [<StringEnum; RequireQualifiedAccess>]
 type AlwaysOnTopLevel =
@@ -4616,7 +4628,7 @@ type BitmapOptions =
   abstract scaleFactor: float with get, set
 
 type BrowserViewOptions =
-  /// See BrowserWindow.
+  /// Settings of web page's features.
   abstract webPreferences: WebPreferences with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
