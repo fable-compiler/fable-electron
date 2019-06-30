@@ -326,8 +326,8 @@ type App =
   /// Extra parameters:
   ///
   ///   - launchInfo: On macOS, this object holds the `userInfo` of the
-  ///   `NSUserNotification` that was used to open the application, if it was
-  ///   launched from Notification Center
+  ///     `NSUserNotification` that was used to open the application, if it was
+  ///     launched from Notification Center
   [<Emit "$0.on('ready',$1)">] abstract onReady: listener: (Event -> obj -> unit) -> App
   /// See onReady.
   [<Emit "$0.once('ready',$1)">] abstract onceReady: listener: (Event -> obj -> unit) -> App
@@ -461,9 +461,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - type: A string identifying the activity. Maps to
-  ///   NSUserActivity.activityType. - userInfo: Contains app-specific state
-  ///   stored by the activity on another device
+  ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
+  ///   - userInfo: Contains app-specific state stored by the activity on another device
   [<Emit "$0.on('continue-activity',$1)">] abstract onContinueActivity: listener: (Event -> string -> obj -> unit) -> App
   /// See onContinueActivity.
   [<Emit "$0.once('continue-activity',$1)">] abstract onceContinueActivity: listener: (Event -> string -> obj -> unit) -> App
@@ -477,8 +476,7 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - type: A string identifying the activity. Maps to
-  ///   NSUserActivity.activityType.
+  ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
   [<Emit "$0.on('will-continue-activity',$1)">] abstract onWillContinueActivity: listener: (Event -> string -> unit) -> App
   /// See onWillContinueActivity.
   [<Emit "$0.once('will-continue-activity',$1)">] abstract onceWillContinueActivity: listener: (Event -> string -> unit) -> App
@@ -491,9 +489,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - type: A string identifying the activity. Maps to
-  ///   NSUserActivity.activityType. - error: A string with the error's
-  ///   localized description
+  ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
+  ///   - error: A string with the error's localized description
   [<Emit "$0.on('continue-activity-error',$1)">] abstract onContinueActivityError: listener: (Event -> string -> string -> unit) -> App
   /// See onContinueActivityError.
   [<Emit "$0.once('continue-activity-error',$1)">] abstract onceContinueActivityError: listener: (Event -> string -> string -> unit) -> App
@@ -506,9 +503,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - type: A string identifying the activity. Maps to
-  ///   NSUserActivity.activityType. - userInfo: Contains app-specific state
-  ///   stored by the activity
+  ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
+  ///   - userInfo: Contains app-specific state stored by the activity
   [<Emit "$0.on('activity-was-continued',$1)">] abstract onActivityWasContinued: listener: (Event -> string -> obj -> unit) -> App
   /// See onActivityWasContinued.
   [<Emit "$0.once('activity-was-continued',$1)">] abstract onceActivityWasContinued: listener: (Event -> string -> obj -> unit) -> App
@@ -524,9 +520,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - type: A string identifying the activity. Maps to
-  ///   NSUserActivity.activityType. - userInfo: Contains app-specific state
-  ///   stored by the activity
+  ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType. 
+  ///   - userInfo: Contains app-specific state stored by the activity
   [<Emit "$0.on('update-activity-state',$1)">] abstract onUpdateActivityState: listener: (Event -> string -> obj option -> unit) -> App
   /// See onUpdateActivityState.
   [<Emit "$0.once('update-activity-state',$1)">] abstract onceUpdateActivityState: listener: (Event -> string -> obj option -> unit) -> App
@@ -582,8 +577,12 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - url - error: The error code - certificate - callback -
-  ///   isTrusted: Whether to consider the certificate as trusted
+  ///   - webContents
+  ///   - url
+  ///   - error: The error code
+  ///   - certificate
+  ///   - callback
+  ///       - isTrusted: Whether to consider the certificate as trusted
   [<Emit "$0.on('certificate-error',$1)">] abstract onCertificateError: listener: (Event -> WebContents -> string -> string -> Certificate -> (bool -> unit) -> unit) -> App
   /// See onCertificateError.
   [<Emit "$0.once('certificate-error',$1)">] abstract onceCertificateError: listener: (Event -> WebContents -> string -> string -> Certificate -> (bool -> unit) -> unit) -> App
@@ -599,7 +598,11 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - url - certificateList - callback - certificate
+  ///   - webContents
+  ///   - url
+  ///   - certificateList
+  ///   - callback
+  ///   - certificate
   [<Emit "$0.on('select-client-certificate',$1)">] abstract onSelectClientCertificate: listener: (Event -> WebContents -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> App
   /// See onSelectClientCertificate.
   [<Emit "$0.once('select-client-certificate',$1)">] abstract onceSelectClientCertificate: listener: (Event -> WebContents -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> App
@@ -615,7 +618,10 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - request - authInfo - callback(username, password)
+  ///   - webContents
+  ///   - request
+  ///   - authInfo
+  ///   - callback(username, password)
   [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// See onLogin.
   [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
@@ -643,8 +649,7 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - accessibilitySupportEnabled: true when Chrome's accessibility support
-  ///   is enabled, false otherwise.
+  ///   - accessibilitySupportEnabled: true when Chrome's accessibility support is enabled, false otherwise.
   [<Emit "$0.on('accessibility-support-changed',$1)">] abstract onAccessibilitySupportChanged: listener: (Event -> bool -> unit) -> App
   /// See onAccessibilitySupportChanged.
   [<Emit "$0.once('accessibility-support-changed',$1)">] abstract onceAccessibilitySupportChanged: listener: (Event -> bool -> unit) -> App
@@ -672,8 +677,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - argv: The second instance's command line arguments - workingDirectory:
-  ///   The second instance's working directory
+  ///   - argv: The second instance's command line arguments
+  ///   - workingDirectory: The second instance's working directory
   [<Emit "$0.on('second-instance',$1)">] abstract onSecondInstance: listener: (Event -> string [] -> string -> unit) -> App
   /// See onSecondInstance.
   [<Emit "$0.once('second-instance',$1)">] abstract onceSecondInstance: listener: (Event -> string [] -> string -> unit) -> App
@@ -698,7 +703,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - moduleName
+  ///   - webContents
+  ///   - moduleName
   [<Emit "$0.on('remote-require',$1)">] abstract onRemoteRequire: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
   /// See onRemoteRequire.
   [<Emit "$0.once('remote-require',$1)">] abstract onceRemoteRequire: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
@@ -713,7 +719,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - globalName
+  ///   - webContents
+  ///   - globalName
   [<Emit "$0.on('remote-get-global',$1)">] abstract onRemoteGetGlobal: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
   /// See onRemoteGetGlobal.
   [<Emit "$0.once('remote-get-global',$1)">] abstract onceRemoteGetGlobal: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
@@ -728,7 +735,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - moduleName
+  ///   - webContents
+  ///   - moduleName
   [<Emit "$0.on('remote-get-builtin',$1)">] abstract onRemoteGetBuiltin: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
   /// See onRemoteGetBuiltin.
   [<Emit "$0.once('remote-get-builtin',$1)">] abstract onceRemoteGetBuiltin: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
@@ -773,7 +781,8 @@ type App =
   ///
   /// Extra parameters:
   ///
-  ///   - webContents - guestWebContents
+  ///   - webContents
+  ///   - guestWebContents
   [<Emit "$0.on('remote-get-guest-web-contents',$1)">] abstract onRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
   /// See onRemoteGetGuestWebContents.
   [<Emit "$0.once('remote-get-guest-web-contents',$1)">] abstract onceRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
@@ -976,28 +985,39 @@ type App =
   /// will allow multiple instances of the application to once again run side by
   /// side.
   abstract releaseSingleInstanceLock: unit -> unit
-  /// [macOS] Creates an NSUserActivity and sets it as the current activity. The
-  /// activity is eligible for Handoff to another device afterward.
-  ///
-  /// Parameters: - type: Uniquely identifies the activity. Maps to
-  /// NSUserActivity.activityType. - userInfo: App-specific state to store for
-  /// use by another device. - webpageURL: The web page to load in a browser if
-  /// no suitable app is installed on the resuming device. The scheme must be
-  /// http or https.
+  /// <summary>
+  ///   [macOS] Creates an NSUserActivity and sets it as the current activity.
+  ///   The activity is eligible for Handoff to another device afterward.
+  /// </summary>
+  /// <param name="type">
+  ///   Uniquely identifies the activity. Maps to NSUserActivity.activityType.
+  /// </param>
+  /// <param name="userInfo">
+  ///   App-specific state to store for use by another device.
+  /// </param>
+  /// <param name="webpageURL">
+  ///   The web page to load in a browser if no suitable app is installed on the
+  ///   resuming device. The scheme must be http or https.
+  /// </param>
   abstract setUserActivity: ``type``: string * userInfo: obj option * ?webpageURL: string -> unit
   /// [macOS] Returns the type of the currently running activity.
   abstract getCurrentActivityType: unit -> string
-  /// [macOS] Invalidates the current Handoff user activity.
+  /// <summary>[macOS] Invalidates the current Handoff user activity.</summary>
   ///
-  /// Parameters: - type: Uniquely identifies the activity. Maps to
-  /// NSUserActivity.activityType.
+  /// <param name="type">
+  ///   Uniquely identifies the activity. Maps to NSUserActivity.activityType
+  /// </param>
   abstract invalidateCurrentActivity: ``type``: string -> unit
-  /// [macOS] Updates the current activity if its type matches `type`, merging
-  /// the entries from `userInfo` into its current `userInfo` dictionary.
-  ///
-  /// Parameters: - type: Uniquely identifies the activity. Maps to
-  /// NSUserActivity.activityType. - userInfo: App-specific state to store for
-  /// use by another device.
+  /// <summary>
+  ///   [macOS] Updates the current activity if its type matches `type`, merging
+  ///   the entries from `userInfo` into its current `userInfo` dictionary.
+  /// </summary>
+  /// <param name="type">
+  ///   Uniquely identifies the activity. Maps to NSUserActivity.activityType.
+  /// </param>
+  /// <param name="userInfo">
+  ///   App-specific state to store for use by another device.
+  /// </param>
   abstract updateCurrentActivity: ``type``: string * userInfo: obj option -> unit
   /// Changes the Application User Model ID to `id`. More info:
   /// https://docs.microsoft.com/en-us/windows/desktop/shell/appids
@@ -1145,7 +1165,10 @@ type AutoUpdater =
   ///
   /// Extra parameters:
   ///
-  ///   - releaseNotes - releaseName - releaseDate - updateUrl
+  ///   - releaseNotes
+  ///   - releaseName
+  ///   - releaseDate
+  ///   - updateUrl
   [<Emit "$0.on('update-downloaded',$1)">] abstract onUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
   [<Emit "$0.once('update-downloaded',$1)">] abstract onceUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
   [<Emit "$0.addListener('update-downloaded',$1)">] abstract addListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
@@ -1201,8 +1224,6 @@ type BrowserView =
   /// Sets whether the view's height and/or width will grow and shrink together
   /// with the window.
   abstract setAutoResize: options: AutoResizeOptions -> unit
-  /// Resizes and moves the view to the supplied bounds relative to the window.
-  abstract setBounds: bounds: Rectangle -> unit
   /// Sets the background color. Accepted formats: #aarrggbb, #rrggbb, #argb,
   /// #rgb.
   abstract setBackgroundColor: color: string -> unit
@@ -1242,39 +1263,35 @@ type VibrancyType =
   | [<CompiledName("medium-light")>] MediumLight
   | [<CompiledName("ultra-dark")>] UltraDark
 
+[<StringEnum; RequireQualifiedAccess>]
+type SwipeDirection =
+  | Up
+  | Right
+  | Down
+  | Left
+
 type BrowserWindow =
   inherit EventEmitter<BrowserWindow>
-  /// Emitted when the window is set or unset to show always on top of other
-  /// windows.
-  [<Emit "$0.on('always-on-top-changed',$1)">] abstract onAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
-  [<Emit "$0.once('always-on-top-changed',$1)">] abstract onceAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('always-on-top-changed',$1)">] abstract addListenerAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('always-on-top-changed',$1)">] abstract removeListenerAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
-  /// Emitted when an App Command is invoked. These are typically related to
-  /// keyboard media keys or browser commands, as well as the "Back" button
-  /// built into some mice on Windows. Commands are lowercased, underscores are
-  /// replaced with hyphens, and the APPCOMMAND_ prefix is stripped off. e.g.
-  /// APPCOMMAND_BROWSER_BACKWARD is emitted as browser-backward. The following
-  /// app commands are explictly supported on Linux:
-  [<Emit "$0.on('app-command',$1)">] abstract onAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
-  [<Emit "$0.once('app-command',$1)">] abstract onceAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('app-command',$1)">] abstract addListenerAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('app-command',$1)">] abstract removeListenerAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
-  /// Emitted when the window loses focus.
-  [<Emit "$0.on('blur',$1)">] abstract onBlur: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('blur',$1)">] abstract onceBlur: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('blur',$1)">] abstract addListenerBlur: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('blur',$1)">] abstract removeListenerBlur: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the document changed its title, calling
+  /// event.preventDefault() will prevent the native window's title from
+  /// changing. `explicitSet` is false when title is synthesized from file url.
+  ///
+  /// Extra parameters:
+  ///
+  ///   - title
+  ///   - explicitSet
+  [<Emit "$0.on('page-title-updated',$1)">] abstract onPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
+  [<Emit "$0.once('page-title-updated',$1)">] abstract oncePageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('page-title-updated',$1)">] abstract addListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('page-title-updated',$1)">] abstract removeListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
   /// Emitted when the window is going to be closed. It's emitted before the
-  /// beforeunload and unload event of the DOM. Calling event.preventDefault()
-  /// will cancel the close. Usually you would want to use the beforeunload
-  /// handler to decide whether the window should be closed, which will also be
-  /// called when the window is reloaded. In Electron, returning any value other
-  /// than undefined would cancel the close. For example: Note: There is a
-  /// subtle difference between the behaviors of window.onbeforeunload = handler
-  /// and window.addEventListener('beforeunload', handler). It is recommended to
-  /// always set the event.returnValue explicitly, instead of only returning a
-  /// value, as the former works more consistently within Electron.
+  /// `beforeunload` and `unload` event of the DOM. Calling
+  /// event.preventDefault() will cancel the close.
+  ///
+  /// Usually you would want to use the `beforeunload` handler to decide whether
+  /// the window should be closed, which will also be called when the window is
+  /// reloaded. In Electron, returning any value other than undefined would
+  /// cancel the close.
   [<Emit "$0.on('close',$1)">] abstract onClose: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (Event -> unit) -> BrowserWindow
@@ -1285,478 +1302,615 @@ type BrowserWindow =
   [<Emit "$0.once('closed',$1)">] abstract onceClosed: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.addListener('closed',$1)">] abstract addListenerClosed: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.removeListener('closed',$1)">] abstract removeListenerClosed: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window enters a full-screen state.
-  [<Emit "$0.on('enter-full-screen',$1)">] abstract onEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('enter-full-screen',$1)">] abstract onceEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('enter-full-screen',$1)">] abstract addListenerEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('enter-full-screen',$1)">] abstract removeListenerEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window enters a full-screen state triggered by HTML API.
-  [<Emit "$0.on('enter-html-full-screen',$1)">] abstract onEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('enter-html-full-screen',$1)">] abstract onceEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('enter-html-full-screen',$1)">] abstract addListenerEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('enter-html-full-screen',$1)">] abstract removeListenerEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// [Windows] Emitted when window session is going to end due to force
+  /// shutdown or machine restart or session log off.
+  [<Emit "$0.on('session-end',$1)">] abstract onSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('session-end',$1)">] abstract onceSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('session-end',$1)">] abstract addListenerSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('session-end',$1)">] abstract removeListenerSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the web page becomes unresponsive.
+  [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the unresponsive web page becomes responsive again.
+  [<Emit "$0.on('responsive',$1)">] abstract onResponsive: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('responsive',$1)">] abstract onceResponsive: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('responsive',$1)">] abstract addListenerResponsive: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('responsive',$1)">] abstract removeListenerResponsive: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window loses focus.
+  [<Emit "$0.on('blur',$1)">] abstract onBlur: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('blur',$1)">] abstract onceBlur: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('blur',$1)">] abstract addListenerBlur: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('blur',$1)">] abstract removeListenerBlur: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window gains focus.
   [<Emit "$0.on('focus',$1)">] abstract onFocus: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.once('focus',$1)">] abstract onceFocus: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.addListener('focus',$1)">] abstract addListenerFocus: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.removeListener('focus',$1)">] abstract removeListenerFocus: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window is shown.
+  [<Emit "$0.on('show',$1)">] abstract onShow: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('show',$1)">] abstract onceShow: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('show',$1)">] abstract addListenerShow: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('show',$1)">] abstract removeListenerShow: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window is hidden.
   [<Emit "$0.on('hide',$1)">] abstract onHide: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.once('hide',$1)">] abstract onceHide: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.addListener('hide',$1)">] abstract addListenerHide: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.removeListener('hide',$1)">] abstract removeListenerHide: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window leaves a full-screen state.
-  [<Emit "$0.on('leave-full-screen',$1)">] abstract onLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('leave-full-screen',$1)">] abstract onceLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('leave-full-screen',$1)">] abstract addListenerLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('leave-full-screen',$1)">] abstract removeListenerLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window leaves a full-screen state triggered by HTML API.
-  [<Emit "$0.on('leave-html-full-screen',$1)">] abstract onLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('leave-html-full-screen',$1)">] abstract onceLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('leave-html-full-screen',$1)">] abstract addListenerLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('leave-html-full-screen',$1)">] abstract removeListenerLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when window is maximized.
-  [<Emit "$0.on('maximize',$1)">] abstract onMaximize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('maximize',$1)">] abstract onceMaximize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('maximize',$1)">] abstract addListenerMaximize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('maximize',$1)">] abstract removeListenerMaximize: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window is minimized.
-  [<Emit "$0.on('minimize',$1)">] abstract onMinimize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('minimize',$1)">] abstract onceMinimize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('minimize',$1)">] abstract addListenerMinimize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('minimize',$1)">] abstract removeListenerMinimize: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window is being moved to a new position. Note: On macOS
-  /// this event is an alias of moved.
-  [<Emit "$0.on('move',$1)">] abstract onMove: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('move',$1)">] abstract onceMove: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('move',$1)">] abstract addListenerMove: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('move',$1)">] abstract removeListenerMove: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted once when the window is moved to a new position.
-  [<Emit "$0.on('moved',$1)">] abstract onMoved: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('moved',$1)">] abstract onceMoved: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('moved',$1)">] abstract addListenerMoved: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('moved',$1)">] abstract removeListenerMoved: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the native new tab button is clicked.
-  [<Emit "$0.on('new-window-for-tab',$1)">] abstract onNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('new-window-for-tab',$1)">] abstract onceNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('new-window-for-tab',$1)">] abstract addListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('new-window-for-tab',$1)">] abstract removeListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the document changed its title, calling
-  /// event.preventDefault() will prevent the native window's title from
-  /// changing. explicitSet is false when title is synthesized from file url.
-  [<Emit "$0.on('page-title-updated',$1)">] abstract onPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
-  [<Emit "$0.once('page-title-updated',$1)">] abstract oncePageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('page-title-updated',$1)">] abstract addListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('page-title-updated',$1)">] abstract removeListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
   /// Emitted when the web page has been rendered (while not being shown) and
   /// window can be displayed without a visual flash.
   [<Emit "$0.on('ready-to-show',$1)">] abstract onReadyToShow: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.once('ready-to-show',$1)">] abstract onceReadyToShow: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.addListener('ready-to-show',$1)">] abstract addListenerReadyToShow: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.removeListener('ready-to-show',$1)">] abstract removeListenerReadyToShow: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted after the window has been resized.
-  [<Emit "$0.on('resize',$1)">] abstract onResize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('resize',$1)">] abstract onceResize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('resize',$1)">] abstract addListenerResize: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('resize',$1)">] abstract removeListenerResize: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the unresponsive web page becomes responsive again.
-  [<Emit "$0.on('responsive',$1)">] abstract onResponsive: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('responsive',$1)">] abstract onceResponsive: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('responsive',$1)">] abstract addListenerResponsive: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('responsive',$1)">] abstract removeListenerResponsive: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window is restored from a minimized state.
-  [<Emit "$0.on('restore',$1)">] abstract onRestore: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('restore',$1)">] abstract onceRestore: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('restore',$1)">] abstract addListenerRestore: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('restore',$1)">] abstract removeListenerRestore: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when scroll wheel event phase has begun.
-  [<Emit "$0.on('scroll-touch-begin',$1)">] abstract onScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('scroll-touch-begin',$1)">] abstract onceScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('scroll-touch-begin',$1)">] abstract addListenerScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('scroll-touch-begin',$1)">] abstract removeListenerScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when scroll wheel event phase filed upon reaching the edge of
-  /// element.
-  [<Emit "$0.on('scroll-touch-edge',$1)">] abstract onScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('scroll-touch-edge',$1)">] abstract onceScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('scroll-touch-edge',$1)">] abstract addListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('scroll-touch-edge',$1)">] abstract removeListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when scroll wheel event phase has ended.
-  [<Emit "$0.on('scroll-touch-end',$1)">] abstract onScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('scroll-touch-end',$1)">] abstract onceScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('scroll-touch-end',$1)">] abstract addListenerScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('scroll-touch-end',$1)">] abstract removeListenerScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when window session is going to end due to force shutdown or
-  /// machine restart or session log off.
-  [<Emit "$0.on('session-end',$1)">] abstract onSessionEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('session-end',$1)">] abstract onceSessionEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('session-end',$1)">] abstract addListenerSessionEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('session-end',$1)">] abstract removeListenerSessionEnd: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window opens a sheet.
-  [<Emit "$0.on('sheet-begin',$1)">] abstract onSheetBegin: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('sheet-begin',$1)">] abstract onceSheetBegin: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('sheet-begin',$1)">] abstract addListenerSheetBegin: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('sheet-begin',$1)">] abstract removeListenerSheetBegin: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window has closed a sheet.
-  [<Emit "$0.on('sheet-end',$1)">] abstract onSheetEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('sheet-end',$1)">] abstract onceSheetEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('sheet-end',$1)">] abstract addListenerSheetEnd: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('sheet-end',$1)">] abstract removeListenerSheetEnd: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the window is shown.
-  [<Emit "$0.on('show',$1)">] abstract onShow: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('show',$1)">] abstract onceShow: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('show',$1)">] abstract addListenerShow: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('show',$1)">] abstract removeListenerShow: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted on 3-finger swipe. Possible directions are up, right, down, left.
-  [<Emit "$0.on('swipe',$1)">] abstract onSwipe: listener: (Event -> string -> unit) -> BrowserWindow
-  [<Emit "$0.once('swipe',$1)">] abstract onceSwipe: listener: (Event -> string -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('swipe',$1)">] abstract addListenerSwipe: listener: (Event -> string -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('swipe',$1)">] abstract removeListenerSwipe: listener: (Event -> string -> unit) -> BrowserWindow
+  /// Emitted when window is maximized.
+  [<Emit "$0.on('maximize',$1)">] abstract onMaximize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('maximize',$1)">] abstract onceMaximize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('maximize',$1)">] abstract addListenerMaximize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('maximize',$1)">] abstract removeListenerMaximize: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window exits from a maximized state.
   [<Emit "$0.on('unmaximize',$1)">] abstract onUnmaximize: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.once('unmaximize',$1)">] abstract onceUnmaximize: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.addListener('unmaximize',$1)">] abstract addListenerUnmaximize: listener: (Event -> unit) -> BrowserWindow
   [<Emit "$0.removeListener('unmaximize',$1)">] abstract removeListenerUnmaximize: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted when the web page becomes unresponsive.
-  [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (Event -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (Event -> unit) -> BrowserWindow
-  /// Emitted before the window is moved. Calling event.preventDefault() will
-  /// prevent the window from being moved. Note that this is only emitted when
-  /// the window is being resized manually. Resizing the window with
-  /// setBounds/setSize will not emit this event.
-  [<Emit "$0.on('will-move',$1)">] abstract onWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
-  [<Emit "$0.once('will-move',$1)">] abstract onceWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
-  [<Emit "$0.addListener('will-move',$1)">] abstract addListenerWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
-  [<Emit "$0.removeListener('will-move',$1)">] abstract removeListenerWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
-  /// Emitted before the window is resized. Calling event.preventDefault() will
-  /// prevent the window from being resized. Note that this is only emitted when
-  /// the window is being resized manually. Resizing the window with
-  /// setBounds/setSize will not emit this event.
+  /// Emitted when the window is minimized.
+  [<Emit "$0.on('minimize',$1)">] abstract onMinimize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('minimize',$1)">] abstract onceMinimize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('minimize',$1)">] abstract addListenerMinimize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('minimize',$1)">] abstract removeListenerMinimize: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window is restored from a minimized state.
+  [<Emit "$0.on('restore',$1)">] abstract onRestore: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('restore',$1)">] abstract onceRestore: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('restore',$1)">] abstract addListenerRestore: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('restore',$1)">] abstract removeListenerRestore: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS, Windows] Emitted before the window is resized. Calling
+  /// event.preventDefault() will prevent the window from being resized.
+  ///
+  /// Note that this is only emitted when the window is being resized manually.
+  /// Resizing the window with setBounds/setSize will not emit this event.
+  ///
+  /// Extra parameters:
+  ///
+  ///   - newBounds: Size the window is being resized to.
   [<Emit "$0.on('will-resize',$1)">] abstract onWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   [<Emit "$0.once('will-resize',$1)">] abstract onceWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   [<Emit "$0.addListener('will-resize',$1)">] abstract addListenerWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   [<Emit "$0.removeListener('will-resize',$1)">] abstract removeListenerWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
-  /// Replacement API for setBrowserView supporting work with multi browser
-  /// views.
-  abstract addBrowserView: browserView: BrowserView -> unit
-  /// Adds a window as a tab on this window, after the tab for the window
-  /// instance.
-  abstract addTabbedWindow: browserWindow: BrowserWindow -> unit
-  /// Removes focus from the window.
-  abstract blur: unit -> unit
-  abstract blurWebView: unit -> unit
-  /// Captures a snapshot of the page within rect. Upon completion callback will
-  /// be called with callback(image). The image is an instance of NativeImage
-  /// that stores data of the snapshot. Omitting rect will capture the whole
-  /// visible page. Deprecated Soon
-  abstract capturePage: callback: (NativeImage -> unit) -> unit
-  /// Captures a snapshot of the page within rect. Omitting rect will capture
-  /// the whole visible page.
-  abstract capturePage: ?rect: Rectangle -> unit
-  /// Captures a snapshot of the page within rect. Upon completion callback will
-  /// be called with callback(image). The image is an instance of NativeImage
-  /// that stores data of the snapshot. Omitting rect will capture the whole
-  /// visible page. Deprecated Soon
-  abstract capturePage: rect: Rectangle * callback: (NativeImage -> unit) -> unit
-  /// Moves window to the center of the screen.
-  abstract center: unit -> unit
+  /// Emitted after the window has been resized.
+  [<Emit "$0.on('resize',$1)">] abstract onResize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('resize',$1)">] abstract onceResize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('resize',$1)">] abstract addListenerResize: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('resize',$1)">] abstract removeListenerResize: listener: (Event -> unit) -> BrowserWindow
+  /// [Windows] Emitted before the window is moved. Calling
+  /// event.preventDefault() will prevent the window from being moved. Note that
+  /// this is only emitted when the window is being resized manually. Resizing
+  /// the window with setBounds/setSize will not emit this event.
+  ///
+  /// Extra parameters:
+  ///
+  ///   - newBounds: Location the window is being moved to.
+  [<Emit "$0.on('will-move',$1)">] abstract onWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  [<Emit "$0.once('will-move',$1)">] abstract onceWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('will-move',$1)">] abstract addListenerWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('will-move',$1)">] abstract removeListenerWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// Emitted when the window is being moved to a new position.
+  ///
+  /// Note: On macOS this event is an alias of `moved`.
+  [<Emit "$0.on('move',$1)">] abstract onMove: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('move',$1)">] abstract onceMove: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('move',$1)">] abstract addListenerMove: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('move',$1)">] abstract removeListenerMove: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted once when the window is moved to a new position.
+  [<Emit "$0.on('moved',$1)">] abstract onMoved: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('moved',$1)">] abstract onceMoved: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('moved',$1)">] abstract addListenerMoved: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('moved',$1)">] abstract removeListenerMoved: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window enters a full-screen state.
+  [<Emit "$0.on('enter-full-screen',$1)">] abstract onEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('enter-full-screen',$1)">] abstract onceEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('enter-full-screen',$1)">] abstract addListenerEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('enter-full-screen',$1)">] abstract removeListenerEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window leaves a full-screen state.
+  [<Emit "$0.on('leave-full-screen',$1)">] abstract onLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('leave-full-screen',$1)">] abstract onceLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('leave-full-screen',$1)">] abstract addListenerLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('leave-full-screen',$1)">] abstract removeListenerLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window enters a full-screen state triggered by HTML API.
+  [<Emit "$0.on('enter-html-full-screen',$1)">] abstract onEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('enter-html-full-screen',$1)">] abstract onceEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('enter-html-full-screen',$1)">] abstract addListenerEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('enter-html-full-screen',$1)">] abstract removeListenerEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// Emitted when the window leaves a full-screen state triggered by HTML API.
+  [<Emit "$0.on('leave-html-full-screen',$1)">] abstract onLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('leave-html-full-screen',$1)">] abstract onceLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('leave-html-full-screen',$1)">] abstract addListenerLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('leave-html-full-screen',$1)">] abstract removeListenerLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted when the window is set or unset to show always on top of
+  /// other windows.
+  ///
+  /// Extra parameters:
+  ///
+  ///   - isAlwaysOnTop
+  [<Emit "$0.on('always-on-top-changed',$1)">] abstract onAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  [<Emit "$0.once('always-on-top-changed',$1)">] abstract onceAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('always-on-top-changed',$1)">] abstract addListenerAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('always-on-top-changed',$1)">] abstract removeListenerAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  /// [Windows, Linux] Emitted when an App Command is invoked. These are
+  /// typically related to keyboard media keys or browser commands, as well as
+  /// the "Back" button built into some mice on Windows. Commands are
+  /// lowercased, underscores are replaced with hyphens, and the APPCOMMAND_
+  /// prefix is stripped off. e.g. APPCOMMAND_BROWSER_BACKWARD is emitted as
+  /// browser-backward. The following app commands are explicitly supported on
+  /// Linux: browser-backward, browser-forward
+  ///
+  /// Extra parameters:
+  ///
+  ///   - command
+  [<Emit "$0.on('app-command',$1)">] abstract onAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  [<Emit "$0.once('app-command',$1)">] abstract onceAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('app-command',$1)">] abstract addListenerAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('app-command',$1)">] abstract removeListenerAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  /// [macOS] Emitted when scroll wheel event phase has begun.
+  [<Emit "$0.on('scroll-touch-begin',$1)">] abstract onScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('scroll-touch-begin',$1)">] abstract onceScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('scroll-touch-begin',$1)">] abstract addListenerScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('scroll-touch-begin',$1)">] abstract removeListenerScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted when scroll wheel event phase has ended.
+  [<Emit "$0.on('scroll-touch-end',$1)">] abstract onScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('scroll-touch-end',$1)">] abstract onceScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('scroll-touch-end',$1)">] abstract addListenerScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('scroll-touch-end',$1)">] abstract removeListenerScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted when scroll wheel event phase filed upon reaching the edge
+  /// of element.
+  [<Emit "$0.on('scroll-touch-edge',$1)">] abstract onScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('scroll-touch-edge',$1)">] abstract onceScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('scroll-touch-edge',$1)">] abstract addListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('scroll-touch-edge',$1)">] abstract removeListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted on 3-finger swipe.
+  [<Emit "$0.on('swipe',$1)">] abstract onSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  [<Emit "$0.once('swipe',$1)">] abstract onceSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('swipe',$1)">] abstract addListenerSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('swipe',$1)">] abstract removeListenerSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  /// [macOS] Emitted when the window opens a sheet.
+  [<Emit "$0.on('sheet-begin',$1)">] abstract onSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('sheet-begin',$1)">] abstract onceSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('sheet-begin',$1)">] abstract addListenerSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('sheet-begin',$1)">] abstract removeListenerSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted when the window has closed a sheet.
+  [<Emit "$0.on('sheet-end',$1)">] abstract onSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('sheet-end',$1)">] abstract onceSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('sheet-end',$1)">] abstract addListenerSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('sheet-end',$1)">] abstract removeListenerSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  /// [macOS] Emitted when the native new tab button is clicked.
+  [<Emit "$0.on('new-window-for-tab',$1)">] abstract onNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.once('new-window-for-tab',$1)">] abstract onceNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.addListener('new-window-for-tab',$1)">] abstract addListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  [<Emit "$0.removeListener('new-window-for-tab',$1)">] abstract removeListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  /// A WebContents object this window owns. All web page related events and
+  /// operations will be done via it.
+  abstract webContents: WebContents with get, set
+  /// An integer representing the unique ID of the window.
+  abstract id: int with get, set
+  /// Force closing the window, the `unload` and `beforeunload` event won't be
+  /// emitted for the web page, and `close` event will also not be emitted for
+  /// this window, but it guarantees the `closed` event will be emitted.
+  abstract destroy: unit -> unit
   /// Try to close the window. This has the same effect as a user manually
   /// clicking the close button of the window. The web page may cancel the close
-  /// though. See the close event.
+  /// though (see the `close` event).
   abstract close: unit -> unit
-  /// Closes the currently open Quick Look panel.
-  abstract closeFilePreview: unit -> unit
-  /// Force closing the window, the unload and beforeunload event won't be
-  /// emitted for the web page, and close event will also not be emitted for
-  /// this window, but it guarantees the closed event will be emitted.
-  abstract destroy: unit -> unit
-  /// Starts or stops flashing the window to attract user's attention.
-  abstract flashFrame: flag: bool -> unit
   /// Focuses on the window.
   abstract focus: unit -> unit
-  abstract focusOnWebView: unit -> unit
+  /// Removes focus from the window.
+  abstract blur: unit -> unit
+  /// Indicates whether the window is focused.
+  abstract isFocused: unit -> bool
+  /// Indicates whether the window is destroyed.
+  abstract isDestroyed: unit -> bool
+  /// Shows and gives focus to the window.
+  abstract show: unit -> unit
+  /// Shows the window but doesn't focus on it.
+  abstract showInactive: unit -> unit
+  /// Hides the window.
+  abstract hide: unit -> unit
+  /// Indicates whether the window is visible to the user.
+  abstract isVisible: unit -> bool
+  /// Indicates whether current window is a modal window.
+  abstract isModal: unit -> bool
+  /// Maximizes the window. This will also show (but not focus) the window if it
+  /// isn't being displayed already.
+  abstract maximize: unit -> unit
+  /// Unmaximizes the window.
+  abstract unmaximize: unit -> unit
+  /// Indicates whether the window is maximized.
+  abstract isMaximized: unit -> bool
+  /// Minimizes the window. On some platforms the minimized window will be shown
+  /// in the Dock.
+  abstract minimize: unit -> unit
+  /// Restores the window from minimized state to its previous state.
+  abstract restore: unit -> unit
+  /// Indicates whether the window is minimized.
+  abstract isMinimized: unit -> bool
+  /// Sets whether the window should be in fullscreen mode.
+  abstract setFullScreen: flag: bool -> unit
+  /// Indicates whether the window is in fullscreen mode.
+  abstract isFullScreen: unit -> bool
+  /// [macOS] Enters or leaves simple fullscreen mode.
+  ///
+  /// Simple fullscreen mode emulates the native fullscreen behavior found in
+  /// versions of Mac OS X prior to Lion (10.7).
+  abstract setSimpleFullScreen: flag: bool -> unit
+  /// [macOS] Indicates whether the window is in simple (pre-Lion) fullscreen
+  /// mode.
+  abstract isSimpleFullScreen: unit -> bool
+  /// Indicates whether the window is in normal state (not maximized, not
+  /// minimized, not in fullscreen mode).
+  abstract isNormal: unit -> bool
+  /// <summary>
+  ///   [macOS] This will make a window maintain an aspect ratio. The extra size
+  ///   allows a developer to have space, specified in pixels, not included
+  ///   within the aspect ratio calculations. This API already takes into
+  ///   account the difference between a window's size and its content size.
+  ///
+  ///   Consider a normal window with an HD video player and associated
+  ///   controls. Perhaps there are 15 pixels of controls on the left edge, 25
+  ///   pixels of controls on the right edge and 50 pixels of controls below the
+  ///   player. In order to maintain a 16:9 aspect ratio (standard aspect ratio
+  ///   for HD @1920x1080) within the player itself we would call this function
+  ///   with arguments of 16/9 and [ 40, 50 ]. The second argument doesn't care
+  ///   where the extra width and height are within the content view--only that
+  ///   they exist. Sum any extra width and height areas you have within the
+  ///   overall content view.
+  ///
+  ///   Calling this function with a value of 0 will remove any previously set
+  ///   aspect ratios.
+  /// </summary>
+  /// <param name="aspectRatio">
+  ///   The aspect ratio to maintain for some portion of the content view.
+  /// </param>
+  /// <param name="ertraSize">
+  ///   The extra size not to be included while maintaining the aspect ratio.
+  /// </param>
+  abstract setAspectRatio: aspectRatio: float * extraSize: Size -> unit
+  /// Sets the background color of the window as a hexadecimal value, like
+  /// #66CD00 or #FFF or #80FFFFFF (alpha is supported if transparent is true).
+  /// Default is #FFF (white).
+  abstract setBackgroundColor: backgroundColor: string -> unit
+  /// <summary>
+  ///   [macOS] Uses Quick Look to preview a file at a given path.
+  /// </summary>
+  /// <param name="path">
+  ///   The absolute path to the file to preview with QuickLook. This is
+  ///   important as Quick Look uses the file name and file extension on the
+  ///   path to determine the content type of the file to open.
+  /// </param>
+  /// <param name="displayName">
+  ///   The name of the file to display on the Quick Look modal view. This is
+  ///   purely visual and does not affect the content type of the file. Defaults
+  ///   to path.
+  /// </param>
+  abstract previewFile: path: string * ?displayName: string -> unit
+  /// [macOS] Closes the currently open Quick Look panel.
+  abstract closeFilePreview: unit -> unit
+  /// Resizes and moves the window to the supplied bounds. Any properties that
+  /// are not supplied will default to their current values. animate is macOS
+  /// only.
+  abstract setBounds: bounds: Rectangle * ?animate: bool -> unit
   abstract getBounds: unit -> Rectangle
-  abstract getBrowserView: unit -> BrowserView option
-  /// Returns array of BrowserView what was an attached with addBrowserView or
-  /// setBrowserView. Note: The BrowserView API is currently experimental and
-  /// may change or be removed in future Electron releases.
-  abstract getBrowserViews: unit -> BrowserView []
-  abstract getChildWindows: unit -> BrowserWindow []
+  /// Resizes and moves the window's client area (e.g. the web page) to the
+  /// supplied bounds. animate is macOS only.
+  abstract setContentBounds: bounds: Rectangle * ?animate: bool -> unit
   abstract getContentBounds: unit -> Rectangle
-  abstract getContentSize: unit -> int * int
-  abstract getMaximumSize: unit -> int * int
-  abstract getMinimumSize: unit -> int * int
-  /// The native type of the handle is HWND on Windows, NSView* on macOS, and
-  /// Window (unsigned long) on Linux.
-  abstract getNativeWindowHandle: unit -> Buffer
+  /// Returns a Rectangle that contains the window bounds of the normal state.
+  ///
   /// Note: whatever the current state of the window : maximized, minimized or
   /// in fullscreen, this function always returns the position and size of the
   /// window in normal state. In normal state, getBounds and getNormalBounds
   /// returns the same Rectangle.
   abstract getNormalBounds: unit -> Rectangle
-  abstract getOpacity: unit -> float
-  abstract getParentWindow: unit -> BrowserWindow
-  abstract getPosition: unit -> int * int
-  abstract getRepresentedFilename: unit -> string
+  /// Disable or enable the window.
+  abstract setEnabled: enable: bool -> unit
+  /// Resizes the window. If width or height are below any set minimum size
+  /// constraints the window will snap to its minimum size. animate is macOS only.
+  abstract setSize: width: int * height: int * ?animate: bool -> unit
+  /// Returns the window's width and height.
   abstract getSize: unit -> int * int
-  /// Note: The title of the web page can be different from the title of the
-  /// native window.
-  abstract getTitle: unit -> string
-  /// On Windows and Linux always returns true.
-  abstract hasShadow: unit -> bool
-  /// Hides the window.
-  abstract hide: unit -> unit
-  /// Hooks a windows message. The callback is called when the message is
-  /// received in the WndProc.
-  abstract hookWindowMessage: message: int * callback: (Event -> unit) -> unit
-  abstract isAlwaysOnTop: unit -> bool
-  /// On Linux always returns true.
-  abstract isClosable: unit -> bool
-  abstract isDestroyed: unit -> bool
-  abstract isDocumentEdited: unit -> bool
-  abstract isFocused: unit -> bool
-  abstract isFullScreen: unit -> bool
-  abstract isFullScreenable: unit -> bool
-  abstract isKiosk: unit -> bool
-  /// On Linux always returns true.
-  abstract isMaximizable: unit -> bool
-  abstract isMaximized: unit -> bool
-  abstract isMenuBarAutoHide: unit -> bool
-  abstract isMenuBarVisible: unit -> bool
-  /// On Linux always returns true.
-  abstract isMinimizable: unit -> bool
-  abstract isMinimized: unit -> bool
-  abstract isModal: unit -> bool
-  /// On Linux always returns true.
-  abstract isMovable: unit -> bool
-  abstract isNormal: unit -> bool
+  /// Resizes the window's client area (e.g. the web page) to width and height.
+  /// animate is macOS only.
+  abstract setContentSize: width: int * height: int * ?animate: bool -> unit
+  /// Returns the window's client area's width and height.
+  abstract getContentSize: unit -> int * int
+  /// Sets the minimum size of window to width and height.
+  abstract setMinimumSize: width: int * height: int -> unit
+  /// Returns the window's minimum width and height.
+  abstract getMinimumSize: unit -> int * int
+  /// Sets the maximum size of window to width and height.
+  abstract setMaximumSize: width: int * height: int -> unit
+  /// Returns the window's maximum width and height.
+  abstract getMaximumSize: unit -> int * int
+  /// Sets whether the window can be manually resized by user.
+  abstract setResizable: resizable: bool -> unit
+  /// Indicates whether the window can be manually resized by user.
   abstract isResizable: unit -> bool
-  abstract isSimpleFullScreen: unit -> bool
-  abstract isVisible: unit -> bool
-  /// Note: This API always returns false on Windows.
-  abstract isVisibleOnAllWorkspaces: unit -> bool
-  abstract isWindowMessageHooked: message: int -> bool
-  /// Same as webContents.loadFile, filePath should be a path to an HTML file
-  /// relative to the root of your application.  See the webContents docs for
-  /// more information.
-  abstract loadFile: filePath: string * ?options: LoadFileOptions -> Promise<unit>
-  /// Same as webContents.loadURL(url[, options]). The url can be a remote
-  /// address (e.g. http://) or a path to a local HTML file using the file://
-  /// protocol. To ensure that file URLs are properly formatted, it is
-  /// recommended to use Node's url.format method: You can load a URL using a
-  /// POST request with URL-encoded data by doing the following:
-  abstract loadURL: url: string * ?options: LoadURLOptions -> Promise<unit>
-  /// Maximizes the window. This will also show (but not focus) the window if it
-  /// isn't being displayed already.
-  abstract maximize: unit -> unit
-  /// Merges all windows into one window with multiple tabs when native tabs are
-  /// enabled and there is more than one open window.
-  abstract mergeAllWindows: unit -> unit
-  /// Minimizes the window. On some platforms the minimized window will be shown
-  /// in the Dock.
-  abstract minimize: unit -> unit
-  /// Moves the current tab into a new window if native tabs are enabled and
-  /// there is more than one tab in the current window.
-  abstract moveTabToNewWindow: unit -> unit
-  /// Moves window to top(z-order) regardless of focus
-  abstract moveTop: unit -> unit
-  /// Uses Quick Look to preview a file at a given path.
-  abstract previewFile: path: string * ?displayName: string -> unit
-  /// Same as webContents.reload.
-  abstract reload: unit -> unit
-  abstract removeBrowserView: browserView: BrowserView -> unit
-  /// Remove the window's menu bar.
-  abstract removeMenu: unit -> unit
-  /// Restores the window from minimized state to its previous state.
-  abstract restore: unit -> unit
-  /// Selects the next tab when native tabs are enabled and there are other tabs
-  /// in the window.
-  abstract selectNextTab: unit -> unit
-  /// Selects the previous tab when native tabs are enabled and there are other
-  /// tabs in the window.
-  abstract selectPreviousTab: unit -> unit
+  /// [macOS, Windows] Sets whether the window can be moved by user. On Linux
+  /// does nothing.
+  abstract setMovable: movable: bool -> unit
+  /// [macOS, Windows] Indicates whether the window can be moved by user. On
+  /// Linux always returns true.
+  abstract isMovable: unit -> bool
+  /// [macOS, Windows] Sets whether the window can be manually minimized by
+  /// user. On Linux does nothing.
+  abstract setMinimizable: minimizable: bool -> unit
+  /// [macOS, Windows] Indicates whether the window can be manually minimized by
+  /// user. On Linux always returns true.
+  abstract isMinimizable: unit -> bool
+  /// [macOS, Windows] Sets whether the window can be manually maximized by
+  /// user. On Linux does nothing.
+  abstract setMaximizable: maximizable: bool -> unit
+  /// [Windows, macOS] Indicates whether the window can be manually maximized by
+  /// user. On Linux always returns true.
+  abstract isMaximizable: unit -> bool
+  /// Sets whether the maximize/zoom window button toggles fullscreen mode or
+  /// maximizes the window.
+  abstract setFullScreenable: fullscreenable: bool -> unit
+  /// Indicates whether the maximize/zoom window button toggles fullscreen mode
+  /// or maximizes the window.
+  abstract isFullScreenable: unit -> bool
+  /// [macOS, Windows] Sets whether the window can be manually closed by user.
+  /// On Linux does nothing.
+  abstract setClosable: closable: bool -> unit
+  /// [macOS, Windows] Indicates whether the window can be manually closed by
+  /// user. On Linux always returns true.
+  abstract isClosable: unit -> bool
   /// Sets whether the window should show always on top of other windows. After
   /// setting this, the window is still a normal window, not a toolbox window
   /// which can not be focused on.
   abstract setAlwaysOnTop: flag: bool * ?level: AlwaysOnTopLevel * ?relativeLevel: int -> unit
-  /// Sets the properties for the window's taskbar button. Note: relaunchCommand
-  /// and relaunchDisplayName must always be set together. If one of those
-  /// properties is not set, then neither will be used.
-  abstract setAppDetails: options: AppDetailsOptions -> unit
-  /// This will make a window maintain an aspect ratio. The extra size allows a
-  /// developer to have space, specified in pixels, not included within the
-  /// aspect ratio calculations. This API already takes into account the
-  /// difference between a window's size and its content size. Consider a normal
-  /// window with an HD video player and associated controls. Perhaps there are
-  /// 15 pixels of controls on the left edge, 25 pixels of controls on the right
-  /// edge and 50 pixels of controls below the player. In order to maintain a
-  /// 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within the
-  /// player itself we would call this function with arguments of 16/9 and [ 40,
-  /// 50 ]. The second argument doesn't care where the extra width and height
-  /// are within the content view--only that they exist. Sum any extra width and
-  /// height areas you have within the overall content view. Calling this
-  /// function with a value of 0 will remove any previously set aspect ratios.
-  abstract setAspectRatio: aspectRatio: float * extraSize: Size -> unit
-  /// Controls whether to hide cursor when typing.
-  abstract setAutoHideCursor: autoHide: bool -> unit
-  /// Sets whether the window menu bar should hide itself automatically. Once
-  /// set the menu bar will only show when users press the single Alt key. If
-  /// the menu bar is already visible, calling setAutoHideMenuBar(true) won't
-  /// hide it immediately.
-  abstract setAutoHideMenuBar: hide: bool -> unit
-  /// Sets the background color of the window. See Setting backgroundColor.
-  abstract setBackgroundColor: backgroundColor: string -> unit
-  /// Resizes and moves the window to the supplied bounds. Any properties that
-  /// are not supplied will default to their current values.
-  abstract setBounds: bounds: Rectangle * ?animate: bool -> unit
-  abstract setBrowserView: browserView: BrowserView -> unit
-  /// Sets whether the window can be manually closed by user. On Linux does
-  /// nothing.
-  abstract setClosable: closable: bool -> unit
-  /// Resizes and moves the window's client area (e.g. the web page) to the
-  /// supplied bounds.
-  abstract setContentBounds: bounds: Rectangle * ?animate: bool -> unit
-  /// Prevents the window contents from being captured by other apps. On macOS
-  /// it sets the NSWindow's sharingType to NSWindowSharingNone. On Windows it
-  /// calls SetWindowDisplayAffinity with WDA_MONITOR.
-  abstract setContentProtection: enable: bool -> unit
-  /// Resizes the window's client area (e.g. the web page) to width and height.
-  abstract setContentSize: width: int * height: int * ?animate: bool -> unit
-  /// Specifies whether the window’s document has been edited, and the icon in
-  /// title bar will become gray when set to true.
-  abstract setDocumentEdited: edited: bool -> unit
-  /// Disable or enable the window.
-  abstract setEnabled: enable: bool -> unit
-  /// Changes whether the window can be focused.
-  abstract setFocusable: focusable: bool -> unit
-  /// Sets whether the window should be in fullscreen mode.
-  abstract setFullScreen: flag: bool -> unit
-  /// Sets whether the maximize/zoom window button toggles fullscreen mode or
-  /// maximizes the window.
-  abstract setFullScreenable: fullscreenable: bool -> unit
-  /// Sets whether the window should have a shadow. On Windows and Linux does
-  /// nothing.
-  abstract setHasShadow: hasShadow: bool -> unit
-  /// Changes window icon.
-  abstract setIcon: icon: NativeImage -> unit
-  /// Makes the window ignore all mouse events. All mouse events happened in
-  /// this window will be passed to the window below this window, but if this
-  /// window has focus, it will still receive keyboard events.
-  abstract setIgnoreMouseEvents: ignore: bool * ?options: IgnoreMouseEventsOptions -> unit
+  /// Indicates whether the window is always on top of other windows.
+  abstract isAlwaysOnTop: unit -> bool
+  /// [macOS, Windows] Moves window to top(z-order) regardless of focus
+  abstract moveTop: unit -> unit
+  /// Moves window to the center of the screen.
+  abstract center: unit -> unit
+  /// Moves window to x and y. animate is macOS only.
+  abstract setPosition: x: int * y: int * ?animate: bool -> unit
+  /// Returns the window's current position.
+  abstract getPosition: unit -> int * int
+  /// Changes the title of native window.
+  abstract setTitle: title: string -> unit
+  /// Returns the title of the native window.
+  ///
+  /// Note: The title of the web page can be different from the title of the
+  /// native window.
+  abstract getTitle: unit -> string
+  /// [macOS] Changes the attachment point for sheets on macOS. By default,
+  /// sheets are attached just below the window frame, but you may want to
+  /// display them beneath a HTML-rendered toolbar.
+  abstract setSheetOffset: offsetY: float * ?offsetX: float -> unit
+  /// Starts or stops flashing the window to attract user's attention.
+  abstract flashFrame: flag: bool -> unit
+  /// Makes the window not show in the taskbar.
+  abstract setSkipTaskbar: skip: bool -> unit
   /// Enters or leaves the kiosk mode.
   abstract setKiosk: flag: bool -> unit
-  /// Sets whether the window can be manually maximized by user. On Linux does
-  /// nothing.
-  abstract setMaximizable: maximizable: bool -> unit
-  /// Sets the maximum size of window to width and height.
-  abstract setMaximumSize: width: int * height: int -> unit
-  /// Sets the menu as the window's menu bar.
-  abstract setMenu: menu: Menu option -> unit
-  /// Sets whether the menu bar should be visible. If the menu bar is auto-hide,
-  /// users can still bring up the menu bar by pressing the single Alt key.
-  abstract setMenuBarVisibility: visible: bool -> unit
-  /// Sets whether the window can be manually minimized by user. On Linux does
-  /// nothing.
-  abstract setMinimizable: minimizable: bool -> unit
-  /// Sets the minimum size of window to width and height.
-  abstract setMinimumSize: width: int * height: int -> unit
-  /// Sets whether the window can be moved by user. On Linux does nothing.
-  abstract setMovable: movable: bool -> unit
-  /// Sets the opacity of the window. On Linux does nothing.
-  abstract setOpacity: opacity: float -> unit
-  /// Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used
-  /// to convey some sort of application status or to passively notify the user.
-  abstract setOverlayIcon: overlay: NativeImage option * description: string -> unit
-  /// Sets parent as current window's parent window, passing null will turn
-  /// current window into a top-level window.
-  abstract setParentWindow: parent: BrowserWindow -> unit
-  /// Moves window to x and y.
-  abstract setPosition: x: int * y: int * ?animate: bool -> unit
-  /// Sets progress value in progress bar. Valid range is [0, 1.0]. Remove
-  /// progress bar when progress < 0; Change to indeterminate mode when progress
-  /// > 1. On Linux platform, only supports Unity desktop environment, you need
-  /// to specify the *.desktop file name to desktopName field in package.json.
-  /// By default, it will assume app.getName().desktop. On Windows, a mode can
-  /// be passed. Accepted values are none, normal, indeterminate, error, and
-  /// paused. If you call setProgressBar without a mode set (but with a value
-  /// within the valid range), normal will be assumed.
-  abstract setProgressBar: progress: float * ?options: ProgressBarOptions -> unit
-  /// Sets the pathname of the file the window represents, and the icon of the
-  /// file will show in window's title bar.
+  /// Indicates whether the window is in kiosk mode.
+  abstract isKiosk: unit -> bool
+  /// The native type of the handle is HWND on Windows, NSView* on macOS, and
+  /// Window (unsigned long) on Linux.
+  abstract getNativeWindowHandle: unit -> Buffer
+  /// [Windows] Hooks a windows message. The callback is called when the message
+  /// is received in the WndProc.
+  abstract hookWindowMessage: message: int * callback: (unit -> unit) -> unit  // TODO: is unit -> unit correct?
+  /// [Windows] Indicates whether the message is hooked.
+  abstract isWindowMessageHooked: message: int -> bool
+  /// [Windows] Unhook the window message.
+  abstract unhookWindowMessage: message: int -> unit
+  /// [Windows] Unhooks all of the window messages.
+  abstract unhookAllWindowMessages: unit -> unit
+  /// [macOS] Sets the pathname of the file the window represents, and the icon
+  /// of the file will show in window's title bar.
   abstract setRepresentedFilename: filename: string -> unit
-  /// Sets whether the window can be manually resized by user.
-  abstract setResizable: resizable: bool -> unit
+  /// [macOS] Returns the pathname of the file the window represents.
+  abstract getRepresentedFilename: unit -> string option
+  /// [macOS] Specifies whether the window’s document has been edited, and the
+  /// icon in title bar will become gray when set to true.
+  abstract setDocumentEdited: edited: bool -> unit
+  /// [macOS] Indicates whether the window's document has been edited.
+  abstract isDocumentEdited: unit -> bool
+  abstract focusOnWebView: unit -> unit
+  abstract blurWebView: unit -> unit
+  /// Captures a snapshot of the page within rect. Omitting rect will capture
+  /// the whole visible page.
+  abstract capturePage: ?rect: Rectangle -> Promise<NativeImage>
+  /// Returns a promise that will resolve when the page has finished loading
+  /// (see `did-finish-load`), and rejects if the page fails to load (see
+  /// `did-fail-load`).
+  ///
+  /// Same as webContents.loadURL(url[, options]). The url can be a remote
+  /// address (e.g. http://) or a path to a local HTML file using the file://
+  /// protocol. To ensure that file URLs are properly formatted, it is
+  /// recommended to use Node's url.format method.
+  abstract loadURL: url: string * ?options: LoadURLOptions -> Promise<unit>
+  /// Returns a promise that will resolve when the page has finished loading
+  /// (see `did-finish-load`), and rejects if the page fails to load (see
+  /// `did-fail-load`).
+  ///
+  /// Same as webContents.loadFile, filePath should be a path to an HTML file
+  /// relative to the root of your application.  See the webContents docs for
+  /// more information.
+  abstract loadFile: filePath: string * ?options: LoadFileOptions -> Promise<unit>
+  /// Same as webContents.reload.
+  abstract reload: unit -> unit
+  /// [Windows, Linux] Sets the menu as the window's menu bar.
+  abstract setMenu: menu: Menu option -> unit
+  /// [Windows, Linux] Remove the window's menu bar.
+  abstract removeMenu: unit -> unit
+  /// Sets progress value in progress bar. Valid range is [0, 1.0].
+  ///
+  /// Remove progress bar when progress < 0; Change to indeterminate mode when
+  /// progress > 1.
+  ///
+  /// On Linux platform, only supports Unity desktop environment, you need to
+  /// specify the *.desktop file name to desktopName field in package.json. By
+  /// default, it will assume app.getName().desktop.
+  ///
+  /// On Windows, a mode can be passed. If you call setProgressBar without a
+  /// mode set (but with a value within the valid range), ProgressBarMode.Normal
+  /// will be assumed.
+  abstract setProgressBar: progress: float * ?options: ProgressBarOptions -> unit
+  /// <summary>
+  ///   [Windows] Sets or clears a 16 x 16 pixel overlay onto the current
+  ///   taskbar icon, usually used to convey some sort of application status or
+  ///   to passively notify the user.
+  /// </summary>
+  /// <param name="overlay">
+  ///   The icon to display on the bottom right corner of the taskbar icon. If
+  ///   this parameter is null, the overlay is cleared
+  /// </param>
+  /// <param name="description">
+  ///    A description that will be provided to Accessibility screen readers
+  /// </param>
+  abstract setOverlayIcon: overlay: NativeImage option * description: string -> unit
+  /// [macOS] Sets whether the window should have a shadow. On Windows and Linux
+  /// does nothing.
+  abstract setHasShadow: hasShadow: bool -> unit
+  /// [macOS] Indicates whether the window has a shadow. On Windows and Linux
+  /// always returns true.
+  abstract hasShadow: unit -> bool
+  /// [Windows, macOS] Sets the opacity of the window. On Linux does nothing.
+  abstract setOpacity: opacity: float -> unit
+  /// [Windows, macOS] Returns a number between 0.0 (fully transparent) and 1.0 (fully opaque).
+  abstract getOpacity: unit -> float
+  /// [Windows, Linux] Sets a shape on the window. Passing an empty array
+  /// reverts the window to being rectangular.
+  ///
   /// Setting a window shape determines the area within the window where the
   /// system permits drawing and user interaction. Outside of the given region,
   /// no pixels will be drawn and no mouse events will be registered. Mouse
   /// events outside of the region will not be received by that window, but will
   /// fall through to whatever is behind the window.
-  abstract setShape: rects: Rectangle [] -> unit
-  /// Changes the attachment point for sheets on macOS. By default, sheets are
-  /// attached just below the window frame, but you may want to display them
-  /// beneath a HTML-rendered toolbar. For example:
-  abstract setSheetOffset: offsetY: float * ?offsetX: float -> unit
-  /// Enters or leaves simple fullscreen mode. Simple fullscreen mode emulates
-  /// the native fullscreen behavior found in versions of Mac OS X prior to Lion
-  /// (10.7).
-  abstract setSimpleFullScreen: flag: bool -> unit
-  /// Resizes the window to width and height. If width or height are below any
-  /// set minimum size constraints the window will snap to its minimum size.
-  abstract setSize: width: int * height: int * ?animate: bool -> unit
-  /// Makes the window not show in the taskbar.
-  abstract setSkipTaskbar: skip: bool -> unit
-  /// Add a thumbnail toolbar with a specified set of buttons to the thumbnail
-  /// image of a window in a taskbar button layout. Returns a Boolean object
-  /// indicates whether the thumbnail has been added successfully. The number of
-  /// buttons in thumbnail toolbar should be no greater than 7 due to the
-  /// limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
-  /// removed due to the platform's limitation. But you can call the API with an
-  /// empty array to clean the buttons. The buttons is an array of Button
-  /// objects: The flags is an array that can include following Strings:
+  abstract setShape: rects: Rectangle [] -> bool
+  /// [Windows] Add a thumbnail toolbar with a specified set of buttons to the
+  /// thumbnail image of a window in a taskbar button layout. Returns true if
+  /// the thumbnail has been added successfully.
+  ///
+  /// The number of buttons in thumbnail toolbar should be no greater than 7 due
+  /// to the limited room. Once you setup the thumbnail toolbar, the toolbar
+  /// cannot be removed due to the platform's limitation. But you can call the
+  /// API with an empty array to clean the buttons.
+  ///
   abstract setThumbarButtons: buttons: ThumbarButton [] -> bool
-  /// Sets the region of the window to show as the thumbnail image displayed
-  /// when hovering over the window in the taskbar. You can reset the thumbnail
-  /// to be the entire window by specifying an empty region: { x: 0, y: 0,
-  /// width: 0, height: 0}.
+  /// [Windows] Sets the region of the window to show as the thumbnail image
+  /// displayed when hovering over the window in the taskbar. You can reset the
+  /// thumbnail to be the entire window by specifying an empty region: { x: 0,
+  /// y: 0, width: 0, height: 0 }.
   abstract setThumbnailClip: region: Rectangle -> unit
-  /// Sets the toolTip that is displayed when hovering over the window thumbnail
-  /// in the taskbar.
+  /// [Windows] Sets the toolTip that is displayed when hovering over the window
+  /// thumbnail in the taskbar.
   abstract setThumbnailToolTip: toolTip: string -> unit
-  /// Changes the title of native window to title.
-  abstract setTitle: title: string -> unit
-  /// Sets the touchBar layout for the current window. Specifying null or
-  /// undefined clears the touch bar. This method only has an effect if the
-  /// machine has a touch bar and is running on macOS 10.12.1+. Note: The
-  /// TouchBar API is currently experimental and may change or be removed in
-  /// future Electron releases.
-  abstract setTouchBar: touchBar: TouchBar -> unit
-  /// Adds a vibrancy effect to the browser window. Passing null or an empty
-  /// string will remove the vibrancy effect on the window.
-  abstract setVibrancy: ``type``: VibrancyType -> unit
-  /// Sets whether the window should be visible on all workspaces. Note: This
-  /// API does nothing on Windows.
-  abstract setVisibleOnAllWorkspaces: visible: bool * ?options: VisibleOnAllWorkspacesOptions -> unit
-  /// Sets whether the window traffic light buttons should be visible. This
-  /// cannot be called when titleBarStyle is set to customButtonsOnHover.
-  abstract setWindowButtonVisibility: visible: bool -> unit
-  /// Shows and gives focus to the window.
-  abstract show: unit -> unit
-  /// Same as webContents.showDefinitionForSelection().
+  /// Sets the properties for the window's taskbar button.
+  ///
+  /// Note: relaunchCommand and relaunchDisplayName must always be set together.
+  /// If one of those properties is not set, then neither will be used.
+  abstract setAppDetails: options: AppDetailsOptions -> unit
+  /// [macOS] Same as webContents.showDefinitionForSelection().
   abstract showDefinitionForSelection: unit -> unit
-  /// Shows the window but doesn't focus on it.
-  abstract showInactive: unit -> unit
-  /// Toggles the visibility of the tab bar if native tabs are enabled and there
-  /// is only one tab in the current window.
+  /// [Windows, Linux] Changes window icon.
+  abstract setIcon: icon: NativeImage -> unit
+  /// [macOS] Sets whether the window traffic light buttons should be visible.
+  ///
+  /// This cannot be called when titleBarStyle is set to customButtonsOnHover.
+  abstract setWindowButtonVisibility: visible: bool -> unit
+  /// Sets whether the window menu bar should hide itself automatically. Once
+  /// set the menu bar will only show when users press the single Alt key.
+  ///
+  /// If the menu bar is already visible, calling setAutoHideMenuBar(true) won't
+  /// hide it immediately.
+  abstract setAutoHideMenuBar: hide: bool -> unit
+  /// Indicates whether menu bar automatically hides itself.
+  abstract isMenuBarAutoHide: unit -> bool
+  /// [Windows, Linux] Sets whether the menu bar should be visible. If the menu
+  /// bar is auto-hide, users can still bring up the menu bar by pressing the
+  /// single Alt key.
+  abstract setMenuBarVisibility: visible: bool -> unit
+  /// Indicates whether the menu bar is visible.
+  abstract isMenuBarVisible: unit -> bool
+  /// [macOS, Linux] Sets whether the window should be visible on all workspaces.
+  ///
+  /// Note: This API does nothing on Windows.
+  abstract setVisibleOnAllWorkspaces: visible: bool * ?options: VisibleOnAllWorkspacesOptions -> unit
+  /// [macOS, Linux] Indicates whether the window is visible on all workspaces.
+  ///
+  /// Note: This API always returns false on Windows.
+  abstract isVisibleOnAllWorkspaces: unit -> bool
+  /// Makes the window ignore all mouse events.
+  ///
+  /// All mouse events happened in this window will be passed to the window
+  /// below this window, but if this window has focus, it will still receive
+  /// keyboard events.
+  abstract setIgnoreMouseEvents: ignore: bool * ?options: IgnoreMouseEventsOptions -> unit
+  /// [macOS, Windows] Prevents the window contents from being captured by other
+  /// apps.
+  ///
+  /// On macOS it sets the NSWindow's sharingType to NSWindowSharingNone. On
+  /// Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
+  abstract setContentProtection: enable: bool -> unit
+  /// [Windows] Changes whether the window can be focused.
+  abstract setFocusable: focusable: bool -> unit
+  /// Sets parent as current window's parent window, passing None will turn
+  /// current window into a top-level window.
+  abstract setParentWindow: parent: BrowserWindow option -> unit
+  /// Returns the parent window.
+  abstract getParentWindow: unit -> BrowserWindow option
+  /// Returns all child windows.
+  abstract getChildWindows: unit -> BrowserWindow []
+  /// [macOS] Controls whether to hide cursor when typing.
+  abstract setAutoHideCursor: autoHide: bool -> unit
+  /// [macOS] Selects the previous tab when native tabs are enabled and there
+  /// are other tabs in the window.
+  abstract selectPreviousTab: unit -> unit
+  /// [macOS] Selects the next tab when native tabs are enabled and there are
+  /// other tabs in the window.
+  abstract selectNextTab: unit -> unit
+  /// [macOS] Merges all windows into one window with multiple tabs when native
+  /// tabs are enabled and there is more than one open window.
+  abstract mergeAllWindows: unit -> unit
+  /// [macOS] Moves the current tab into a new window if native tabs are enabled
+  /// and there is more than one tab in the current window.
+  abstract moveTabToNewWindow: unit -> unit
+  /// [macOS] Toggles the visibility of the tab bar if native tabs are enabled
+  /// and there is only one tab in the current window.
   abstract toggleTabBar: unit -> unit
-  /// Unhooks all of the window messages.
-  abstract unhookAllWindowMessages: unit -> unit
-  /// Unhook the window message.
-  abstract unhookWindowMessage: message: int -> unit
-  /// Unmaximizes the window.
-  abstract unmaximize: unit -> unit
-  abstract id: int with get, set
-  abstract webContents: WebContents with get, set
+  /// [macOS] Adds a window as a tab on this window, after the tab for the
+  /// window instance.
+  abstract addTabbedWindow: browserWindow: BrowserWindow -> unit
+  /// [macOS] Adds a vibrancy effect to the browser window. Passing None will
+  /// remove the vibrancy effect on the window.
+  abstract setVibrancy: ``type``: VibrancyType option -> unit
+  /// [macOS] Sets the touchBar layout for the current window. Specifying None
+  /// clears the touch bar. This method only has an effect if the machine has a
+  /// touch bar and is running on macOS 10.12.1+.
+  ///
+  /// Note: The TouchBar API is currently experimental and may change or be
+  /// removed in future Electron releases.
+  abstract setTouchBar: touchBar: TouchBar option -> unit
+  /// Attach browserView to win. If there is some other browserViews was
+  /// attached they will be removed from this window.
+  abstract setBrowserView: browserView: BrowserView -> unit
+  /// Returns an BrowserView what is attached. Returns null if none is attached.
+  /// Throw error if multiple BrowserViews is attached.
+  abstract getBrowserView: unit -> BrowserView option
+  /// Replacement API for setBrowserView supporting work with multi browser
+  /// views.
+  abstract addBrowserView: browserView: BrowserView -> unit
+  abstract removeBrowserView: browserView: BrowserView -> unit
+  /// Returns array of BrowserView what was an attached with addBrowserView or
+  /// setBrowserView.
+  ///
+  /// Note: The BrowserView API is currently experimental and may change or be
+  /// removed in future Electron releases.
+  abstract getBrowserViews: unit -> BrowserView []
 
 type BrowserWindowStatic =
   /// Instantiates a BrowserWindow.
@@ -1825,12 +1979,12 @@ type BrowserWindowProxy =
   abstract eval: code: string -> unit
   /// Focuses the child window (brings the window to front).
   abstract focus: unit -> unit
-  /// Sends a message to the child window with the specified origin or * for no
-  /// origin preference. In addition to these methods, the child window
-  /// implements window.opener object with no properties and a single method.
-  abstract postMessage: message: string * targetOrigin: string -> unit
   /// Invokes the print dialog on the child window.
   abstract print: unit -> unit
+  /// Sends a message to the child window with the specified origin or * for no
+  /// origin preference.
+  abstract postMessage: message: string * targetOrigin: string -> unit
+  /// Set to true after the child window gets closed.
   abstract closed: bool with get, set
 
 type Certificate =
@@ -3636,7 +3790,7 @@ type ThumbarButton =
   /// The text of the button's tooltip.
   abstract tooltip: string option with get, set
   /// Control specific states and behaviors of the button. By default, it is
-  /// ['enabled'].
+  /// [ThumbarButtonFlag.Enabled].
   abstract flags: ThumbarButtonFlag [] with get, set
 
 type ITouchBarItem =
@@ -4760,17 +4914,21 @@ type NativeImageRepresentationOptions =
   abstract dataURL: string with get, set
 
 type AppDetailsOptions =
-  /// Window's . It has to be set, otherwise the other options will have no
-  /// effect.
+  /// Window's App User Model ID. It has to be set, otherwise the other options
+  /// will have no effect.
+  /// https://docs.microsoft.com/en-us/windows/desktop/properties/props-system-appusermodel-id
   abstract appId: string with get, set
-  /// Window's .
+  /// Window's Relaunch Icon.
+  /// https://docs.microsoft.com/en-us/windows/desktop/properties/props-system-appusermodel-relaunchiconresource
   abstract appIconPath: string with get, set
   /// Index of the icon in appIconPath. Ignored when appIconPath is not set.
   /// Default is 0.
   abstract appIconIndex: int with get, set
-  /// Window's .
+  /// Window's Relaunch Command.
+  /// https://docs.microsoft.com/en-us/windows/desktop/properties/props-system-appusermodel-relaunchcommand
   abstract relaunchCommand: string with get, set
-  /// Window's .
+  /// Window's Relaunch Display Name.
+  /// https://docs.microsoft.com/en-us/windows/desktop/properties/props-system-appusermodel-relaunchdisplaynameresource
   abstract relaunchDisplayName: string with get, set
 
 type AuthInfo =
@@ -5296,9 +5454,10 @@ type HeapStatistics =
   abstract doesZapGarbage: bool with get, set
 
 type IgnoreMouseEventsOptions =
-  /// If true, forwards mouse move messages to Chromium, enabling mouse related
-  /// events such as mouseleave. Only used when ignore is true. If ignore is
-  /// false, forwarding is always disabled regardless of this value.
+  /// [macOS, Windows] If true, forwards mouse move messages to Chromium,
+  /// enabling mouse related events such as mouseleave. Only used when ignore is
+  /// true. If ignore is false, forwarding is always disabled regardless of this
+  /// value.
   abstract forward: bool with get, set
 
 type ImportCertificateOptions =
@@ -5913,12 +6072,11 @@ type ProgressBarMode =
   | Paused
 
 type ProgressBarOptions =
-  /// Mode for the progress bar. Can be none, normal, indeterminate, error or
-  /// paused.
+  /// [Windows] Mode for the progress bar. Can be none, normal, indeterminate,
+  /// error or paused.
   abstract mode: ProgressBarMode with get, set
 
 type SpellCheckProvider =
-  /// .
   abstract spellCheck: (string [] -> (string [] -> unit) -> unit) with get, set
 
 type ReadBookmark =
