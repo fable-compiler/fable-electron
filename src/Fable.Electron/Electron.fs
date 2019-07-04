@@ -9,6 +9,10 @@ open Node.Base
 open Node.Buffer
 
 
+// TODO: check if U2, U3 etc. can be replaced with overloads
+// TODO: ensure that all onceX, addListenerX, removeListenerX events refer to the onX event
+
+
 /// All Electron APIs. Consider using `main` or `renderer` as your entry points;
 /// there is nothing here that is not accessible through them.
 [<ImportAll("electron")>]
@@ -1136,24 +1140,36 @@ type AutoUpdater =
   inherit EventEmitter<AutoUpdater>
   /// Emitted when there is an error while updating.
   [<Emit "$0.on('error',$1)">] abstract onError: listener: (Event -> Error -> unit) -> AutoUpdater
+  /// See onError.
   [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Event -> Error -> unit) -> AutoUpdater
+  /// See onError.
   [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Event -> Error -> unit) -> AutoUpdater
+  /// See onError.
   [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Event -> Error -> unit) -> AutoUpdater
   /// Emitted when checking if an update exists has started.
   [<Emit "$0.on('checking-for-update',$1)">] abstract onCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  /// See onCheckingForUpdate.
   [<Emit "$0.once('checking-for-update',$1)">] abstract onceCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  /// See onCheckingForUpdate.
   [<Emit "$0.addListener('checking-for-update',$1)">] abstract addListenerCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  /// See onCheckingForUpdate.
   [<Emit "$0.removeListener('checking-for-update',$1)">] abstract removeListenerCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
   /// Emitted when there is an available update. The update is downloaded
   /// automatically.
   [<Emit "$0.on('update-available',$1)">] abstract onUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  /// See onUpdateAvailable.
   [<Emit "$0.once('update-available',$1)">] abstract onceUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  /// See onUpdateAvailable.
   [<Emit "$0.addListener('update-available',$1)">] abstract addListenerUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  /// See onUpdateAvailable.
   [<Emit "$0.removeListener('update-available',$1)">] abstract removeListenerUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
   /// Emitted when there is no available update.
   [<Emit "$0.on('update-not-available',$1)">] abstract onUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  /// See onUpdateNotAvailable.
   [<Emit "$0.once('update-not-available',$1)">] abstract onceUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  /// See onUpdateNotAvailable.
   [<Emit "$0.addListener('update-not-available',$1)">] abstract addListenerUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  /// See onUpdateNotAvailable.
   [<Emit "$0.removeListener('update-not-available',$1)">] abstract removeListenerUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
   /// Emitted when an update has been downloaded.
   ///
@@ -1170,8 +1186,11 @@ type AutoUpdater =
   ///   - releaseDate
   ///   - updateUrl
   [<Emit "$0.on('update-downloaded',$1)">] abstract onUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  /// See onUpdateDownloaded.
   [<Emit "$0.once('update-downloaded',$1)">] abstract onceUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  /// See onUpdateDownloaded.
   [<Emit "$0.addListener('update-downloaded',$1)">] abstract addListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
+  /// See onUpdateDownloaded.
   [<Emit "$0.removeListener('update-downloaded',$1)">] abstract removeListenerUpdateDownloaded: listener: (Event -> string -> string -> DateTime -> string -> unit) -> AutoUpdater
   /// This event is emitted after a user calls quitAndInstall().
   ///
@@ -1180,8 +1199,11 @@ type AutoUpdater =
   /// wish to perform actions before the windows are closed while a process is
   /// quitting, as well as listening to `before-quit`.
   [<Emit "$0.on('before-quit-for-update',$1)">] abstract onBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  /// See onBeforeQuitForUpdate.
   [<Emit "$0.once('before-quit-for-update',$1)">] abstract onceBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  /// See onBeforeQuitForUpdate.
   [<Emit "$0.addListener('before-quit-for-update',$1)">] abstract addListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  /// See onBeforeQuitForUpdate.
   [<Emit "$0.removeListener('before-quit-for-update',$1)">] abstract removeListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
   /// Sets the url and initialize the auto updater.
   abstract setFeedURL: options: AutoOpdateFeedOptions -> unit
@@ -1281,8 +1303,11 @@ type BrowserWindow =
   ///   - title
   ///   - explicitSet
   [<Emit "$0.on('page-title-updated',$1)">] abstract onPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
+  /// See onPageTitleUpdated.
   [<Emit "$0.once('page-title-updated',$1)">] abstract oncePageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
+  /// See onPageTitleUpdated.
   [<Emit "$0.addListener('page-title-updated',$1)">] abstract addListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
+  /// See onPageTitleUpdated.
   [<Emit "$0.removeListener('page-title-updated',$1)">] abstract removeListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
   /// Emitted when the window is going to be closed. It's emitted before the
   /// `beforeunload` and `unload` event of the DOM. Calling
@@ -1293,76 +1318,118 @@ type BrowserWindow =
   /// reloaded. In Electron, returning any value other than undefined would
   /// cancel the close.
   [<Emit "$0.on('close',$1)">] abstract onClose: listener: (Event -> unit) -> BrowserWindow
+  /// See onClose.
   [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (Event -> unit) -> BrowserWindow
+  /// See onClose.
   [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (Event -> unit) -> BrowserWindow
+  /// See onClose.
   [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window is closed. After you have received this event you
   /// should remove the reference to the window and avoid using it any more.
   [<Emit "$0.on('closed',$1)">] abstract onClosed: listener: (Event -> unit) -> BrowserWindow
+  /// See onClosed.
   [<Emit "$0.once('closed',$1)">] abstract onceClosed: listener: (Event -> unit) -> BrowserWindow
+  /// See onClosed.
   [<Emit "$0.addListener('closed',$1)">] abstract addListenerClosed: listener: (Event -> unit) -> BrowserWindow
+  /// See onClosed.
   [<Emit "$0.removeListener('closed',$1)">] abstract removeListenerClosed: listener: (Event -> unit) -> BrowserWindow
   /// [Windows] Emitted when window session is going to end due to force
   /// shutdown or machine restart or session log off.
   [<Emit "$0.on('session-end',$1)">] abstract onSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onSessionEnd.
   [<Emit "$0.once('session-end',$1)">] abstract onceSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onSessionEnd.
   [<Emit "$0.addListener('session-end',$1)">] abstract addListenerSessionEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onSessionEnd.
   [<Emit "$0.removeListener('session-end',$1)">] abstract removeListenerSessionEnd: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the web page becomes unresponsive.
   [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  /// See onUnresponsive.
   [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  /// See onUnresponsive.
   [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (Event -> unit) -> BrowserWindow
+  /// See onUnresponsive.
   [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the unresponsive web page becomes responsive again.
   [<Emit "$0.on('responsive',$1)">] abstract onResponsive: listener: (Event -> unit) -> BrowserWindow
+  /// See onResponsive.
   [<Emit "$0.once('responsive',$1)">] abstract onceResponsive: listener: (Event -> unit) -> BrowserWindow
+  /// See onResponsive.
   [<Emit "$0.addListener('responsive',$1)">] abstract addListenerResponsive: listener: (Event -> unit) -> BrowserWindow
+  /// See onResponsive.
   [<Emit "$0.removeListener('responsive',$1)">] abstract removeListenerResponsive: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window loses focus.
   [<Emit "$0.on('blur',$1)">] abstract onBlur: listener: (Event -> unit) -> BrowserWindow
+  /// See onBlur.
   [<Emit "$0.once('blur',$1)">] abstract onceBlur: listener: (Event -> unit) -> BrowserWindow
+  /// See onBlur.
   [<Emit "$0.addListener('blur',$1)">] abstract addListenerBlur: listener: (Event -> unit) -> BrowserWindow
+  /// See onBlur.
   [<Emit "$0.removeListener('blur',$1)">] abstract removeListenerBlur: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window gains focus.
   [<Emit "$0.on('focus',$1)">] abstract onFocus: listener: (Event -> unit) -> BrowserWindow
+  /// See onFocus.
   [<Emit "$0.once('focus',$1)">] abstract onceFocus: listener: (Event -> unit) -> BrowserWindow
+  /// See onFocus.
   [<Emit "$0.addListener('focus',$1)">] abstract addListenerFocus: listener: (Event -> unit) -> BrowserWindow
+  /// See onFocus.
   [<Emit "$0.removeListener('focus',$1)">] abstract removeListenerFocus: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window is shown.
   [<Emit "$0.on('show',$1)">] abstract onShow: listener: (Event -> unit) -> BrowserWindow
+  /// See onShow.
   [<Emit "$0.once('show',$1)">] abstract onceShow: listener: (Event -> unit) -> BrowserWindow
+  /// See onShow.
   [<Emit "$0.addListener('show',$1)">] abstract addListenerShow: listener: (Event -> unit) -> BrowserWindow
+  /// See onShow.
   [<Emit "$0.removeListener('show',$1)">] abstract removeListenerShow: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window is hidden.
   [<Emit "$0.on('hide',$1)">] abstract onHide: listener: (Event -> unit) -> BrowserWindow
+  /// See onHide.
   [<Emit "$0.once('hide',$1)">] abstract onceHide: listener: (Event -> unit) -> BrowserWindow
+  /// See onHide.
   [<Emit "$0.addListener('hide',$1)">] abstract addListenerHide: listener: (Event -> unit) -> BrowserWindow
+  /// See onHide.
   [<Emit "$0.removeListener('hide',$1)">] abstract removeListenerHide: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the web page has been rendered (while not being shown) and
   /// window can be displayed without a visual flash.
   [<Emit "$0.on('ready-to-show',$1)">] abstract onReadyToShow: listener: (Event -> unit) -> BrowserWindow
+  /// See onReadyToShow.
   [<Emit "$0.once('ready-to-show',$1)">] abstract onceReadyToShow: listener: (Event -> unit) -> BrowserWindow
+  /// See onReadyToShow.
   [<Emit "$0.addListener('ready-to-show',$1)">] abstract addListenerReadyToShow: listener: (Event -> unit) -> BrowserWindow
+  /// See onReadyToShow.
   [<Emit "$0.removeListener('ready-to-show',$1)">] abstract removeListenerReadyToShow: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when window is maximized.
   [<Emit "$0.on('maximize',$1)">] abstract onMaximize: listener: (Event -> unit) -> BrowserWindow
+  /// See onMaximize.
   [<Emit "$0.once('maximize',$1)">] abstract onceMaximize: listener: (Event -> unit) -> BrowserWindow
+  /// See onMaximize.
   [<Emit "$0.addListener('maximize',$1)">] abstract addListenerMaximize: listener: (Event -> unit) -> BrowserWindow
+  /// See onMaximize.
   [<Emit "$0.removeListener('maximize',$1)">] abstract removeListenerMaximize: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window exits from a maximized state.
   [<Emit "$0.on('unmaximize',$1)">] abstract onUnmaximize: listener: (Event -> unit) -> BrowserWindow
+  /// See onUnmaximize.
   [<Emit "$0.once('unmaximize',$1)">] abstract onceUnmaximize: listener: (Event -> unit) -> BrowserWindow
+  /// See onUnmaximize.
   [<Emit "$0.addListener('unmaximize',$1)">] abstract addListenerUnmaximize: listener: (Event -> unit) -> BrowserWindow
+  /// See onUnmaximize.
   [<Emit "$0.removeListener('unmaximize',$1)">] abstract removeListenerUnmaximize: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window is minimized.
   [<Emit "$0.on('minimize',$1)">] abstract onMinimize: listener: (Event -> unit) -> BrowserWindow
+  /// See onMinimize.
   [<Emit "$0.once('minimize',$1)">] abstract onceMinimize: listener: (Event -> unit) -> BrowserWindow
+  /// See onMinimize.
   [<Emit "$0.addListener('minimize',$1)">] abstract addListenerMinimize: listener: (Event -> unit) -> BrowserWindow
+  /// See onMinimize.
   [<Emit "$0.removeListener('minimize',$1)">] abstract removeListenerMinimize: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window is restored from a minimized state.
   [<Emit "$0.on('restore',$1)">] abstract onRestore: listener: (Event -> unit) -> BrowserWindow
+  /// See onRestore.
   [<Emit "$0.once('restore',$1)">] abstract onceRestore: listener: (Event -> unit) -> BrowserWindow
+  /// See onRestore.
   [<Emit "$0.addListener('restore',$1)">] abstract addListenerRestore: listener: (Event -> unit) -> BrowserWindow
+  /// See onRestore.
   [<Emit "$0.removeListener('restore',$1)">] abstract removeListenerRestore: listener: (Event -> unit) -> BrowserWindow
   /// [macOS, Windows] Emitted before the window is resized. Calling
   /// event.preventDefault() will prevent the window from being resized.
@@ -1374,13 +1441,19 @@ type BrowserWindow =
   ///
   ///   - newBounds: Size the window is being resized to.
   [<Emit "$0.on('will-resize',$1)">] abstract onWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// See onWillResize.
   [<Emit "$0.once('will-resize',$1)">] abstract onceWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// See onWillResize.
   [<Emit "$0.addListener('will-resize',$1)">] abstract addListenerWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// See onWillResize.
   [<Emit "$0.removeListener('will-resize',$1)">] abstract removeListenerWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   /// Emitted after the window has been resized.
   [<Emit "$0.on('resize',$1)">] abstract onResize: listener: (Event -> unit) -> BrowserWindow
+  /// See onResize.
   [<Emit "$0.once('resize',$1)">] abstract onceResize: listener: (Event -> unit) -> BrowserWindow
+  /// See onResize.
   [<Emit "$0.addListener('resize',$1)">] abstract addListenerResize: listener: (Event -> unit) -> BrowserWindow
+  /// See onResize.
   [<Emit "$0.removeListener('resize',$1)">] abstract removeListenerResize: listener: (Event -> unit) -> BrowserWindow
   /// [Windows] Emitted before the window is moved. Calling
   /// event.preventDefault() will prevent the window from being moved. Note that
@@ -1391,40 +1464,61 @@ type BrowserWindow =
   ///
   ///   - newBounds: Location the window is being moved to.
   [<Emit "$0.on('will-move',$1)">] abstract onWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// See onWillMove.
   [<Emit "$0.once('will-move',$1)">] abstract onceWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// See onWillMove.
   [<Emit "$0.addListener('will-move',$1)">] abstract addListenerWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
+  /// See onWillMove.
   [<Emit "$0.removeListener('will-move',$1)">] abstract removeListenerWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   /// Emitted when the window is being moved to a new position.
   ///
   /// Note: On macOS this event is an alias of `moved`.
   [<Emit "$0.on('move',$1)">] abstract onMove: listener: (Event -> unit) -> BrowserWindow
+  /// See onMove.
   [<Emit "$0.once('move',$1)">] abstract onceMove: listener: (Event -> unit) -> BrowserWindow
+  /// See onMove.
   [<Emit "$0.addListener('move',$1)">] abstract addListenerMove: listener: (Event -> unit) -> BrowserWindow
+  /// See onMove.
   [<Emit "$0.removeListener('move',$1)">] abstract removeListenerMove: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted once when the window is moved to a new position.
   [<Emit "$0.on('moved',$1)">] abstract onMoved: listener: (Event -> unit) -> BrowserWindow
+  /// See onMoved.
   [<Emit "$0.once('moved',$1)">] abstract onceMoved: listener: (Event -> unit) -> BrowserWindow
+  /// See onMoved.
   [<Emit "$0.addListener('moved',$1)">] abstract addListenerMoved: listener: (Event -> unit) -> BrowserWindow
+  /// See onMoved.
   [<Emit "$0.removeListener('moved',$1)">] abstract removeListenerMoved: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window enters a full-screen state.
   [<Emit "$0.on('enter-full-screen',$1)">] abstract onEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onEnterFullScreen.
   [<Emit "$0.once('enter-full-screen',$1)">] abstract onceEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onEnterFullScreen.
   [<Emit "$0.addListener('enter-full-screen',$1)">] abstract addListenerEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onEnterFullScreen.
   [<Emit "$0.removeListener('enter-full-screen',$1)">] abstract removeListenerEnterFullScreen: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window leaves a full-screen state.
   [<Emit "$0.on('leave-full-screen',$1)">] abstract onLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onLeaveFullScreen.
   [<Emit "$0.once('leave-full-screen',$1)">] abstract onceLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onLeaveFullScreen.
   [<Emit "$0.addListener('leave-full-screen',$1)">] abstract addListenerLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onLeaveFullScreen.
   [<Emit "$0.removeListener('leave-full-screen',$1)">] abstract removeListenerLeaveFullScreen: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window enters a full-screen state triggered by HTML API.
   [<Emit "$0.on('enter-html-full-screen',$1)">] abstract onEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onEnterHtmlFullScreen.
   [<Emit "$0.once('enter-html-full-screen',$1)">] abstract onceEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onEnterHtmlFullScreen.
   [<Emit "$0.addListener('enter-html-full-screen',$1)">] abstract addListenerEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onEnterHtmlFullScreen.
   [<Emit "$0.removeListener('enter-html-full-screen',$1)">] abstract removeListenerEnterHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the window leaves a full-screen state triggered by HTML API.
   [<Emit "$0.on('leave-html-full-screen',$1)">] abstract onLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onLeaveHtmlFullScreen.
   [<Emit "$0.once('leave-html-full-screen',$1)">] abstract onceLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onLeaveHtmlFullScreen.
   [<Emit "$0.addListener('leave-html-full-screen',$1)">] abstract addListenerLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
+  /// See onLeaveHtmlFullScreen.
   [<Emit "$0.removeListener('leave-html-full-screen',$1)">] abstract removeListenerLeaveHtmlFullScreen: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted when the window is set or unset to show always on top of
   /// other windows.
@@ -1433,8 +1527,11 @@ type BrowserWindow =
   ///
   ///   - isAlwaysOnTop
   [<Emit "$0.on('always-on-top-changed',$1)">] abstract onAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  /// See onAlwaysOnTopChanged.
   [<Emit "$0.once('always-on-top-changed',$1)">] abstract onceAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  /// See onAlwaysOnTopChanged.
   [<Emit "$0.addListener('always-on-top-changed',$1)">] abstract addListenerAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
+  /// See onAlwaysOnTopChanged.
   [<Emit "$0.removeListener('always-on-top-changed',$1)">] abstract removeListenerAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
   /// [Windows, Linux] Emitted when an App Command is invoked. These are
   /// typically related to keyboard media keys or browser commands, as well as
@@ -1448,44 +1545,68 @@ type BrowserWindow =
   ///
   ///   - command
   [<Emit "$0.on('app-command',$1)">] abstract onAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  /// See onAppCommand.
   [<Emit "$0.once('app-command',$1)">] abstract onceAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  /// See onAppCommand.
   [<Emit "$0.addListener('app-command',$1)">] abstract addListenerAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
+  /// See onAppCommand.
   [<Emit "$0.removeListener('app-command',$1)">] abstract removeListenerAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
   /// [macOS] Emitted when scroll wheel event phase has begun.
   [<Emit "$0.on('scroll-touch-begin',$1)">] abstract onScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchBegin.
   [<Emit "$0.once('scroll-touch-begin',$1)">] abstract onceScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchBegin.
   [<Emit "$0.addListener('scroll-touch-begin',$1)">] abstract addListenerScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchBegin.
   [<Emit "$0.removeListener('scroll-touch-begin',$1)">] abstract removeListenerScrollTouchBegin: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted when scroll wheel event phase has ended.
   [<Emit "$0.on('scroll-touch-end',$1)">] abstract onScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchEnd.
   [<Emit "$0.once('scroll-touch-end',$1)">] abstract onceScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchEnd.
   [<Emit "$0.addListener('scroll-touch-end',$1)">] abstract addListenerScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchEnd.
   [<Emit "$0.removeListener('scroll-touch-end',$1)">] abstract removeListenerScrollTouchEnd: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted when scroll wheel event phase filed upon reaching the edge
   /// of element.
   [<Emit "$0.on('scroll-touch-edge',$1)">] abstract onScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchEdge.
   [<Emit "$0.once('scroll-touch-edge',$1)">] abstract onceScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchEdge.
   [<Emit "$0.addListener('scroll-touch-edge',$1)">] abstract addListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
+  /// See onScrollTouchEdge.
   [<Emit "$0.removeListener('scroll-touch-edge',$1)">] abstract removeListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted on 3-finger swipe.
   [<Emit "$0.on('swipe',$1)">] abstract onSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  /// See onSwipe.
   [<Emit "$0.once('swipe',$1)">] abstract onceSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  /// See onSwipe.
   [<Emit "$0.addListener('swipe',$1)">] abstract addListenerSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  /// See onSwipe.
   [<Emit "$0.removeListener('swipe',$1)">] abstract removeListenerSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
   /// [macOS] Emitted when the window opens a sheet.
   [<Emit "$0.on('sheet-begin',$1)">] abstract onSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  /// See onSheetBegin.
   [<Emit "$0.once('sheet-begin',$1)">] abstract onceSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  /// See onSheetBegin.
   [<Emit "$0.addListener('sheet-begin',$1)">] abstract addListenerSheetBegin: listener: (Event -> unit) -> BrowserWindow
+  /// See onSheetBegin.
   [<Emit "$0.removeListener('sheet-begin',$1)">] abstract removeListenerSheetBegin: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted when the window has closed a sheet.
   [<Emit "$0.on('sheet-end',$1)">] abstract onSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onSheetEnd.
   [<Emit "$0.once('sheet-end',$1)">] abstract onceSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onSheetEnd.
   [<Emit "$0.addListener('sheet-end',$1)">] abstract addListenerSheetEnd: listener: (Event -> unit) -> BrowserWindow
+  /// See onSheetEnd.
   [<Emit "$0.removeListener('sheet-end',$1)">] abstract removeListenerSheetEnd: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted when the native new tab button is clicked.
   [<Emit "$0.on('new-window-for-tab',$1)">] abstract onNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  /// See onNewWindowForTab.
   [<Emit "$0.once('new-window-for-tab',$1)">] abstract onceNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  /// See onNewWindowForTab.
   [<Emit "$0.addListener('new-window-for-tab',$1)">] abstract addListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
+  /// See onNewWindowForTab.
   [<Emit "$0.removeListener('new-window-for-tab',$1)">] abstract removeListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
   /// A WebContents object this window owns. All web page related events and
   /// operations will be done via it.
@@ -1990,122 +2111,203 @@ type BrowserWindowProxy =
 type Certificate =
   /// PEM encoded data
   abstract data: string with get, set
-  /// Fingerprint of the certificate
-  abstract fingerprint: string with get, set
   /// Issuer principal
   abstract issuer: CertificatePrincipal with get, set
-  /// Issuer certificate (if not self-signed)
-  abstract issuerCert: Certificate with get, set
   /// Issuer's Common Name
   abstract issuerName: string with get, set
-  /// Hex value represented string
-  abstract serialNumber: string with get, set
+  /// Issuer certificate (if not self-signed)
+  abstract issuerCert: Certificate with get, set
   /// Subject principal
   abstract subject: CertificatePrincipal with get, set
   /// Subject's Common Name
   abstract subjectName: string with get, set
-  /// End date of the certificate being valid in seconds
-  abstract validExpiry: float with get, set
+  /// Hex value represented string
+  abstract serialNumber: string with get, set
   /// Start date of the certificate being valid in seconds
   abstract validStart: float with get, set
+  /// End date of the certificate being valid in seconds
+  abstract validExpiry: float with get, set
+  /// Fingerprint of the certificate
+  abstract fingerprint: string with get, set
 
 type CertificatePrincipal =
   /// Common Name.
   abstract commonName: string with get, set
-  /// Country or region.
-  abstract country: string with get, set
-  /// Locality.
-  abstract locality: string with get, set
   /// Organization names.
   abstract organizations: string [] with get, set
   /// Organization Unit names.
   abstract organizationUnits: string [] with get, set
+  /// Locality.
+  abstract locality: string with get, set
+  /// Country or region.
+  abstract country: string with get, set
   /// State or province.
   abstract state: string with get, set
 
 type ClientRequest =
   inherit Node.Stream.Writable<obj>
   inherit EventEmitter<ClientRequest>
-  /// Emitted when the request is aborted. The abort event will not be fired if
-  /// the request is already closed.
+  /// Provides the HTTP response message.
+  [<Emit "$0.on('response',$1)">] abstract onResponse: listener: (IncomingMessage -> unit) -> ClientRequest  // TODO: Should IncomingMessage be second argument, and first argument be Event?
+  /// See onResponse.
+  [<Emit "$0.once('response',$1)">] abstract onceResponse: listener: (IncomingMessage -> unit) -> ClientRequest
+  /// See onResponse.
+  [<Emit "$0.addListener('response',$1)">] abstract addListenerResponse: listener: (IncomingMessage -> unit) -> ClientRequest
+  /// See onResponse.
+  [<Emit "$0.removeListener('response',$1)">] abstract removeListenerResponse: listener: (IncomingMessage -> unit) -> ClientRequest
+  /// Emitted when an authenticating proxy is asking for user credentials.
+  ///
+  /// The callback function is expected to be called back with username and
+  /// password.
+  ///
+  /// Providing empty credentials will cancel the request and report an
+  /// authentication error on the response object.
+  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
+  /// See onLogin.
+  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
+  /// See onLogin.
+  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
+  /// See onLogin.
+  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
+  /// Emitted just after the last chunk of the request's data has been written
+  /// into the `request` object.
+  [<Emit "$0.on('finish',$1)">] abstract onFinish: listener: (Event -> unit) -> ClientRequest
+  /// See onFinish.
+  [<Emit "$0.once('finish',$1)">] abstract onceFinish: listener: (Event -> unit) -> ClientRequest
+  /// See onFinish.
+  [<Emit "$0.addListener('finish',$1)">] abstract addListenerFinish: listener: (Event -> unit) -> ClientRequest
+  /// See onFinish.
+  [<Emit "$0.removeListener('finish',$1)">] abstract removeListenerFinish: listener: (Event -> unit) -> ClientRequest
+  /// Emitted when the request is aborted. Will not be fired if the request is
+  /// already closed.
   [<Emit "$0.on('abort',$1)">] abstract onAbort: listener: (Event -> unit) -> ClientRequest
+  /// See onAbort.
   [<Emit "$0.once('abort',$1)">] abstract onceAbort: listener: (Event -> unit) -> ClientRequest
+  /// See onAbort.
   [<Emit "$0.addListener('abort',$1)">] abstract addListenerAbort: listener: (Event -> unit) -> ClientRequest
+  /// See onAbort.
   [<Emit "$0.removeListener('abort',$1)">] abstract removeListenerAbort: listener: (Event -> unit) -> ClientRequest
+  /// Emitted when the `net` module fails to issue a network request. Typically
+  /// when the request object emits an error event, a close event will
+  /// subsequently follow and no response object will be provided.
+  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Error -> unit) -> ClientRequest
+  /// See onError.
+  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Error -> unit) -> ClientRequest
+  /// See onError.
+  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Error -> unit) -> ClientRequest
+  /// See onError.
+  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Error -> unit) -> ClientRequest
   /// Emitted as the last event in the HTTP request-response transaction. The
   /// close event indicates that no more events will be emitted on either the
   /// request or response objects.
   [<Emit "$0.on('close',$1)">] abstract onClose: listener: (Event -> unit) -> ClientRequest
+  /// See onClose.
   [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (Event -> unit) -> ClientRequest
+  /// See onClose.
   [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (Event -> unit) -> ClientRequest
+  /// See onClose.
   [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (Event -> unit) -> ClientRequest
-  /// Emitted when the net module fails to issue a network request. Typically
-  /// when the request object emits an error event, a close event will
-  /// subsequently follow and no response object will be provided.
-  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Error -> unit) -> ClientRequest
-  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Error -> unit) -> ClientRequest
-  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Error -> unit) -> ClientRequest
-  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Error -> unit) -> ClientRequest
-  /// Emitted just after the last chunk of the request's data has been written
-  /// into the request object.
-  [<Emit "$0.on('finish',$1)">] abstract onFinish: listener: (Event -> unit) -> ClientRequest
-  [<Emit "$0.once('finish',$1)">] abstract onceFinish: listener: (Event -> unit) -> ClientRequest
-  [<Emit "$0.addListener('finish',$1)">] abstract addListenerFinish: listener: (Event -> unit) -> ClientRequest
-  [<Emit "$0.removeListener('finish',$1)">] abstract removeListenerFinish: listener: (Event -> unit) -> ClientRequest
-  /// Emitted when an authenticating proxy is asking for user credentials. The
-  /// callback function is expected to be called back with user credentials:
-  /// Providing empty credentials will cancel the request and report an
-  /// authentication error on the response object:
-  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
-  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
-  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
-  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
   /// Emitted when there is redirection and the mode is manual. Calling
   /// request.followRedirect will continue with the redirection.
+  ///
+  /// Parameters:
+  ///   - statusCode
+  ///   - method
+  ///   - redirectUrl
+  ///   - responseHeaders
   [<Emit "$0.on('redirect',$1)">] abstract onRedirect: listener: (int -> string -> string -> obj option -> unit) -> ClientRequest
+  /// See onRedirect.
   [<Emit "$0.once('redirect',$1)">] abstract onceRedirect: listener: (int -> string -> string -> obj option -> unit) -> ClientRequest
+  /// See onRedirect.
   [<Emit "$0.addListener('redirect',$1)">] abstract addListenerRedirect: listener: (int -> string -> string -> obj option -> unit) -> ClientRequest
+  /// See onRedirect.
   [<Emit "$0.removeListener('redirect',$1)">] abstract removeListenerRedirect: listener: (int -> string -> string -> obj option -> unit) -> ClientRequest
-  [<Emit "$0.on('response',$1)">] abstract onResponse: listener: (IncomingMessage -> unit) -> ClientRequest
-  [<Emit "$0.once('response',$1)">] abstract onceResponse: listener: (IncomingMessage -> unit) -> ClientRequest
-  [<Emit "$0.addListener('response',$1)">] abstract addListenerResponse: listener: (IncomingMessage -> unit) -> ClientRequest
-  [<Emit "$0.removeListener('response',$1)">] abstract removeListenerResponse: listener: (IncomingMessage -> unit) -> ClientRequest
-  /// Cancels an ongoing HTTP transaction. If the request has already emitted
-  /// the close event, the abort operation will have no effect. Otherwise an
-  /// ongoing event will emit abort and close events. Additionally, if there is
-  /// an ongoing response object,it will emit the aborted event.
-  abstract abort: unit -> unit
-  /// Sends the last chunk of the request data. Subsequent write or end
-  /// operations will not be allowed. The finish event is emitted just after the
-  /// end operation.
-  abstract ``end``: ?chunk: U2<string, Buffer> * ?encoding: string * ?callback: (Event -> unit) -> unit
-  /// Continues any deferred redirection request when the redirection mode is
-  /// manual.
-  abstract followRedirect: unit -> unit
-  abstract getHeader: name: string -> ExtraHeaderValue
-  /// You can use this method in conjunction with POST requests to get the
-  /// progress of a file upload or other data transfer.
-  abstract getUploadProgress: unit -> UploadProgress
+  /// Indicates whether the request will use HTTP chunked transfer encoding or
+  /// not. Defaults to false. The property is readable and writable, however it
+  /// can be set only before the first write operation as the HTTP headers are
+  /// not yet put on the wire. Trying to set the chunkedEncoding property after
+  /// the first write will throw an error.
+  ///
+  /// Using chunked encoding is strongly recommended if you need to send a large
+  /// request body as data will be streamed in small chunks instead of being
+  /// internally buffered inside Electron process memory.
+  abstract chunkedEncoding: bool with get, set
+  /// Adds an extra HTTP header. The header name will issued as it is without
+  /// lowercasing. It can be called only before first write. Calling this method
+  /// after the first write will throw an error. If the passed value is not a
+  /// string, its toString() method will be called to obtain the final value.
+  abstract setHeader: name: string * value: obj -> unit
+  /// Returns the value of a previously set extra header.
+  abstract getHeader: name: string -> obj
   /// Removes a previously set extra header name. This method can be called only
   /// before first write. Trying to call it after the first write will throw an
   /// error.
   abstract removeHeader: name: string -> unit
-  /// Adds an extra HTTP header. The header name will issued as it is without
-  /// lowercasing. It can be called only before first write. Calling this method
-  /// after the first write will throw an error. If the passed value is not a
-  /// String, its toString() method will be called to obtain the final value.
-  abstract setHeader: name: string * value: obj -> unit
-  /// callback is essentially a dummy function introduced in the purpose of
-  /// keeping similarity with the Node.js API. It is called asynchronously in
-  /// the next tick after chunk content have been delivered to the Chromium
-  /// networking layer. Contrary to the Node.js implementation, it is not
-  /// guaranteed that chunk content have been flushed on the wire before
-  /// callback is called. Adds a chunk of data to the request body. The first
-  /// write operation may cause the request headers to be issued on the wire.
-  /// After the first write operation, it is not allowed to add or remove a
-  /// custom header.
-  abstract write: chunk: U2<string, Buffer> * ?encoding: string * ?callback: (Event -> unit) -> unit
-  abstract chunkedEncoding: bool with get, set
+  /// <summary>
+  ///   Adds a chunk of data to the request body. The first write operation may
+  ///   cause the request headers to be issued on the wire. After the first
+  ///   write operation, it is not allowed to add or remove a custom header.
+  /// </summary>
+  /// <param name="chunk">
+  ///   A chunk of the request body's data. It is converted into a Buffer using
+  ///   the specified encoding.
+  /// </param>
+  /// <param name="encoding">
+  ///   Used to convert string chunks into Buffer objects. Defaults to "utf-8".
+  /// </param>
+  /// <param name="callback">
+  ///   Called after the write operation ends. This is essentially a dummy
+  ///   function introduced in the purpose of keeping similarity with the
+  ///   Node.js API. It is called asynchronously in the next tick after chunk
+  ///   content have been delivered to the Chromium networking layer. Contrary
+  ///   to the Node.js implementation, it is not guaranteed that chunk content
+  ///   have been flushed on the wire before callback is called.
+  /// </param>
+  abstract write: chunk: string * ?encoding: string * ?callback: (Event -> unit) -> unit
+  /// <summary>
+  ///   Adds a chunk of data to the request body. The first write operation may
+  ///   cause the request headers to be issued on the wire. After the first
+  ///   write operation, it is not allowed to add or remove a custom header.
+  /// </summary>
+  /// <param name="chunk">A chunk of the request body's data.</param>
+  /// <param name="callback">
+  ///   Called after the write operation ends. This is essentially a dummy
+  ///   function introduced in the purpose of keeping similarity with the
+  ///   Node.js API. It is called asynchronously in the next tick after chunk
+  ///   content have been delivered to the Chromium networking layer. Contrary
+  ///   to the Node.js implementation, it is not guaranteed that chunk content
+  ///   have been flushed on the wire before callback is called.
+  /// </param>
+  abstract write: chunk: Buffer * ?callback: (Event -> unit) -> unit
+  /// Sends the last chunk of the request data. Subsequent write or end
+  /// operations will not be allowed. The `finish` event is emitted just after
+  /// the end operation.
+  abstract ``end``: ?callback: (Event -> unit) -> unit
+  /// Sends the last chunk of the request data. Subsequent write or end
+  /// operations will not be allowed. The `finish` event is emitted just after
+  /// the end operation.
+  abstract ``end``: chunk: string * ?encoding: string * ?callback: (Event -> unit) -> unit
+  /// Sends the last chunk of the request data. Subsequent write or end
+  /// operations will not be allowed. The `finish` event is emitted just after
+  /// the end operation.
+  abstract ``end``: chunk: Buffer * ?callback: (Event -> unit) -> unit
+  /// Cancels an ongoing HTTP transaction. If the request has already emitted
+  /// the `close` event, the abort operation will have no effect. Otherwise an
+  /// ongoing event will emit `abort` and `close` events. Additionally, if there
+  /// is an ongoing response object,it will emit the `aborted` event.
+  abstract abort: unit -> unit
+  /// Continues any deferred redirection request when the redirection mode is
+  /// RedirectMode.Manual.
+  abstract followRedirect: unit -> unit
+  /// You can use this method in conjunction with POST requests to get the
+  /// progress of a file upload or other data transfer.
+  abstract getUploadProgress: unit -> UploadProgress
+
+[<StringEnum; RequireQualifiedAccess>]
+type RedirectMode =
+  | Follow
+  | Error
+  | Manual
 
 type ClientRequestOptions =
   /// The HTTP request method. Defaults to the GET method.
@@ -2131,12 +2333,12 @@ type ClientRequestOptions =
   abstract port: int
   /// The path part of the request URL.
   abstract path: string
-  /// The redirect mode for this request. Should be one of follow, error or
-  /// manual. Defaults to follow. When mode is error, any redirection will be
-  /// aborted. When mode is manual the redirection will be deferred until
-  /// request.followRedirect is invoked. Listen for the redirect event in this
+  /// The redirect mode for this request. Defaults to RedirectMode.Follow. When
+  /// mode is RedirectMode.Error, any redirection will be aborted. When mode is
+  /// RedirectMode.Manual the redirection will be deferred until
+  /// request.followRedirect is invoked. Listen for the `redirect` event in this
   /// mode to get more details about the redirect request.
-  abstract redirect: string
+  abstract redirect: RedirectMode
 
 
 type ClientRequestStatic =
@@ -2150,153 +2352,173 @@ type ClipboardType =
 
 type Clipboard =
   inherit EventEmitter<Clipboard>
-  abstract availableFormats: ?``type``: ClipboardType -> string []
+  /// Returns the content in the clipboard as plain text.
+  abstract readText: ?``type``: ClipboardType -> string
+  /// Writes the `text` into the clipboard as plain text.
+  abstract writeText: text: string * ?``type``: ClipboardType -> unit
+  /// Returns the content in the clipboard as markup.
+  abstract readHTML: ?``type``: ClipboardType -> string
+  /// Writes `markup` to the clipboard.
+  abstract writeHTML: markup: string * ?``type``: ClipboardType -> unit
+  /// Returns the image content in the clipboard.
+  abstract readImage: ?``type``: ClipboardType -> NativeImage
+  /// Writes `image` to the clipboard.
+  abstract writeImage: image: NativeImage * ?``type``: ClipboardType -> unit
+  /// Returns the content in the clipboard as RTF.
+  abstract readRTF: ?``type``: ClipboardType -> string
+  /// Writes the `text` into the clipboard in RTF.
+  abstract writeRTF: text: string * ?``type``: ClipboardType -> unit
+  /// [macOS, Windows] Returns an object containing title and url keys
+  /// representing the bookmark in the clipboard. The title and url values will
+  /// be empty strings when the bookmark is unavailable.
+  abstract readBookmark: unit -> ClipboardBookmark
+  /// [macOS, Windows] Writes the title and url into the clipboard as a
+  /// bookmark.
+  ///
+  /// Note: Most apps on Windows don't support pasting bookmarks into them so
+  /// you can use clipboard.write to write both a bookmark and fallback text to
+  /// the clipboard.
+  abstract writeBookmark: title: string * url: string * ?``type``: ClipboardType -> unit
+  /// [macOS] Returns the text on the find pasteboard. This method uses
+  /// synchronous IPC when called from the renderer process. The cached value is
+  /// reread from the find pasteboard whenever the application is activated.
+  abstract readFindText: unit -> string
+  /// [macOS] Writes the `text` into the find pasteboard as plain text. This
+  /// method uses synchronous IPC when called from the renderer process.
+  abstract writeFindText: text: string -> unit
   /// Clears the clipboard content.
   abstract clear: ?``type``: ClipboardType -> unit
+  /// Returns the supported formats for the clipboard.
+  abstract availableFormats: ?``type``: ClipboardType -> string []
+  /// Returns a value indicating whether the clipboard supports the specified format.
   abstract has: format: string * ?``type``: ClipboardType -> bool
+  /// Reads `format` type from the clipboard.
   abstract read: format: string -> string
-  /// Returns an Object containing title and url keys representing the bookmark
-  /// in the clipboard. The title and url values will be empty strings when the
-  /// bookmark is unavailable.
-  abstract readBookmark: unit -> ReadBookmark
+  /// Reads `format` type from the clipboard.
   abstract readBuffer: format: string -> Buffer
-  abstract readFindText: unit -> string
-  abstract readHTML: ?``type``: ClipboardType -> string
-  abstract readImage: ?``type``: ClipboardType -> NativeImage
-  abstract readRTF: ?``type``: ClipboardType -> string
-  abstract readText: ?``type``: ClipboardType -> string
-  /// Writes data to the clipboard.
-  abstract write: data: ClipboardData * ?``type``: ClipboardType -> unit
-  /// Writes the title and url into the clipboard as a bookmark. Note: Most apps
-  /// on Windows don't support pasting bookmarks into them so you can use
-  /// clipboard.write to write both a bookmark and fallback text to the
-  /// clipboard.
-  abstract writeBookmark: title: string * url: string * ?``type``: ClipboardType -> unit
-  /// Writes the buffer into the clipboard as format.
+  /// Writes the `buffer` into the clipboard as `format`.
   abstract writeBuffer: format: string * buffer: Buffer * ?``type``: ClipboardType -> unit
-  /// Writes the text into the find pasteboard as plain text. This method uses
-  /// synchronous IPC when called from the renderer process.
-  abstract writeFindText: text: string -> unit
-  /// Writes markup to the clipboard.
-  abstract writeHTML: markup: string * ?``type``: ClipboardType -> unit
-  /// Writes image to the clipboard.
-  abstract writeImage: image: NativeImage * ?``type``: ClipboardType -> unit
-  /// Writes the text into the clipboard in RTF.
-  abstract writeRTF: text: string * ?``type``: ClipboardType -> unit
-  /// Writes the text into the clipboard as plain text.
-  abstract writeText: text: string * ?``type``: ClipboardType -> unit
+  /// Writes `data` to the clipboard.
+  abstract write: data: ClipboardData * ?``type``: ClipboardType -> unit
 
 type ContentTracing =
   inherit EventEmitter<ContentTracing>
   /// Get a set of category groups. The category groups can change as new code
-  /// paths are reached. Once all child processes have acknowledged the
-  /// getCategories request the callback is invoked with an array of category
-  /// groups. Deprecated Soon
-  abstract getCategories: callback: (string [] -> unit) -> unit
-  /// Get a set of category groups. The category groups can change as new code
   /// paths are reached.
-  abstract getCategories: unit -> Promise<string>
-  /// Get the maximum usage across processes of trace buffer as a percentage of
-  /// the full state. When the TraceBufferUsage value is determined the callback
-  /// is called.
-  abstract getTraceBufferUsage: callback: (float -> float -> unit) -> unit
-  /// Start recording on all processes. Recording begins immediately locally and
-  /// asynchronously on child processes as soon as they receive the
-  /// EnableRecording request. The callback will be called once all child
-  /// processes have acknowledged the startRecording request. Deprecated Soon
-  abstract startRecording: options: U2<TraceCategoriesAndOptions, TraceConfig> * callback: (Event -> unit) -> unit
-  /// Start recording on all processes. Recording begins immediately locally and
-  /// asynchronously on child processes as soon as they receive the
-  /// EnableRecording request.
-  abstract startRecording: options: U2<TraceCategoriesAndOptions, TraceConfig> -> Promise<unit>
-  /// Stop recording on all processes. Child processes typically cache trace
-  /// data and only rarely flush and send trace data back to the main process.
-  /// This helps to minimize the runtime overhead of tracing since sending trace
-  /// data over IPC can be an expensive operation. So, to end tracing, we must
-  /// asynchronously ask all child processes to flush any pending trace data.
-  /// Once all child processes have acknowledged the stopRecording request,
-  /// callback will be called with a file that contains the traced data. Trace
-  /// data will be written into resultFilePath if it is not empty or into a
-  /// temporary file. The actual file path will be passed to callback if it's
-  /// not null. Deprecated Soon
-  abstract stopRecording: resultFilePath: string * callback: (string -> unit) -> unit
-  /// Stop recording on all processes. Child processes typically cache trace
-  /// data and only rarely flush and send trace data back to the main process.
-  /// This helps to minimize the runtime overhead of tracing since sending trace
-  /// data over IPC can be an expensive operation. So, to end tracing, we must
-  /// asynchronously ask all child processes to flush any pending trace data.
-  /// Trace data will be written into resultFilePath if it is not empty or into
-  /// a temporary file.
+  ///
+  /// The returned promise resolves with an array of category groups once all
+  /// child processes have acknowledged the getCategories request.
+  abstract getCategories: unit -> Promise<string []>
+  /// Start recording on all processes.
+  ///
+  /// Recording begins immediately locally and asynchronously on child processes
+  /// as soon as they receive the EnableRecording request.
+  ///
+  /// The returned promise is resolved once all child processes have
+  /// acknowledged the `startRecording` request.
+  abstract startRecording: options: TraceCategoriesAndOptions -> Promise<unit>
+  /// Start recording on all processes.
+  ///
+  /// Recording begins immediately locally and asynchronously on child processes
+  /// as soon as they receive the EnableRecording request.
+  ///
+  /// The returned promise is resolved once all child processes have
+  /// acknowledged the `startRecording` request.
+  abstract startRecording: options: TraceConfig -> Promise<unit>
+  /// Stop recording on all processes.
+  ///
+  /// Child processes typically cache trace data and only rarely flush and send
+  /// trace data back to the main process. This helps to minimize the runtime
+  /// overhead of tracing since sending trace data over IPC can be an expensive
+  /// operation. So, to end tracing, we must asynchronously ask all child
+  /// processes to flush any pending trace data.
+  ///
+  /// Trace data will be written into `resultFilePath` if it is not empty or
+  /// into a temporary file.
+  ///
+  /// The returned promise resolves with a file that contains the traced data
+  /// once all child processes have acknowledged the stopRecording request
   abstract stopRecording: resultFilePath: string -> Promise<string>
+  /// Get the maximum usage across processes of trace buffer as a percentage of
+  /// the full state. When the TraceBufferUsage value is determined the `callback`
+  /// is called.
+  ///
+  /// Callback arguments:
+  ///   - value
+  ///   - percentage
+  abstract getTraceBufferUsage: callback: (float -> float -> unit) -> unit
 
 type Cookie =
+  /// The name of the cookie.
+  abstract name: string with get, set
+  /// The value of the cookie.
+  abstract value: string with get, set
   /// The domain of the cookie; this will be normalized with a preceding dot so
   /// that it's also valid for subdomains.
   abstract domain: string option with get, set
-  /// The expiration date of the cookie as the number of seconds since the UNIX
-  /// epoch. Not provided for session cookies.
-  abstract expirationDate: float option with get, set
-  /// Whether the cookie is a host-only cookie; this will only be true if no
-  /// domain was passed.
-  abstract hostOnly: bool option with get, set
-  /// Whether the cookie is marked as HTTP only.
-  abstract httpOnly: bool option with get, set
-  /// The name of the cookie.
-  abstract name: string with get, set
   /// The path of the cookie.
   abstract path: string option with get, set
   /// Whether the cookie is marked as secure.
   abstract secure: bool option with get, set
+  /// Whether the cookie is marked as HTTP only.
+  abstract httpOnly: bool option with get, set
+  /// Whether the cookie is a host-only cookie; this will only be true if no
+  /// domain was passed.
+  abstract hostOnly: bool option with get, set
   /// Whether the cookie is a session cookie or a persistent cookie with an
   /// expiration date.
   abstract session: bool option with get, set
-  /// The value of the cookie.
-  abstract value: string with get, set
+  /// The expiration date of the cookie as the number of seconds since the UNIX
+  /// epoch. Not provided for session cookies.
+  abstract expirationDate: float option with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type CookieChangedCause =
+  /// The cookie was changed directly by a consumer's action.
   | Explicit
+  /// The cookie was automatically removed due to an insert operation that
+  /// overwrote it.
   | Overwrite
+  /// The cookie was automatically removed as it expired.
   | Expired
+  /// The cookie was automatically evicted during garbage collection.
   | Evicted
+  /// The cookie was overwritten with an already-expired expiration date.
   | [<CompiledName("expired-overwrite")>] ExpiredOverwrite
 
 type Cookies =
   inherit EventEmitter<Cookies>
   /// Emitted when a cookie is changed because it was added, edited, removed, or
   /// expired.
+  ///
+  /// Extra parameters:
+  ///   - cookie: The cookie that was changed
+  ///   - cause: The cause of the change
+  ///   - removed: true if the cookie was removed, false otherwise
   [<Emit "$0.on('changed',$1)">] abstract onChanged: listener: (Event -> Cookie -> CookieChangedCause -> bool -> unit) -> Cookies
+  /// See onChanged.
   [<Emit "$0.once('changed',$1)">] abstract onceChanged: listener: (Event -> Cookie -> CookieChangedCause -> bool -> unit) -> Cookies
+  /// See onChanged.
   [<Emit "$0.addListener('changed',$1)">] abstract addListenerChanged: listener: (Event -> Cookie -> CookieChangedCause -> bool -> unit) -> Cookies
+  /// See onChanged.
   [<Emit "$0.removeListener('changed',$1)">] abstract removeListenerChanged: listener: (Event -> Cookie -> CookieChangedCause -> bool -> unit) -> Cookies
-  /// Writes any unwritten cookies data to disk.
-  abstract flushStore: unit -> Promise<unit>
-  /// Writes any unwritten cookies data to disk. Deprecated Soon
-  abstract flushStore: callback: (Event -> unit) -> unit
   /// Sends a request to get all cookies matching filter, and resolves a promise
   /// with the response.
-  abstract get: filter: CookieFilter -> Promise<Cookie>
-  /// Sends a request to get all cookies matching filter, callback will be
-  /// called with callback(error, cookies) on complete. Deprecated Soon
-  abstract get: filter: CookieFilter * callback: (Error -> Cookie [] -> unit) -> unit
-  /// Removes the cookies matching url and name
-  abstract remove: url: string * name: string -> Promise<unit>
-  /// Removes the cookies matching url and name, callback will called with
-  /// callback() on complete. Deprecated Soon
-  abstract remove: url: string * name: string * callback: (Event -> unit) -> unit
+  abstract get: filter: GetCookiesFilter -> Promise<Cookie []>
   /// Sets a cookie with details.
-  abstract set: details: CookieDetails -> Promise<unit>
-  /// Sets a cookie with details, callback will be called with callback(error)
-  /// on complete. Deprecated Soon
-  abstract set: details: CookieDetails * callback: (Error -> unit) -> unit
+  abstract set: details: SetCookieDetails -> Promise<unit>
+  /// Removes the cookies matching `url` and `name`
+  abstract remove: url: string * name: string -> Promise<unit>
+  /// Writes any unwritten cookies data to disk.
+  abstract flushStore: unit -> Promise<unit>
 
 type CPUUsage =
-  /// The number of average idle cpu wakeups per second since the last call to
-  /// getCPUUsage. First call returns 0. Will always return 0 on Windows.
-  abstract idleWakeupsPerSecond: float with get, set
-  /// Percentage of CPU used since the last call to getCPUUsage. First call
+  /// Percentage of CPU used since the last call to `getCPUUsage`. First call
   /// returns 0.
   abstract percentCPUUsage: float with get, set
+  /// The number of average idle cpu wakeups per second since the last call to
+  /// `getCPUUsage`. First call returns 0. Will always return 0 on Windows.
+  abstract idleWakeupsPerSecond: float with get, set
 
 type CrashReport =
   abstract date: DateTime with get, set
@@ -2304,240 +2526,198 @@ type CrashReport =
 
 type CrashReporter =
   inherit EventEmitter<CrashReporter>
-  /// Set an extra parameter to be sent with the crash report. The values
-  /// specified here will be sent in addition to any values set via the extra
-  /// option when start was called. This API is only available on macOS, if you
-  /// need to add/update extra parameters on Linux and Windows after your first
-  /// call to start you can call start again with the updated extra options.
-  abstract addExtraParameter: key: string * value: string -> unit
-  /// Returns the date and ID of the last crash report. Only crash reports that
-  /// have been uploaded will be returned; even if a crash report is present on
-  /// disk it will not be returned until it is uploaded. In the case that there
-  /// are no uploaded reports, null is returned.
-  abstract getLastCrashReport: unit -> CrashReport
-  /// See all of the current parameters being passed to the crash reporter.
-  abstract getParameters: unit -> unit
-  /// Returns all uploaded crash reports. Each report contains the date and
-  /// uploaded ID.
-  abstract getUploadedReports: unit -> CrashReport []
-  /// Note: This API can only be called from the main process.
-  abstract getUploadToServer: unit -> bool
-  /// Remove a extra parameter from the current set of parameters so that it
-  /// will not be sent with the crash report.
-  abstract removeExtraParameter: key: string -> unit
-  /// This would normally be controlled by user preferences. This has no effect
-  /// if called before start is called. Note: This API can only be called from
-  /// the main process.
-  abstract setUploadToServer: uploadToServer: bool -> unit
   /// You are required to call this method before using any other crashReporter
   /// APIs and in each process (main/renderer) from which you want to collect
   /// crash reports. You can pass different options to crashReporter.start when
-  /// calling from different processes. Note Child processes created via the
-  /// child_process module will not have access to the Electron modules.
-  /// Therefore, to collect crash reports from them, use
-  /// process.crashReporter.start instead. Pass the same options as above along
-  /// with an additional one called crashesDirectory that should point to a
-  /// directory to store the crash reports temporarily. You can test this out by
-  /// calling process.crash() to crash the child process. Note: To collect crash
-  /// reports from child process in Windows, you need to add this extra code as
-  /// well. This will start the process that will monitor and send the crash
-  /// reports. Replace submitURL, productName and crashesDirectory with
-  /// appropriate values. Note: If you need send additional/updated extra
-  /// parameters after your first call start you can call addExtraParameter on
-  /// macOS or call start again with the new/updated extra parameters on Linux
-  /// and Windows. Note: On macOS, Electron uses a new crashpad client for crash
-  /// collection and reporting. If you want to enable crash reporting,
-  /// initializing crashpad from the main process using crashReporter.start is
-  /// required regardless of which process you want to collect crashes from.
-  /// Once initialized this way, the crashpad handler collects crashes from all
-  /// processes. You still have to call crashReporter.start from the renderer or
-  /// child process, otherwise crashes from them will get reported without
-  /// companyName, productName or any of the extra information.
+  /// calling from different processes.
+  ///
+  /// For more information, see the Electron docs:
+  /// https://electronjs.org/docs/api/crash-reporter
   abstract start: options: CrashReporterStartOptions -> unit
+  /// Returns the date and ID of the last crash report. Only crash reports that
+  /// have been uploaded will be returned; even if a crash report is present on
+  /// disk it will not be returned until it is uploaded. In the case that there
+  /// are no uploaded reports, None is returned.
+  abstract getLastCrashReport: unit -> CrashReport option
+  /// Returns all uploaded crash reports.
+  abstract getUploadedReports: unit -> CrashReport []
+  /// [Linux, macOS] Returns a value indicating whether reports should be
+  /// submitted to the server. Set through the `start` method or
+  /// `setUploadToServer`.
+  ///
+  /// Note: This API can only be called from the main process.
+  abstract getUploadToServer: unit -> bool
+  /// [Linux, macOS] Sets whether reports should be submitted to the server.
+  ///
+  /// This would normally be controlled by user preferences. This has no effect
+  /// if called before `start` is called.
+  ///
+  /// Note: This API can only be called from the main process.
+  abstract setUploadToServer: uploadToServer: bool -> unit
+  /// [macOS] Set an extra parameter to be sent with the crash report. The
+  /// values specified here will be sent in addition to any values set via the
+  /// `extra` option when `start` was called. This API is only available on
+  /// macOS, if you need to add/update extra parameters on Linux and Windows
+  /// after your first call to `start` you can call `start` again with the
+  /// updated `extra` options.
+  ///
+  /// Both `key` and `value` must be less than 64 characters long.
+  abstract addExtraParameter: key: string * value: string -> unit
+  /// [macOS] Remove a extra parameter from the current set of parameters so
+  /// that it will not be sent with the crash report.
+  abstract removeExtraParameter: key: string -> unit
+  /// See all of the current parameters being passed to the crash reporter.
+  abstract getParameters: unit -> unit
 
 type CustomScheme =
-  abstract privileges: CustomSchemePrivileges with get, set
   /// Custom schemes to be registered with options.
   abstract scheme: string with get, set
+  abstract privileges: CustomSchemePrivileges with get, set
 
 type Debugger =
   inherit EventEmitter<Debugger>
   /// Emitted when debugging session is terminated. This happens either when
   /// webContents is closed or devtools is invoked for the attached webContents.
   [<Emit "$0.on('detach',$1)">] abstract onDetach: listener: (Event -> string -> unit) -> Debugger
+  /// See onDetach.
   [<Emit "$0.once('detach',$1)">] abstract onceDetach: listener: (Event -> string -> unit) -> Debugger
+  /// See onDetach.
   [<Emit "$0.addListener('detach',$1)">] abstract addListenerDetach: listener: (Event -> string -> unit) -> Debugger
+  /// See onDetach.
   [<Emit "$0.removeListener('detach',$1)">] abstract removeListenerDetach: listener: (Event -> string -> unit) -> Debugger
   /// Emitted whenever debugging target issues instrumentation event.
   [<Emit "$0.on('message',$1)">] abstract onMessage: listener: (Event -> string -> obj option -> unit) -> Debugger
+  /// See onMessage.
   [<Emit "$0.once('message',$1)">] abstract onceMessage: listener: (Event -> string -> obj option -> unit) -> Debugger
+  /// See onMessage.
   [<Emit "$0.addListener('message',$1)">] abstract addListenerMessage: listener: (Event -> string -> obj option -> unit) -> Debugger
+  /// See onMessage.
   [<Emit "$0.removeListener('message',$1)">] abstract removeListenerMessage: listener: (Event -> string -> obj option -> unit) -> Debugger
   /// Attaches the debugger to the webContents.
   abstract attach: ?protocolVersion: string -> unit
+  /// Indicates whether a debugger is attached to the webContents.
+  abstract isAttached: unit -> bool
   /// Detaches the debugger from the webContents.
   abstract detach: unit -> unit
-  abstract isAttached: unit -> bool
-  /// Send given command to the debugging target. Deprecated Soon
-  abstract sendCommand: method: string * ?commandParams: obj * ?callback: (obj option -> obj option -> unit) -> unit
-  /// Send given command to the debugging target.
+  /// <summary>
+  ///   Send given command to the debugging target. Returns a promise that
+  ///   resolves with the response defined by the 'returns' attribute of the
+  ///   command description in the remote debugging protocol or is rejected
+  ///   indicating the failure of the command.
+  /// </summary>
+  /// <param name="method">
+  ///   Method name, should be one of the methods defined by the remote
+  ///   debugging protocol.
+  /// </param>
+  /// <param name="commandParams">Object with request parameters.</param>
   abstract sendCommand: method: string * ?commandParams: obj -> Promise<obj option>
 
 type DesktopCapturer =
   inherit EventEmitter<DesktopCapturer>
-  /// Starts gathering information about all available desktop media sources,
-  /// and calls callback(error, sources) when finished. sources is an array of
-  /// DesktopCapturerSource objects, each DesktopCapturerSource represents a
-  /// screen or an individual window that can be captured. Deprecated Soon
-  abstract getSources: options: GetDesktopCapturerSourcesOptions * callback: (Error -> DesktopCapturerSource [] -> unit) -> unit
-  abstract getSources: options: GetDesktopCapturerSourcesOptions -> Promise<DesktopCapturerSource>
+  /// Each returned DesktopCapturerSource represents a screen or an individual
+  /// window that can be captured.
+  abstract getSources: options: GetDesktopCapturerSourcesOptions -> Promise<DesktopCapturerSource []>
 
 type DesktopCapturerSource =
-  /// An icon image of the application that owns the window or null if the
-  /// source has a type screen. The size of the icon is not known in advance and
-  /// depends on what the the application provides.
-  abstract appIcon: NativeImage with get, set
-  /// A unique identifier that will correspond to the id of the matching
-  /// returned by the . On some platforms, this is equivalent to the XX portion
-  /// of the id field above and on others it will differ. It will be an empty
-  /// string if not available.
-  abstract display_id: string with get, set
   /// The identifier of a window or screen that can be used as a
   /// chromeMediaSourceId constraint when calling
   /// [navigator.webkitGetUserMedia]. The format of the identifier will be
   /// window:XX or screen:XX, where XX is a random generated number.
   abstract id: string with get, set
-  /// A screen source will be named either Entire Screen or Screen , while the
-  /// name of a window source will match the window title.
+  /// A screen source will be named either Entire Screen or Screen <index>,
+  /// while the name of a window source will match the window title.
   abstract name: string with get, set
   /// A thumbnail image. There is no guarantee that the size of the thumbnail is
-  /// the same as the thumbnailSize specified in the options passed to
+  /// the same as the `thumbnailSize` specified in the `options` passed to
   /// desktopCapturer.getSources. The actual size depends on the scale of the
   /// screen or window.
   abstract thumbnail: NativeImage with get, set
+  /// A unique identifier that will correspond to the `id` of the matching
+  /// returned by the Screen API. On some platforms, this is equivalent to the
+  /// XX portion of the `id` field and on others it will differ. It will be an
+  /// empty string if not available.
+  abstract display_id: string with get, set
+  /// An icon image of the application that owns the window or null if the
+  /// source has a type screen. The size of the icon is not known in advance and
+  /// depends on what the application provides.
+  abstract appIcon: NativeImage option with get, set
 
 type Dialog =
   inherit EventEmitter<Dialog>
-  /// On macOS, this displays a modal dialog that shows a message and
-  /// certificate information, and gives the user the option of
-  /// trusting/importing the certificate. If you provide a browserWindow
-  /// argument the dialog will be attached to the parent window, making it
-  /// modal. On Windows the options are more limited, due to the Win32 APIs
-  /// used:
-  abstract showCertificateTrustDialog: browserWindow: BrowserWindow * options: CertificateTrustDialogOptions * callback: (Event -> unit) -> unit
-  /// On macOS, this displays a modal dialog that shows a message and
-  /// certificate information, and gives the user the option of
-  /// trusting/importing the certificate. If you provide a browserWindow
-  /// argument the dialog will be attached to the parent window, making it
-  /// modal. On Windows the options are more limited, due to the Win32 APIs
-  /// used:
-  abstract showCertificateTrustDialog: options: CertificateTrustDialogOptions * callback: (Event -> unit) -> unit
-  /// Displays a modal dialog that shows an error message. This API can be
-  /// called safely before the ready event the app module emits, it is usually
-  /// used to report errors in early stage of startup. If called before the app
-  /// readyevent on Linux, the message will be emitted to stderr, and no GUI
-  /// dialog will appear.
-  abstract showErrorBox: title: string * content: string -> unit
-  /// Shows a message box, it will block the process until the message box is
-  /// closed. It returns the index of the clicked button. The browserWindow
-  /// argument allows the dialog to attach itself to a parent window, making it
-  /// modal. If the callback and browserWindow arguments are passed, the dialog
-  /// will not block the process. The API call will be asynchronous and the
-  /// result will be passed via callback(response).
-  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions * callback: (int -> bool -> unit) -> unit
-  /// Shows a message box, it will block the process until the message box is
-  /// closed. It returns the index of the clicked button. The browserWindow
-  /// argument allows the dialog to attach itself to a parent window, making it
-  /// modal. If the callback and browserWindow arguments are passed, the dialog
-  /// will not block the process. The API call will be asynchronous and the
-  /// result will be passed via callback(response).
-  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions -> int
-  /// Shows a message box, it will block the process until the message box is
-  /// closed. It returns the index of the clicked button. The browserWindow
-  /// argument allows the dialog to attach itself to a parent window, making it
-  /// modal. If the callback and browserWindow arguments are passed, the dialog
-  /// will not block the process. The API call will be asynchronous and the
-  /// result will be passed via callback(response).
-  abstract showMessageBox: options: MessageBoxOptions * callback: (int -> bool -> unit) -> unit
-  /// Shows a message box, it will block the process until the message box is
-  /// closed. It returns the index of the clicked button. The browserWindow
-  /// argument allows the dialog to attach itself to a parent window, making it
-  /// modal. If the callback and browserWindow arguments are passed, the dialog
-  /// will not block the process. The API call will be asynchronous and the
-  /// result will be passed via callback(response).
-  abstract showMessageBox: options: MessageBoxOptions -> int
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed or selected when you want to limit the user to a specific
-  /// type. For example: The extensions array should contain extensions without
-  /// wildcards or dots (e.g. 'png' is good but '.png' and '*.png' are bad). To
-  /// show all files, use the '*' wildcard (no other wildcard is supported). If
-  /// a callback is passed, the API call will be asynchronous and the result
-  /// will be passed via callback(filenames). Note: On Windows and Linux an open
-  /// dialog can not be both a file selector and a directory selector, so if you
-  /// set properties to ['openFile', 'openDirectory'] on these platforms, a
-  /// directory selector will be shown.
-  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions * callback: (string [] -> string [] -> unit) -> unit
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed or selected when you want to limit the user to a specific
-  /// type. For example: The extensions array should contain extensions without
-  /// wildcards or dots (e.g. 'png' is good but '.png' and '*.png' are bad). To
-  /// show all files, use the '*' wildcard (no other wildcard is supported). If
-  /// a callback is passed, the API call will be asynchronous and the result
-  /// will be passed via callback(filenames). Note: On Windows and Linux an open
-  /// dialog can not be both a file selector and a directory selector, so if you
-  /// set properties to ['openFile', 'openDirectory'] on these platforms, a
-  /// directory selector will be shown.
+  /// Returns the file paths chosen by the user, or None if the dialog was
+  /// canceled.
+  abstract showOpenDialog: options: OpenDialogOptions -> string [] option
+  /// Calls the callback with the file paths chosen by the user, or None if the
+  /// dialog was canceled. The second callback argument is populated only on Mac
+  /// App Store builds and only if `securityScopedBookmarks` is enabled, and
+  /// contains an array matching the `filePaths` array of base64 encoded strings
+  /// which contains security scoped bookmark data.
   abstract showOpenDialog: options: OpenDialogOptions * callback: (string [] option -> string [] -> unit) -> unit
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed or selected when you want to limit the user to a specific
-  /// type. For example: The extensions array should contain extensions without
-  /// wildcards or dots (e.g. 'png' is good but '.png' and '*.png' are bad). To
-  /// show all files, use the '*' wildcard (no other wildcard is supported). If
-  /// a callback is passed, the API call will be asynchronous and the result
-  /// will be passed via callback(filenames). Note: On Windows and Linux an open
-  /// dialog can not be both a file selector and a directory selector, so if you
-  /// set properties to ['openFile', 'openDirectory'] on these platforms, a
-  /// directory selector will be shown.
-  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions -> string []
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed or selected when you want to limit the user to a specific
-  /// type. For example: The extensions array should contain extensions without
-  /// wildcards or dots (e.g. 'png' is good but '.png' and '*.png' are bad). To
-  /// show all files, use the '*' wildcard (no other wildcard is supported). If
-  /// a callback is passed, the API call will be asynchronous and the result
-  /// will be passed via callback(filenames). Note: On Windows and Linux an open
-  /// dialog can not be both a file selector and a directory selector, so if you
-  /// set properties to ['openFile', 'openDirectory'] on these platforms, a
-  /// directory selector will be shown.
-  abstract showOpenDialog: options: OpenDialogOptions -> string []
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed, see dialog.showOpenDialog for an example. If a callback
-  /// is passed, the API call will be asynchronous and the result will be passed
-  /// via callback(filename).
-  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions * callback: (string option -> string option -> unit) -> unit
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed, see dialog.showOpenDialog for an example. If a callback
-  /// is passed, the API call will be asynchronous and the result will be passed
-  /// via callback(filename).
-  abstract showSaveDialog: options: SaveDialogOptions * callback: (string option -> string option -> unit) -> unit
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed, see dialog.showOpenDialog for an example. If a callback
-  /// is passed, the API call will be asynchronous and the result will be passed
-  /// via callback(filename).
-  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions -> string option
-  /// The browserWindow argument allows the dialog to attach itself to a parent
-  /// window, making it modal. The filters specifies an array of file types that
-  /// can be displayed, see dialog.showOpenDialog for an example. If a callback
-  /// is passed, the API call will be asynchronous and the result will be passed
-  /// via callback(filename).
+  /// Returns an array of file paths chosen by the user.
+  ///
+  /// The `browserWindow` argument allows the dialog to attach itself to a
+  /// parent window, making it modal.
+  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions -> string [] option
+  /// Calls the callback with the file paths chosen by the user, or None if the
+  /// dialog was canceled. The second callback argument is populated only on Mac
+  /// App Store builds and only if `securityScopedBookmarks` is enabled, and
+  /// contains an array matching the `filePaths` array of base64 encoded strings
+  /// which contains security scoped bookmark data.
+  ///
+  /// The `browserWindow` argument allows the dialog to attach itself to a
+  /// parent window, making it modal.
+  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions * callback: (string [] option -> string [] -> unit) -> unit
+  /// Returns the path of the file chosen by the user, or None if the dialog was
+  /// canceled.
   abstract showSaveDialog: options: SaveDialogOptions -> string option
+  /// Calls the callback with the path of the file chosen by the user, or None
+  /// if the dialog was canceled. The second callback argument is present only
+  /// on Mac App Store builds and only if `securityScopedBookmarks` is enabled,
+  /// and is a base64 encoded string which contains security scoped bookmark
+  /// data for the saved file.
+  abstract showSaveDialog: options: SaveDialogOptions * callback: (string option -> string option -> unit) -> unit
+  /// Returns the path of the file chosen by the user, or None if the dialog was
+  /// canceled.
+  ///
+  /// The `browserWindow` argument allows the dialog to attach itself to a
+  /// parent window, making it modal.
+  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions -> string option
+  /// Calls the callback with the path of the file chosen by the user, or None
+  /// if the dialog was canceled. The second callback argument is present only
+  /// on Mac App Store builds and only if `securityScopedBookmarks` is enabled,
+  /// and is a base64 encoded string which contains security scoped bookmark
+  /// data for the saved file.
+  ///
+  /// The `browserWindow` argument allows the dialog to attach itself to a
+  /// parent window, making it modal.
+  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions * callback: (string option -> string option -> unit) -> unit
+  /// Shows a message box and returns the index of the clicked button.
+  abstract showMessageBox: options: MessageBoxOptions -> int
+  /// Shows a message box and calls the callback with 1) the index of the
+  /// clicked button and 2) the checked state of the checkbox if `checkboxLabel`
+  /// was set, otherwise `false`.
+  abstract showMessageBox: options: MessageBoxOptions * callback: (int -> bool -> unit) -> unit
+  /// Shows a message box and returns the index of the clicked button.
+  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions -> int
+  /// Shows a message box and calls the callback with 1) the index of the
+  /// clicked button and 2) the checked state of the checkbox if `checkboxLabel`
+  /// was set, otherwise `false`.
+  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions * callback: (int -> bool -> unit) -> unit
+  /// Displays a modal dialog that shows an error message.
+  ///
+  /// This API can be called safely before the `ready` event the app module
+  /// emits, it is usually used to report errors in early stage of startup. If
+  /// called before the app `ready` event on Linux, the message will be emitted
+  /// to stderr, and no GUI dialog will appear.
+  abstract showErrorBox: title: string * content: string -> unit
+  /// [macOS, Windows] Displays a modal dialog that shows a message and
+  /// certificate information, and gives the user the option of
+  /// trusting/importing the certificate.
+  abstract showCertificateTrustDialog: options: CertificateTrustDialogOptions * callback: (Event -> unit) -> unit  // TODO: is Event correct?
+  /// [macOS] Displays a modal dialog that shows a message and certificate
+  /// information, and gives the user the option of trusting/importing the
+  /// certificate.
+  abstract showCertificateTrustDialog: browserWindow: BrowserWindow * options: CertificateTrustDialogOptions * callback: (Event -> unit) -> unit  // TODO: is Event correct?
 
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -2547,15 +2727,15 @@ type DisplayTouchSupport =
   | Unknown
 
 type Display =
-  abstract bounds: Rectangle with get, set
   /// Unique identifier associated with the display.
   abstract id: int with get, set
   /// Can be 0, 90, 180, 270, represents screen rotation in clock-wise degrees.
   abstract rotation: int with get, set
   /// Output device's pixel scale factor.
   abstract scaleFactor: float with get, set
-  abstract size: Size with get, set
   abstract touchSupport: DisplayTouchSupport with get, set
+  abstract bounds: Rectangle with get, set
+  abstract size: Size with get, set
   abstract workArea: Rectangle with get, set
   abstract workAreaSize: Size with get, set
 
@@ -2568,75 +2748,121 @@ type DownloadItemState =
 
 [<StringEnum; RequireQualifiedAccess>]
 type DownloadItemDoneState =
+  /// The download completed successfully.
   | Completed
+  /// The download has been cancelled.
   | Cancelled
+  /// The download has interrupted and can not resume.
   | Interrupted
 
 [<StringEnum; RequireQualifiedAccess>]
 type DownloadItemUpdatedState =
+  /// The download is in-progress.
   | Progressing
+  /// The download has interrupted and can be resumed.
   | Interrupted
 
 type DownloadItem =
   inherit EventEmitter<DownloadItem>
+  /// Emitted when the download has been updated and is not done.
+  [<Emit "$0.on('updated',$1)">] abstract onUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
+  /// See onUpdated.
+  [<Emit "$0.once('updated',$1)">] abstract onceUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
+  /// See onUpdated.
+  [<Emit "$0.addListener('updated',$1)">] abstract addListenerUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
+  /// See onUpdated.
+  [<Emit "$0.removeListener('updated',$1)">] abstract removeListenerUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
   /// Emitted when the download is in a terminal state. This includes a
   /// completed download, a cancelled download (via downloadItem.cancel()), and
-  /// interrupted download that can't be resumed. The state can be one of
-  /// following:
+  /// interrupted download that can't be resumed.
   [<Emit "$0.on('done',$1)">] abstract onDone: listener: (Event -> DownloadItemDoneState -> unit) -> DownloadItem
+  /// See onDone.
   [<Emit "$0.once('done',$1)">] abstract onceDone: listener: (Event -> DownloadItemDoneState -> unit) -> DownloadItem
+  /// See onDone.
   [<Emit "$0.addListener('done',$1)">] abstract addListenerDone: listener: (Event -> DownloadItemDoneState -> unit) -> DownloadItem
+  /// See onDone.
   [<Emit "$0.removeListener('done',$1)">] abstract removeListenerDone: listener: (Event -> DownloadItemDoneState -> unit) -> DownloadItem
-  /// Emitted when the download has been updated and is not done. The state can
-  /// be one of following:
-  [<Emit "$0.on('updated',$1)">] abstract onUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
-  [<Emit "$0.once('updated',$1)">] abstract onceUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
-  [<Emit "$0.addListener('updated',$1)">] abstract addListenerUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
-  [<Emit "$0.removeListener('updated',$1)">] abstract removeListenerUpdated: listener: (Event -> DownloadItemUpdatedState -> unit) -> DownloadItem
+  /// Set the save file path of the download item.
+  ///
+  /// The API is only available in session's `will-download` callback function.
+  /// If user doesn't set the save path via the API, Electron will use the
+  /// original routine to determine the save path (usually prompts a save
+  /// dialog).
+  abstract setSavePath: path: string -> unit
+  /// Returns the save path of the download item. This will be either the path
+  /// set via downloadItem.setSavePath(path) or the path selected from the shown
+  /// save dialog.
+  abstract getSavePath: unit -> string
+  /// Set the save file dialog options.
+  ///
+  /// This API allows the user to set custom options for the save dialog that
+  /// opens for the download item by default. The API is only available in
+  /// session's `will-download` callback function.
+  abstract setSaveDialogOptions: options: SaveDialogOptions -> unit
+  /// Returns the object previously set by
+  /// downloadItem.setSaveDialogOptions(options)
+  abstract getSaveDialogOptions: unit -> SaveDialogOptions
+  /// Pauses the download.
+  abstract pause: unit -> unit
+  /// Indicates whether the download is paused.
+  abstract isPaused: unit -> bool
+  /// Resumes the download that has been paused.
+  ///
+  /// Note: To enable resumable downloads the server you are downloading from
+  /// must support range requests and provide both Last-Modified and ETag header
+  /// values. Otherwise resume() will dismiss previously received bytes and
+  /// restart the download from the beginning.
+  abstract resume: unit -> unit
+  /// Indicates whether the download can resume.
+  abstract canResume: unit -> bool
   /// Cancels the download operation.
   abstract cancel: unit -> unit
-  abstract canResume: unit -> bool
-  abstract getContentDisposition: unit -> string
-  abstract getETag: unit -> string
+  /// Returns the origin url where the item is downloaded from.
+  abstract getURL: unit -> string
+  /// Returns the files mime type.
+  abstract getMimeType: unit -> string
+  /// Indicates whether the download has user gesture.
+  abstract hasUserGesture: unit -> bool
+  /// Returns the file name of the download item.
+  ///
   /// Note: The file name is not always the same as the actual one saved in
   /// local disk. If user changes the file name in a prompted download saving
   /// dialog, the actual name of saved file will be different.
   abstract getFilename: unit -> string
-  abstract getLastModifiedTime: unit -> string
-  abstract getMimeType: unit -> string
-  abstract getReceivedBytes: unit -> int
-  abstract getSaveDialogOptions: unit -> SaveDialogOptions
-  abstract getSavePath: unit -> string
-  abstract getStartTime: unit -> float
-  /// Note: The following methods are useful specifically to resume a cancelled
-  /// item when session is restarted.
-  abstract getState: unit -> DownloadItemState
+  /// Returns the total size in bytes of the download item.
+  ///
   /// If the size is unknown, it returns 0.
   abstract getTotalBytes: unit -> int
-  abstract getURL: unit -> string
+  /// Returns the received bytes of the download item.
+  abstract getReceivedBytes: unit -> int
+  /// Returns the Content-Disposition field from the response header.
+  abstract getContentDisposition: unit -> string
+  /// Returns the current state.
+  abstract getState: unit -> DownloadItemState
+  /// Returns the complete url chain of the item including any redirects.
+  ///
+  /// May be useful to resume a cancelled item when session is restarted.
   abstract getURLChain: unit -> string []
-  abstract hasUserGesture: unit -> bool
-  abstract isPaused: unit -> bool
-  /// Pauses the download.
-  abstract pause: unit -> unit
-  /// Resumes the download that has been paused. Note: To enable resumable
-  /// downloads the server you are downloading from must support range requests
-  /// and provide both Last-Modified and ETag header values. Otherwise resume()
-  /// will dismiss previously received bytes and restart the download from the
-  /// beginning.
-  abstract resume: unit -> unit
-  /// This API allows the user to set custom options for the save dialog that
-  /// opens for the download item by default. The API is only available in
-  /// session's will-download callback function.
-  abstract setSaveDialogOptions: options: SaveDialogOptions -> unit
-  /// The API is only available in session's will-download callback function. If
-  /// user doesn't set the save path via the API, Electron will use the original
-  /// routine to determine the save path(Usually prompts a save dialog).
-  abstract setSavePath: path: string -> unit
+  /// Returns the Last-Modified header value.
+  ///
+  /// May be useful to resume a cancelled item when session is restarted.
+  abstract getLastModifiedTime: unit -> string
+  /// Returns the ETag header value.
+  ///
+  /// May be useful to resume a cancelled item when session is restarted.
+  abstract getETag: unit -> string
+  /// Returns the number of seconds since the UNIX epoch when the download was
+  /// started.
+  ///
+  /// May be useful to resume a cancelled item when session is restarted.
+  abstract getStartTime: unit -> float
+  
 
-type FileDialogFilter =
-  abstract extensions: string [] with get, set
+type FileFilter =
   abstract name: string with get, set
+  /// Extensions without dots or wildcards (e.g. "png", but not ".png" or
+  /// "*.png"). To show all files, use "*".
+  abstract extensions: string [] with get, set
 
 type GlobalShortcut =
   inherit EventEmitter<GlobalShortcut>
@@ -5124,7 +5350,7 @@ type BrowserWindowOptions =
 type CertificateTrustDialogOptions =
   /// The certificate to trust/import.
   abstract certificate: Certificate with get, set
-  /// The message to display to the user.
+  /// [macOS] The message to display to the user.
   abstract message: string with get, set
 
 type CertificateVerifyProcRequest =
@@ -5303,17 +5529,19 @@ type ClipboardData =
   abstract html: string with get, set
   abstract image: NativeImage with get, set
   abstract rtf: string with get, set
-  /// The title of the url at text.
+  /// The title of the url at `text`.
   abstract bookmark: string with get, set
 
-type CookieDetails =
-  /// The url to associate the cookie with.
+type SetCookieDetails =
+  /// The url to associate the cookie with. If invalid, the promise returned
+  /// when setting the cookie will be rejected.
   abstract url: string with get, set
   /// The name of the cookie. Empty by default if omitted.
   abstract name: string with get, set
   /// The value of the cookie. Empty by default if omitted.
   abstract value: string with get, set
-  /// The domain of the cookie. Empty by default if omitted.
+  /// The domain of the cookie; this will be normalized with a preceding dot so
+  /// that it's also valid for subdomains. Empty by default if omitted.
   abstract domain: string with get, set
   /// The path of the cookie. Empty by default if omitted.
   abstract path: string with get, set
@@ -5405,15 +5633,15 @@ type FileIconSize =
 type FileIconOptions =
   abstract size: FileIconSize with get, set
 
-type CookieFilter =
+type GetCookiesFilter =
   /// Retrieves cookies which are associated with url. Empty implies retrieving
   /// cookies of all urls.
   abstract url: string with get, set
   /// Filters cookies by name.
   abstract name: string with get, set
-  /// Retrieves cookies whose domains match or are subdomains of domains.
+  /// Retrieves cookies whose domains match or are subdomains of `domain`.
   abstract domain: string with get, set
-  /// Retrieves cookies whose path matches path.
+  /// Retrieves cookies whose path matches `path`.
   abstract path: string with get, set
   /// Filters cookies by their Secure property.
   abstract secure: bool with get, set
@@ -5437,10 +5665,6 @@ type FindInPageOptions =
 type FromPartitionOptions =
   /// Whether to enable cache.
   abstract cache: bool with get, set
-
-type ExtraHeaderValue =
-  /// Specify an extra header name.
-  abstract name: string with get, set
 
 type HeapStatistics =
   abstract totalHeapSize: int with get, set
@@ -5680,12 +5904,19 @@ type MenuItemOptions =
   /// specified label.
   abstract afterGroupContaining: string [] with get, set
 
+[<StringEnum; RequireQualifiedAccess>]
+type MessageBoxType =
+  | None
+  | Info
+  /// On macOS, by default uses the same icon as Warning.
+  | Error
+  /// On Windows, by default uses the same icon as Info.
+  | Question
+  /// On macOS, by default uses the same icon as Error.
+  | Warning
+
 type MessageBoxOptions =
-  /// Can be "none", "info", "error", "question" or "warning". On Windows,
-  /// "question" displays the same icon as "info", unless you set an icon using
-  /// the "icon" option. On macOS, both "warning" and "error" display the same
-  /// warning icon.
-  abstract ``type``: string with get, set
+  abstract ``type``: MessageBoxType with get, set
   /// Array of texts for buttons. On Windows, an empty array will result in one
   /// button labeled "OK".
   abstract buttons: string [] with get, set
@@ -5699,9 +5930,8 @@ type MessageBoxOptions =
   /// Extra information of the message.
   abstract detail: string with get, set
   /// If provided, the message box will include a checkbox with the given label.
-  /// The checkbox state can be inspected only when using callback.
   abstract checkboxLabel: string with get, set
-  /// Initial checked state of the checkbox. false by default.
+  /// Initial checked state of the checkbox. `false` by default.
   abstract checkboxChecked: bool with get, set
   abstract icon: NativeImage with get, set
   /// The index of the button to be used to cancel the dialog, via the Esc key.
@@ -5917,14 +6147,29 @@ type OpenDevToolsOptions =
   abstract activate: bool with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
-type DialogFeatures =
+type DialogFeature =
+  /// Allow files to be selected. Note: On Windows and Linux, can not be
+  /// combined with OpenDirectory. OpenDirectory will take precedence.
   | OpenFile
+  /// Allow directories to be selected. Note: On Windows and Linux, can not be
+  /// combined with OpenFile. OpenDirectory will take precedence.
   | OpenDirectory
+  /// Allow multiple paths to be selected.
   | MultiSelections
+  /// Show hidden files in dialog.
   | ShowHiddenFiles
+  /// [macOS] Allow creating new directories from dialog.
   | CreateDirectory
+  /// [Windows] Prompt for creation if the file path entered in the dialog does
+  /// not exist. This does not actually create the file at the path but allows
+  /// non-existent paths to be returned that should be created by the
+  /// application.
   | PromptToCreate
+  /// [macOS] Disable the automatic alias (symlink) path resolution. Selected
+  /// aliases will now return the alias path instead of their target path.
   | NoResolveAliases
+  /// [macOS] Treat packages, such as .app folders, as a directory instead of a
+  /// file.
   | TreatPackageAsDirectory
 
 type OpenDialogOptions =
@@ -5933,13 +6178,15 @@ type OpenDialogOptions =
   /// Custom label for the confirmation button, when left empty the default
   /// label will be used.
   abstract buttonLabel: string with get, set
-  abstract filters: FileDialogFilter [] with get, set
+  /// Filters the file types that are displayed or selected in the dialog.
+  abstract filters: FileFilter [] with get, set
   /// Contains which features the dialog should use. The following values are
   /// supported:
-  abstract properties: DialogFeatures [] with get, set
-  /// Message to display above input boxes.
+  abstract properties: DialogFeature [] with get, set
+  /// [macOS] Message to display above input boxes.
   abstract message: string with get, set
-  /// Create when packaged for the Mac App Store.
+  /// [Mac App Store] Create security scoped bookmarks when packaged for the Mac
+  /// App Store.
   abstract securityScopedBookmarks: bool with get, set
 
 type OpenExternalOptions =
@@ -6079,8 +6326,12 @@ type ProgressBarOptions =
 type SpellCheckProvider =
   abstract spellCheck: (string [] -> (string [] -> unit) -> unit) with get, set
 
-type ReadBookmark =
+type ClipboardBookmark =
+  /// The title of the bookmark in the clipboard. Will be the empty string when
+  /// the bookmark is unavailable.
   abstract title: string with get, set
+  /// The URL of the bookmark in the clipboard. Will be the empty string when
+  /// the bookmark is unavailable.
   abstract url: string with get, set
 
 type RedirectRequest =
@@ -6171,16 +6422,18 @@ type SaveDialogOptions =
   /// Custom label for the confirmation button, when left empty the default
   /// label will be used.
   abstract buttonLabel: string with get, set
-  abstract filters: FileDialogFilter [] with get, set
-  /// Message to display above text fields.
+  /// Filters the file types that are displayed in the dialog.
+  abstract filters: FileFilter [] with get, set
+  /// [macOS] Message to display above text fields.
   abstract message: string with get, set
-  /// Custom label for the text displayed in front of the filename text field.
+  /// [macOS] Custom label for the text displayed in front of the filename text
+  /// field.
   abstract nameFieldLabel: string with get, set
-  /// Show the tags input box, defaults to true.
+  /// [macOS] Show the tags input box, defaults to true.
   abstract showsTagField: bool with get, set
-  /// Create a when packaged for the Mac App Store. If this option is enabled
-  /// and the file doesn't already exist a blank file will be created at the
-  /// chosen path.
+  /// [Mac App Store] Create a security scoped bookmark when packaged for the
+  /// Mac App Store. If this option is enabled and the file doesn't already
+  /// exist a blank file will be created at the chosen path.
   abstract securityScopedBookmarks: bool with get, set
 
 type SetLoginItemSettings =
@@ -6199,10 +6452,15 @@ type SetLoginItemSettings =
   /// to an empty array. Take care to wrap paths in quotes.
   abstract args: string [] with get, set
 
+[<RequireQualifiedAccess; StringEnum>]
+type DesktopCapturerSourceType =
+  | Screen
+  | Window
+
 type GetDesktopCapturerSourcesOptions =
   /// An array of Strings that lists the types of desktop sources to be
-  /// captured, available types are screen and window.
-  abstract types: string [] with get, set
+  /// captured.
+  abstract types: DesktopCapturerSourceType [] with get, set
   /// The size that the media source thumbnail should be scaled to. Default is
   /// 150 x 150.
   abstract thumbnailSize: Size with get, set
@@ -6359,8 +6617,8 @@ type UploadProgress =
   /// Whether the request is currently active. If this is false no other
   /// properties will be set
   abstract active: bool with get, set
-  /// Whether the upload has started. If this is false both current and total
-  /// will be set to 0.
+  /// Whether the upload has started. If this is false both `current` and
+  /// `total` will be set to 0.
   abstract started: bool with get, set
   /// The number of bytes that have been uploaded so far
   abstract current: int with get, set
