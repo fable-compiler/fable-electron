@@ -74,6 +74,15 @@ type IpcMainEvent =
   /// go to the correct process and frame.
   abstract reply: channel: string * [<ParamArray>] args: obj [] -> unit
 
+type IpcRendererEvent =
+  inherit Browser.Types.Event
+  /// Returns the webContents.id that sent the message, you can call
+  /// event.sender.sendTo(event.senderId, ...) to reply to the message, see
+  /// ipcRenderer.sendTo for more information. This only applies to messages
+  /// sent from a different renderer. Messages sent directly from the main
+  /// process set event.senderId to 0.
+  abstract senderId: unit -> int
+
 type TrayInputEvent =
   inherit Browser.Types.Event
   abstract altKey: bool with get, set
@@ -2866,28 +2875,29 @@ type FileFilter =
 
 type GlobalShortcut =
   inherit EventEmitter<GlobalShortcut>
+  /// Registers a global shortcut. The callback is called when the registered
+  /// shortcut is pressed by the user. The returned value indicates whether or
+  /// not the shortcut was registered successfully.
+  ///
+  /// When the accelerator is already taken by other applications, this call
+  /// will silently fail. This behavior is intended by operating systems, since
+  /// they don't want applications to fight for global shortcuts.
+  abstract register: accelerator: string * callback: (unit -> unit) -> bool
+  /// Registers multiple global shortcuts. The callback is called when any of
+  /// the registered shortcuts are pressed by the user.
+  ///
+  /// When a given accelerator is already taken by other applications, this call
+  /// will silently fail. This behavior is intended by operating systems, since
+  /// they don't want applications to fight for global shortcuts.
+  abstract registerAll: accelerators: string [] * callback: (Event -> unit) -> unit
+  /// Returns a value indicating whether this application has registered the
+  /// accelerator.
+  ///
   /// When the accelerator is already taken by other applications, this call
   /// will still return false. This behavior is intended by operating systems,
   /// since they don't want applications to fight for global shortcuts.
   abstract isRegistered: accelerator: string -> bool
-  /// Registers a global shortcut of accelerator. The callback is called when
-  /// the registered shortcut is pressed by the user. When the accelerator is
-  /// already taken by other applications, this call will silently fail. This
-  /// behavior is intended by operating systems, since they don't want
-  /// applications to fight for global shortcuts. The following accelerators
-  /// will not be registered successfully on macOS 10.14 Mojave unless the app
-  /// has been authorized as a trusted accessibility client:
-  abstract register: accelerator: string * callback: (Event -> unit) -> bool
-  /// Registers a global shortcut of all accelerator items in accelerators. The
-  /// callback is called when any of the registered shortcuts are pressed by the
-  /// user. When a given accelerator is already taken by other applications,
-  /// this call will silently fail. This behavior is intended by operating
-  /// systems, since they don't want applications to fight for global shortcuts.
-  /// The following accelerators will not be registered successfully on macOS
-  /// 10.14 Mojave unless the app has been authorized as a trusted accessibility
-  /// client:
-  abstract registerAll: accelerators: string [] * callback: (Event -> unit) -> unit
-  /// Unregisters the global shortcut of accelerator.
+  /// Unregisters the global shortcut of `accelerator`.
   abstract unregister: accelerator: string -> unit
   /// Unregisters all of the global shortcuts.
   abstract unregisterAll: unit -> unit
@@ -2924,57 +2934,109 @@ type InAppPurchase =
   inherit EventEmitter<InAppPurchase>
   /// Emitted when one or more transactions have been updated.
   [<Emit "$0.on('transactions-updated',$1)">] abstract onTransactionsUpdated: listener: (Event -> Transaction [] -> unit) -> InAppPurchase
+  /// See onTransactionsUpdated.
   [<Emit "$0.once('transactions-updated',$1)">] abstract onceTransactionsUpdated: listener: (Event -> Transaction [] -> unit) -> InAppPurchase
+  /// See onTransactionsUpdated.
   [<Emit "$0.addListener('transactions-updated',$1)">] abstract addListenerTransactionsUpdated: listener: (Event -> Transaction [] -> unit) -> InAppPurchase
+  /// See onTransactionsUpdated.
   [<Emit "$0.removeListener('transactions-updated',$1)">] abstract removeListenerTransactionsUpdated: listener: (Event -> Transaction [] -> unit) -> InAppPurchase
+  /// <summary>
+  ///   Purchases a product.
+  ///
+  ///   You should listen for the `transactions-updated` event as soon as
+  ///   possible and certainly before you call `purchaseProduct`.
+  /// </summary>
+  /// <param name="productID">
+  ///   The identifiers of the product to purchase. (The identifier of
+  ///   com.example.app.product1 is product1).
+  /// </param>
+  /// <param name="quantity">
+  ///   The number of items the user wants to purchase.
+  /// </param>
+  /// <param name="callback">
+  ///   The callback called when the payment is added to the PaymentQueue. The
+  ///   boolean value indicates whether the product is valid and added to the
+  ///   payment queue.
+  /// </param>
+  abstract purchaseProduct: productID: string * ?quantity: int * ?callback: (bool -> unit) -> unit
+  /// <summary>
+  ///   Retrieves the product descriptions.
+  /// </summary>
+  /// <param name="productIDs">The identifiers of the products to get.</param>
+  /// <param name="callback">
+  ///   The callback called with the products or an empty array if the products
+  ///   don't exist.
+  /// </param>
+  abstract getProducts: productIDs: string [] * callback: (Product [] -> unit) -> unit
+  /// Indicates whether a user can make a payment.
   abstract canMakePayments: unit -> bool
+  /// Returns the path to the receipt.
+  abstract getReceiptURL: unit -> string
   /// Completes all pending transactions.
   abstract finishAllTransactions: unit -> unit
-  /// Completes the pending transactions corresponding to the date.
+  /// Completes the pending transactions corresponding to the ISO formatted
+  /// date.
   abstract finishTransactionByDate: date: string -> unit
-  /// Retrieves the product descriptions.
-  abstract getProducts: productIDs: string [] * callback: (Product [] -> unit) -> unit
-  abstract getReceiptURL: unit -> string
-  /// You should listen for the transactions-updated event as soon as possible
-  /// and certainly before you call purchaseProduct.
-  abstract purchaseProduct: productID: string * ?quantity: int * ?callback: (bool -> unit) -> unit
 
 type IncomingMessage =
   inherit Node.Stream.Readable<obj>
   inherit EventEmitter<IncomingMessage>
-  /// Emitted when a request has been canceled during an ongoing HTTP
-  /// transaction.
-  [<Emit "$0.on('aborted',$1)">] abstract onAborted: listener: (Event -> unit) -> IncomingMessage
-  [<Emit "$0.once('aborted',$1)">] abstract onceAborted: listener: (Event -> unit) -> IncomingMessage
-  [<Emit "$0.addListener('aborted',$1)">] abstract addListenerAborted: listener: (Event -> unit) -> IncomingMessage
-  [<Emit "$0.removeListener('aborted',$1)">] abstract removeListenerAborted: listener: (Event -> unit) -> IncomingMessage
-  /// The data event is the usual method of transferring response data into
+  /// The `data` event is the usual method of transferring response data into
   /// applicative code.
   [<Emit "$0.on('data',$1)">] abstract onData: listener: (Buffer -> unit) -> IncomingMessage
+  /// See onData.
   [<Emit "$0.once('data',$1)">] abstract onceData: listener: (Buffer -> unit) -> IncomingMessage
+  /// See onData.
   [<Emit "$0.addListener('data',$1)">] abstract addListenerData: listener: (Buffer -> unit) -> IncomingMessage
+  /// See onData.
   [<Emit "$0.removeListener('data',$1)">] abstract removeListenerData: listener: (Buffer -> unit) -> IncomingMessage
   /// Indicates that response body has ended.
   [<Emit "$0.on('end',$1)">] abstract onEnd: listener: (Event -> unit) -> IncomingMessage
+  /// See onEnd.
   [<Emit "$0.once('end',$1)">] abstract onceEnd: listener: (Event -> unit) -> IncomingMessage
+  /// See onEnd.
   [<Emit "$0.addListener('end',$1)">] abstract addListenerEnd: listener: (Event -> unit) -> IncomingMessage
+  /// See onEnd.
   [<Emit "$0.removeListener('end',$1)">] abstract removeListenerEnd: listener: (Event -> unit) -> IncomingMessage
-  /// error Error - Typically holds an error string identifying failure root
-  /// cause. Emitted when an error was encountered while streaming response data
+  /// Emitted when a request has been canceled during an ongoing HTTP
+  /// transaction.
+  [<Emit "$0.on('aborted',$1)">] abstract onAborted: listener: (Event -> unit) -> IncomingMessage
+  /// See onAborted.
+  [<Emit "$0.once('aborted',$1)">] abstract onceAborted: listener: (Event -> unit) -> IncomingMessage
+  /// See onAborted.
+  [<Emit "$0.addListener('aborted',$1)">] abstract addListenerAborted: listener: (Event -> unit) -> IncomingMessage
+  /// See onAborted.
+  [<Emit "$0.removeListener('aborted',$1)">] abstract removeListenerAborted: listener: (Event -> unit) -> IncomingMessage
+  /// Emitted when an error was encountered while streaming response data
   /// events. For instance, if the server closes the underlying while the
-  /// response is still streaming, an error event will be emitted on the
-  /// response object and a close event will subsequently follow on the request
-  /// object.
-  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Event -> unit) -> IncomingMessage
-  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Event -> unit) -> IncomingMessage
-  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Event -> unit) -> IncomingMessage
-  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Event -> unit) -> IncomingMessage
-  abstract headers: obj option with get, set
-  abstract httpVersion: string with get, set
-  abstract httpVersionMajor: int with get, set
-  abstract httpVersionMinor: int with get, set
+  /// response is still streaming, an `error` event will be emitted on the
+  /// response object and a `close` event will subsequently follow on the
+  /// request object.
+  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Event -> Error -> unit) -> IncomingMessage  // TODO: is Event correct, or only Error?
+  /// See onError.
+  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Event -> Error -> unit) -> IncomingMessage
+  /// See onError.
+  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Event -> Error -> unit) -> IncomingMessage
+  /// See onError.
+  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Event -> Error -> unit) -> IncomingMessage
+  /// The HTTP response status code.
   abstract statusCode: int with get, set
+  /// The HTTP status message.
   abstract statusMessage: string with get, set
+  /// the response HTTP headers. The headers object is formatted as follows: 1)
+  /// All header names are lowercased. 2) Each header name produces an
+  /// array-valued property on the headers object. 3) Each header value is
+  /// pushed into the array associated with its header name.
+  abstract headers: obj option with get, set
+  /// The HTTP protocol version number. Typical values are '1.0' or '1.1'.
+  /// Additionally `httpVersionMajor` and `httpVersionMinor` are two
+  /// Integer-valued readable properties that return respectively the HTTP major
+  /// and minor version numbers.
+  abstract httpVersion: string with get, set
+  /// The HTTP protocol major version number.
+  abstract httpVersionMajor: int with get, set
+  /// The HTTP protocol minor version number.
+  abstract httpVersionMinor: int with get, set
 
 type IOCounters =
   /// Then number of I/O other operations.
@@ -3009,34 +3071,34 @@ type IpcRenderer =
   inherit EventEmitter<IpcRenderer>
   /// Listens to channel, when a new message arrives listener would be called
   /// with listener(event, args...).
-  abstract on: channel: string * listener: (Event -> unit) -> IpcRenderer
+  abstract on: channel: string * listener: (IpcRendererEvent -> obj [] -> unit) -> IpcRenderer
   /// Adds a one time listener function for the event. This listener is invoked
   /// only the next time a message is sent to channel, after which it is
   /// removed.
-  abstract once: channel: string * listener: (Event -> unit) -> IpcRenderer
+  abstract once: channel: string * listener: (IpcRendererEvent -> obj [] -> unit) -> IpcRenderer
   /// Removes all listeners, or those of the specified channel.
   abstract removeAllListeners: channel: string -> IpcRenderer
   /// Removes the specified listener from the listener array for the specified
   /// channel.
-  abstract removeListener: channel: string * listener: (Event -> unit) -> IpcRenderer
+  abstract removeListener: channel: string * listener: (IpcRendererEvent -> obj [] -> unit) -> IpcRenderer
   /// Send a message to the main process asynchronously via channel, you can
   /// also send arbitrary arguments. Arguments will be serialized in JSON
-  /// internally and hence no functions or prototype chain will be included. The
-  /// main process handles it by listening for channel with ipcMain module.
+  /// internally and hence no functions or prototype chain will be included.
+  ///
+  /// The main process handles it by listening for channel with ipcMain module.
   abstract send: channel: string * [<ParamArray>] args: obj [] -> unit
   /// Send a message to the main process synchronously via channel, you can also
   /// send arbitrary arguments. Arguments will be serialized in JSON internally
-  /// and hence no functions or prototype chain will be included. The main
-  /// process handles it by listening for channel with ipcMain module, and
-  /// replies by setting event.returnValue. Note: Sending a synchronous message
-  /// will block the whole renderer process, unless you know what you are doing
-  /// you should never use it.
+  /// and hence no functions or prototype chain will be included.
+  ///
+  /// The main process handles it by listening for channel with ipcMain module,
+  /// and replies by setting event.returnValue.
+  ///
+  /// Note: Sending a synchronous message will block the whole renderer process,
+  /// unless you know what you are doing you should never use it.
   abstract sendSync: channel: string * [<ParamArray>] args: obj [] -> obj option
-  /// Sends a message to a window with webContentsId via channel.
+  /// Sends a message to a window with `webContentsId` via `channel`.
   abstract sendTo: webContentsId: int * channel: string * [<ParamArray>] args: obj [] -> unit
-  /// Like ipcRenderer.send but the event will be sent to the <webview> element
-  /// in the host page instead of the main process.
-  abstract sendToHost: channel: string * [<ParamArray>] args: obj [] -> unit
 
 [<StringEnum; RequireQualifiedAccess>]
 type JumpListCategoryType =
