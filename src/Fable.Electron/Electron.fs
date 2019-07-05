@@ -3102,179 +3102,277 @@ type IpcRenderer =
 
 [<StringEnum; RequireQualifiedAccess>]
 type JumpListCategoryType =
+  /// Items in this category will be placed into the standard Tasks category.
+  /// There can be only one such category, and it will always be displayed at
+  /// the bottom of the Jump List.
   | Tasks
+  /// Displays a list of files frequently opened by the app. The name of the
+  /// category and its items are set by Windows.
   | Frequent
+  /// Displays a list of files recently opened by the app. The name of the
+  /// category and its items are set by Windows. Items may be added to this
+  /// category indirectly using app.addRecentDocument(path).
   | Recent
+  /// Displays tasks or file links. JumpListCategory.name must be set by the
+  /// app.
   | Custom
 
 type JumpListCategory =
-  /// Array of objects if type is tasks or custom, otherwise it should be
-  /// omitted.
-  abstract items: JumpListItem [] with get, set
-  /// Must be set if type is custom, otherwise it should be omitted.
-  abstract name: string with get, set
-  /// One of the following:
   abstract ``type``: JumpListCategoryType with get, set
+  /// Must be set if `type` JumpListCategoryType.Custom, otherwise it should be
+  /// omitted.
+  abstract name: string with get, set
+  /// Must be set if `type` is JumpListCategoryType.Tasks or
+  /// JumpListCategoryType.Custom, otherwise it should be omitted.
+  abstract items: JumpListItem [] with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type JumpListItemType =
+  /// A task will launch an app with specific arguments.
   | Task
+  /// Can be used to separate items in the standard Tasks category.
   | Separator
+  /// A file link will open a file using the app that created the Jump List, for
+  /// this to work the app must be registered as a handler for the file type
+  /// (though it doesn't have to be the default handler).
   | File
 
 type JumpListItem =
-  /// The command line arguments when program is executed. Should only be set if
-  /// type is task.
+  abstract ``type``: JumpListItemType option with get, set
+  /// Path of the file to open, should only be set if `type` is
+  /// JumpListItemType.File.
+  abstract path: string option with get, set
+  /// Path of the program to execute, usually you should specify
+  /// `process.execPath` which opens the current program. Should only be set if
+  /// `type` is JumpListItemType.Task.
+  abstract program: string option with get, set
+  /// The command line arguments when `program` is executed. Should only be set
+  /// if `type` is JumpListItemType.Task.
   abstract args: string option with get, set
+  /// The text to be displayed for the item in the Jump List. Should only be set
+  /// if `type` is JumpListItemType.Task.
+  abstract title: string option with get, set
   /// Description of the task (displayed in a tooltip). Should only be set if
-  /// type is task.
+  /// `type` is JumpListItemType.Task.
   abstract description: string option with get, set
+  /// The absolute path to an icon to be displayed in a Jump List, which can be
+  /// an arbitrary resource file that contains an icon (e.g. .ico, .exe, .dll).
+  /// You can usually specify `process.execPath` to show the program icon.
+  abstract iconPath: string option with get, set
   /// The index of the icon in the resource file. If a resource file contains
   /// multiple icons this value can be used to specify the zero-based index of
   /// the icon that should be displayed for this task. If a resource file
   /// contains only one icon, this property should be set to zero.
   abstract iconIndex: int option with get, set
-  /// The absolute path to an icon to be displayed in a Jump List, which can be
-  /// an arbitrary resource file that contains an icon (e.g. .ico, .exe, .dll).
-  /// You can usually specify process.execPath to show the program icon.
-  abstract iconPath: string option with get, set
-  /// Path of the file to open, should only be set if type is file.
-  abstract path: string option with get, set
-  /// Path of the program to execute, usually you should specify
-  /// process.execPath which opens the current program. Should only be set if
-  /// type is task.
-  abstract program: string option with get, set
-  /// The text to be displayed for the item in the Jump List. Should only be set
-  /// if type is task.
-  abstract title: string option with get, set
-  /// One of the following:
-  abstract ``type``: JumpListItemType option with get, set
 
 type MemoryUsageDetails =
   abstract count: int with get, set
-  abstract liveSize: float with get, set
   abstract size: float with get, set
+  abstract liveSize: float with get, set
 
 type Menu =
-  /// Emitted when a popup is closed either manually or with menu.closePopup().
-  [<Emit "$0.on('menu-will-close',$1)">] abstract onMenuWillClose: listener: (Event -> unit) -> Menu
-  [<Emit "$0.once('menu-will-close',$1)">] abstract onceMenuWillClose: listener: (Event -> unit) -> Menu
-  [<Emit "$0.addListener('menu-will-close',$1)">] abstract addListenerMenuWillClose: listener: (Event -> unit) -> Menu
-  [<Emit "$0.removeListener('menu-will-close',$1)">] abstract removeListenerMenuWillClose: listener: (Event -> unit) -> Menu
   /// Emitted when menu.popup() is called.
   [<Emit "$0.on('menu-will-show',$1)">] abstract onMenuWillShow: listener: (Event -> unit) -> Menu
+  /// See onMenuWillShow.
   [<Emit "$0.once('menu-will-show',$1)">] abstract onceMenuWillShow: listener: (Event -> unit) -> Menu
+  /// See onMenuWillShow.
   [<Emit "$0.addListener('menu-will-show',$1)">] abstract addListenerMenuWillShow: listener: (Event -> unit) -> Menu
+  /// See onMenuWillShow.
   [<Emit "$0.removeListener('menu-will-show',$1)">] abstract removeListenerMenuWillShow: listener: (Event -> unit) -> Menu
-  /// Appends the menuItem to the menu.
-  abstract append: menuItem: MenuItem -> unit
-  /// Closes the context menu in the browserWindow.
-  abstract closePopup: ?browserWindow: BrowserWindow -> unit
-  abstract getMenuItemById: id: string -> MenuItem
-  /// Inserts the menuItem to the pos position of the menu.
-  abstract insert: pos: int * menuItem: MenuItem -> unit
+  /// Emitted when a popup is closed either manually or with menu.closePopup().
+  [<Emit "$0.on('menu-will-close',$1)">] abstract onMenuWillClose: listener: (Event -> unit) -> Menu
+  /// See onMenuWillClose.
+  [<Emit "$0.once('menu-will-close',$1)">] abstract onceMenuWillClose: listener: (Event -> unit) -> Menu
+  /// See onMenuWillClose.
+  [<Emit "$0.addListener('menu-will-close',$1)">] abstract addListenerMenuWillClose: listener: (Event -> unit) -> Menu
+  /// See onMenuWillClose.
+  [<Emit "$0.removeListener('menu-will-close',$1)">] abstract removeListenerMenuWillClose: listener: (Event -> unit) -> Menu
   /// Pops up this menu as a context menu in the BrowserWindow.
   abstract popup: ?options: PopupOptions -> unit
+  /// Closes the context menu in the browserWindow.
+  abstract closePopup: ?browserWindow: BrowserWindow -> unit
+  /// Appends the menuItem to the menu.
+  abstract append: menuItem: MenuItem -> unit
+  /// Returns the item with the specified id.
+  abstract getMenuItemById: id: string -> MenuItem option
+  /// Inserts the menuItem to the `pos` position of the menu.
+  abstract insert: pos: int * menuItem: MenuItem -> unit
+  /// Returns the menu's items.
   abstract items: MenuItem [] with get, set
 
 type MenuStatic =
   [<EmitConstructor>] abstract Create: unit -> Menu
-  /// Generally, the template is an array of options for constructing a
-  /// MenuItem. The usage can be referenced above. You can also attach other
-  /// fields to the element of the template and they will become properties of
-  /// the constructed menu items.
-  abstract buildFromTemplate: template: U2<MenuItemOptions, MenuItem> [] -> Menu
+  /// Sets `menu` as the application menu on macOS. On Windows and Linux, the
+  /// `menu` will be set as each window's top menu.
+  ///
+  /// Also on Windows and Linux, you can use a `&` in the top-level item name to
+  /// indicate which letter should get a generated accelerator. For example,
+  /// using &File for the file menu would result in a generated Alt-F
+  /// accelerator that opens the associated menu. The indicated character in the
+  /// button label gets an underline. The & character is not displayed on the
+  /// button label.
+  ///
+  /// Passing None will suppress the default menu. On Windows and Linux, this
+  /// has the additional effect of removing the menu bar from the window.
+  ///
+  /// Note: The default menu will be created automatically if the app does not
+  /// set one. It contains standard items such as File, Edit, View, Window and
+  /// Help.
+  abstract setApplicationMenu: menu: Menu option -> unit
+  /// Returns the application menu, if set, or None, if not set.
+  ///
   /// Note: The returned Menu instance doesn't support dynamic addition or
   /// removal of menu items. Instance properties can still be dynamically
   /// modified.
   abstract getApplicationMenu: unit -> Menu option
-  /// Sends the action to the first responder of application. This is used for
-  /// emulating default macOS menu behaviors. Usually you would use the role
-  /// property of a MenuItem. See the macOS Cocoa Event Handling Guide for more
-  /// information on macOS' native actions.
+  /// [macOS] Sends the `action` to the first responder of application. This is
+  /// used for emulating default macOS menu behaviors. Usually you would use the
+  /// `role` property of a MenuItem.
+  ///
+  /// See the macOS Cocoa Event Handling Guide for more information on macOS'
+  /// native actions:
+  /// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7
   abstract sendActionToFirstResponder: action: string -> unit
-  /// Sets menu as the application menu on macOS. On Windows and Linux, the menu
-  /// will be set as each window's top menu. Also on Windows and Linux, you can
-  /// use a & in the top-level item name to indicate which letter should get a
-  /// generated accelerator. For example, using &File for the file menu would
-  /// result in a generated Alt-F accelerator that opens the associated menu.
-  /// The indicated character in the button label gets an underline. The &
-  /// character is not displayed on the button label. Passing null will suppress
-  /// the default menu. On Windows and Linux, this has the additional effect of
-  /// removing the menu bar from the window. Note: The default menu will be
-  /// created automatically if the app does not set one. It contains standard
-  /// items such as File, Edit, View, Window and Help.
-  abstract setApplicationMenu: menu: Menu option -> unit
+  /// Generally, the template is an array of MenuItemOptions for constructing a
+  /// MenuItem.
+  ///
+  /// You can also attach other fields to the elements of the template and they
+  /// will become properties of the constructed menu items.
+  abstract buildFromTemplate: template: U2<MenuItemOptions, MenuItem> [] -> Menu
 
 type MenuItem =
-  abstract ``checked``: bool with get, set
-  abstract click: (Event -> unit) with get, set
-  abstract enabled: bool with get, set
-  abstract label: string with get, set
-  abstract visible: bool with get, set
+  /// The item's unique id, this property can be dynamically changed.
+  abstract id: string option with get, set
+  /// The item's visible label, this property can be dynamically changed.
+  abstract label: string option with get, set
+  /// Fired when the MenuItem receives a click event. It can be called with
+  /// menuItem.click(event, focusedWindow, focusedWebContents).
+  abstract click: (MenuItem -> BrowserWindow -> Event -> unit) option with get, set
+  /// The menu item's submenu, if present.
+  abstract submenu: Menu option with get, set
+  /// The type of the item.
+  abstract ``type``: MenuItemType option with get, set
+  /// The item's role, if set.
+  abstract role: MenuItemRole option with get, set
+  /// The item's accelerator, if set.
+  abstract accelerator: string option with get, set
+  /// The item's icon, if set.
+  abstract icon: U2<NativeImage, string> option with get, set
+  /// The item's sublabel, this property can be dynamically changed.
+  abstract sublabel: string option with get, set
+  /// Indicates whether the item is enabled, this property can be dynamically
+  /// changed.
+  abstract enabled: bool option with get, set
+  /// Indicates whether the item is visible, this property can be dynamically
+  /// changed.
+  abstract visible: bool option with get, set
+  /// Indicates whether the item is checked, this property can be dynamically
+  /// changed.
+  ///
+  /// A MenuItemType.Checkbox menu item will toggle the `checked` property on
+  /// and off when selected.
+  ///
+  /// A MenuItemType.Radio menu item will turn on its `checked` property when
+  /// clicked, and will turn off that property for all adjacent items in the
+  /// same menu.
+  ///
+  /// You can add a `click` function for additional behavior.
+  abstract ``checked``: bool option with get, set
+  /// Indicates if the accelerator should be registered with the system or just
+  /// displayed, this property can be dynamically changed.
+  abstract registerAccelerator: bool option with get, set
+  /// An item's sequential unique id.
+  abstract commandId: int option with get, set
+  /// A Menu that the item is a part of.
+  abstract menu: Menu option with get, set
 
 type MenuItemStatic =
   [<EmitConstructor>] abstract Create: options: MenuItemOptions -> MenuItem
 
 type MimeTypedBuffer =
-  /// The actual Buffer content.
-  abstract data: Buffer with get, set
   /// The mimeType of the Buffer that you are sending.
   abstract mimeType: string with get, set
+  /// The actual Buffer content.
+  abstract data: Buffer with get, set
 
 type NativeImage =
-  /// Add an image representation for a specific scale factor. This can be used
-  /// to explicitly add different scale factor representations to an image. This
-  /// can be called on empty images.
-  abstract addRepresentation: options: NativeImageRepresentationOptions -> unit
-  abstract crop: rect: Rectangle -> NativeImage
-  abstract getAspectRatio: unit -> float
+  /// Returns a Buffer that contains the image's PNG encoded data.
+  abstract toPNG: ?options: ToPNGOptions -> Buffer
+  /// Returns a Buffer that contains the image's JPEG encoded data. `quality`
+  /// must be between 0 and 100.
+  abstract toJPEG: quality: int -> Buffer
+  /// Returns a Buffer that contains a copy of the image's raw bitmap pixel
+  /// data.
+  abstract toBitmap: ?options: ToBitmapOptions -> Buffer
+  /// Returns the data URL of the image.
+  abstract toDataURL: ?options: ToDataURLOptions -> string
+  /// Returns a Buffer that contains the image's raw bitmap pixel data.
+  ///
   /// The difference between getBitmap() and toBitmap() is, getBitmap() does not
   /// copy the bitmap data, so you have to use the returned Buffer immediately
   /// in current event loop tick, otherwise the data might be changed or
   /// destroyed.
-  abstract getBitmap: ?options: BitmapOptions -> Buffer
-  /// Notice that the returned pointer is a weak pointer to the underlying
-  /// native image instead of a copy, so you must ensure that the associated
-  /// nativeImage instance is kept around.
+  abstract getBitmap: ?options: GetBitmapOptions -> Buffer
+  /// Returns a Buffer that stores C pointer to underlying native handle of the
+  /// image. On macOS, a pointer to NSImage instance would be returned.
+  ///
+  /// [macOS] Notice that the returned pointer is a weak pointer to the
+  /// underlying native image instead of a copy, so you must ensure that the
+  /// associated nativeImage instance is kept around.
   abstract getNativeHandle: unit -> Buffer
-  abstract getSize: unit -> Size
+  /// Indicates whether the image is empty.
   abstract isEmpty: unit -> bool
+  abstract getSize: unit -> Size
+  /// Marks the image as a template image.
+  abstract setTemplateImage: option: bool -> unit
+  /// Indicates whether the image is a template image.
   abstract isTemplateImage: unit -> bool
+  /// Returns a cropped image.
+  abstract crop: rect: Rectangle -> NativeImage
+  /// Returns a resized image.
+  ///
   /// If only the height or the width are specified then the current aspect
   /// ratio will be preserved in the resized image.
   abstract resize: options: ResizeOptions -> NativeImage
-  /// Marks the image as a template image.
-  abstract setTemplateImage: option: bool -> unit
-  abstract toBitmap: ?options: ToBitmapOptions -> Buffer
-  abstract toDataURL: ?options: ToDataURLOptions -> string
-  abstract toJPEG: quality: int -> Buffer
-  abstract toPNG: ?options: ToPNGOptions -> Buffer
+  /// Returns the image's aspect ratio.
+  abstract getAspectRatio: unit -> float
+  /// Add an image representation for a specific scale factor. This can be used
+  /// to explicitly add different scale factor representations to an image. This
+  /// can be called on empty images.
+  abstract addRepresentation: options: AddRepresentationOptions -> unit
 
 type NativeImageStatic =
   /// Creates an empty NativeImage instance.
   abstract createEmpty: unit -> NativeImage
-  /// Creates a new NativeImage instance from buffer.
-  abstract createFromBuffer: buffer: Buffer * ?options: NativeImageFromBufferOptions -> NativeImage
-  /// Creates a new NativeImage instance from dataURL.
-  abstract createFromDataURL: dataURL: string -> NativeImage
-  /// Creates a new NativeImage instance from the NSImage that maps to the given
-  /// image name. See NSImageName for a list of possible values. The hslShift is
-  /// applied to the image with the following rules This means that [-1, 0, 1]
-  /// will make the image completely white and [-1, 1, 0] will make the image
-  /// completely black. In some cases, the NSImageName doesn't match its string
-  /// representation; one example of this is NSFolderImageName, whose string
-  /// representation would actually be NSFolder. Therefore, you'll need to
-  /// determine the correct string representation for your image before passing
-  /// it in. This can be done with the following: echo -e '#import
-  /// <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); }' | clang
-  /// -otest -x objective-c -framework Cocoa - && ./test where SYSTEM_IMAGE_NAME
-  /// should be replaced with any value from this list.
-  abstract createFromNamedImage: imageName: string * hslShift: float * float * float -> NativeImage
-  /// Creates a new NativeImage instance from a file located at path. This
+  /// Creates a new NativeImage instance from a file located at `path`. This
   /// method returns an empty image if the path does not exist, cannot be read,
   /// or is not a valid image.
   abstract createFromPath: path: string -> NativeImage
+  /// Creates a new NativeImage instance from buffer.
+  abstract createFromBuffer: buffer: Buffer * ?options: NativeImageFromBufferOptions -> NativeImage
+  /// Creates a new NativeImage instance from `dataURL`.
+  abstract createFromDataURL: dataURL: string -> NativeImage
+  /// [macOS] Creates a new NativeImage instance from the NSImage that maps to
+  /// the given image name. See here for a list of possible values:
+  /// https://developer.apple.com/documentation/appkit/nsimagename?language=objc
+  ///
+  /// The first hslShift number is the absolute hue value for the image. 0 and 1
+  /// map to 0 and 360 on the hue color wheel (red).
+  ///
+  /// The second hslShift number is a saturation shift for the image, with the
+  /// following key values: 0 = remove all color. 0.5 = leave unchanged. 1 =
+  /// fully saturate the image.
+  ///
+  /// The third hslShift number is a lightness shift for the image, with the
+  /// following key values: 0 = remove all lightness (make all pixels black).
+  /// 0.5 = leave unchanged. 1 = full lightness (make all pixels white).
+  ///
+  /// In some cases, the NSImageName doesn't match its string representation;
+  /// one example of this is NSFolderImageName, whose string representation
+  /// would actually be NSFolder. Therefore, you'll need to determine the
+  /// correct string representation for your image before passing it in. See the
+  /// Electron documentation of this method for more information.
+  abstract createFromNamedImage: imageName: string * hslShift: float * float * float -> NativeImage
 
 type Net =
   inherit EventEmitter<Net>
@@ -3286,66 +3384,88 @@ type Net =
 
 type NetLog =
   inherit EventEmitter<NetLog>
-  /// Starts recording network events to path.
+  /// Starts recording network events to `path`.
   abstract startLogging: path: string -> unit
   /// Stops recording network events. If not called, net logging will
   /// automatically end when app quits.
   abstract stopLogging: ?callback: (string -> unit) -> unit
-  /// A Boolean property that indicates whether network logs are recorded.
+  /// Indicates whether network logs are recorded.
   abstract currentlyLogging: bool with get, set
-  /// A String property that returns the path to the current log file.
+  /// The path to the current log file.
   abstract currentlyLoggingPath: string option with get, set
 
 type Notification =
   inherit EventEmitter<Notification>
-  [<Emit "$0.on('action',$1)">] abstract onAction: listener: (Event -> int -> unit) -> Notification
-  [<Emit "$0.once('action',$1)">] abstract onceAction: listener: (Event -> int -> unit) -> Notification
-  [<Emit "$0.addListener('action',$1)">] abstract addListenerAction: listener: (Event -> int -> unit) -> Notification
-  [<Emit "$0.removeListener('action',$1)">] abstract removeListenerAction: listener: (Event -> int -> unit) -> Notification
-  /// Emitted when the notification is clicked by the user.
-  [<Emit "$0.on('click',$1)">] abstract onClick: listener: (Event -> unit) -> Notification
-  [<Emit "$0.once('click',$1)">] abstract onceClick: listener: (Event -> unit) -> Notification
-  [<Emit "$0.addListener('click',$1)">] abstract addListenerClick: listener: (Event -> unit) -> Notification
-  [<Emit "$0.removeListener('click',$1)">] abstract removeListenerClick: listener: (Event -> unit) -> Notification
-  /// Emitted when the notification is closed by manual intervention from the
-  /// user. This event is not guaranteed to be emitted in all cases where the
-  /// notification is closed.
-  [<Emit "$0.on('close',$1)">] abstract onClose: listener: (Event -> unit) -> Notification
-  [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (Event -> unit) -> Notification
-  [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (Event -> unit) -> Notification
-  [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (Event -> unit) -> Notification
-  /// Emitted when the user clicks the "Reply" button on a notification with
-  /// hasReply: true.
-  [<Emit "$0.on('reply',$1)">] abstract onReply: listener: (Event -> string -> unit) -> Notification
-  [<Emit "$0.once('reply',$1)">] abstract onceReply: listener: (Event -> string -> unit) -> Notification
-  [<Emit "$0.addListener('reply',$1)">] abstract addListenerReply: listener: (Event -> string -> unit) -> Notification
-  [<Emit "$0.removeListener('reply',$1)">] abstract removeListenerReply: listener: (Event -> string -> unit) -> Notification
   /// Emitted when the notification is shown to the user, note this could be
   /// fired multiple times as a notification can be shown multiple times through
   /// the show() method.
   [<Emit "$0.on('show',$1)">] abstract onShow: listener: (Event -> unit) -> Notification
+  /// See onShow.
   [<Emit "$0.once('show',$1)">] abstract onceShow: listener: (Event -> unit) -> Notification
+  /// See onShow.
   [<Emit "$0.addListener('show',$1)">] abstract addListenerShow: listener: (Event -> unit) -> Notification
+  /// See onShow.
   [<Emit "$0.removeListener('show',$1)">] abstract removeListenerShow: listener: (Event -> unit) -> Notification
-  /// Dismisses the notification.
-  abstract close: unit -> unit
+  /// Emitted when the notification is clicked by the user.
+  [<Emit "$0.on('click',$1)">] abstract onClick: listener: (Event -> unit) -> Notification
+  /// See onClick.
+  [<Emit "$0.once('click',$1)">] abstract onceClick: listener: (Event -> unit) -> Notification
+  /// See onClick.
+  [<Emit "$0.addListener('click',$1)">] abstract addListenerClick: listener: (Event -> unit) -> Notification
+  /// See onClick.
+  [<Emit "$0.removeListener('click',$1)">] abstract removeListenerClick: listener: (Event -> unit) -> Notification
+  /// Emitted when the notification is closed by manual intervention from the
+  /// user.
+  ///
+  /// This event is not guaranteed to be emitted in all cases where the
+  /// notification is closed.
+  [<Emit "$0.on('close',$1)">] abstract onClose: listener: (Event -> unit) -> Notification
+  /// See onClose.
+  [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (Event -> unit) -> Notification
+  /// See onClose.
+  [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (Event -> unit) -> Notification
+  /// See onClose.
+  [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (Event -> unit) -> Notification
+  /// [macOS] Emitted when the user clicks the "Reply" button on a notification
+  /// with hasReply: true. The string contains the user input.
+  [<Emit "$0.on('reply',$1)">] abstract onReply: listener: (Event -> string -> unit) -> Notification
+  /// See onReply.
+  [<Emit "$0.once('reply',$1)">] abstract onceReply: listener: (Event -> string -> unit) -> Notification
+  /// See onReply.
+  [<Emit "$0.addListener('reply',$1)">] abstract addListenerReply: listener: (Event -> string -> unit) -> Notification
+  /// See onReply.
+  [<Emit "$0.removeListener('reply',$1)">] abstract removeListenerReply: listener: (Event -> string -> unit) -> Notification
+  /// [macOS] Called with the index of the action that was activated.
+  [<Emit "$0.on('action',$1)">] abstract onAction: listener: (Event -> int -> unit) -> Notification
+  /// See onAction.
+  [<Emit "$0.once('action',$1)">] abstract onceAction: listener: (Event -> int -> unit) -> Notification
+  /// See onAction.
+  [<Emit "$0.addListener('action',$1)">] abstract addListenerAction: listener: (Event -> int -> unit) -> Notification
+  /// See onAction.
+  [<Emit "$0.removeListener('action',$1)">] abstract removeListenerAction: listener: (Event -> int -> unit) -> Notification
   /// Immediately shows the notification to the user, please note this means
   /// unlike the HTML5 Notification implementation, instantiating a new
   /// Notification does not immediately show it to the user, you need to call
-  /// this method before the OS will display it. If the notification has been
-  /// shown before, this method will dismiss the previously shown notification
-  /// and create a new one with identical properties.
+  /// this method before the OS will display it.
+  ///
+  /// If the notification has been shown before, this method will dismiss the
+  /// previously shown notification and create a new one with identical
+  /// properties.
   abstract show: unit -> unit
+  /// Dismisses the notification.
+  abstract close: unit -> unit
 
 type NotificationStatic =
   [<EmitConstructor>] abstract Create: options: NotificationOptions -> Notification
+  /// Indicates whether or not desktop notifications are supported on the
+  /// current system
   abstract isSupported: unit -> bool
 
 type NotificationAction =
-  /// The label for the given action.
-  abstract text: string with get, set
   /// The type of action, can be button.
   abstract ``type``: string with get, set
+  /// The label for the given action.
+  abstract text: string with get, set
 
 type Point =
   abstract x: int with get, set
@@ -5189,12 +5309,12 @@ type AboutPanelOptions =
   /// [Linux] Path to the app's icon.
   abstract iconPath: string with get, set
 
-type NativeImageRepresentationOptions =
+type AddRepresentationOptions =
   /// The scale factor to add the image representation for.
   abstract scaleFactor: float with get, set
-  /// Defaults to 0. Required if a bitmap buffer is specified as buffer.
+  /// Defaults to 0. Required if a bitmap buffer is specified as `buffer`.
   abstract width: int with get, set
-  /// Defaults to 0. Required if a bitmap buffer is specified as buffer.
+  /// Defaults to 0. Required if a bitmap buffer is specified as `buffer`.
   abstract height: int with get, set
   /// The buffer containing the raw image data.
   abstract buffer: Buffer with get, set
@@ -5234,7 +5354,7 @@ type AutoResizeOptions =
   /// false by default.
   abstract height: bool with get, set
 
-type BitmapOptions =
+type GetBitmapOptions =
   /// Defaults to 1.0.
   abstract scaleFactor: float with get, set
 
@@ -5882,51 +6002,92 @@ type MenuItemRole =
   | Cut
   | Copy
   | Paste
-  | [<CompiledName("pasteandmatchstyle")>] PasteAndMatchStyle
+  | PasteAndMatchStyle
+  | SelectAll
   | Delete
-  | [<CompiledName("selectall")>] SelectAll
-  | Reload
-  | [<CompiledName("forcereload")>] Forcereload
-  | [<CompiledName("toggledevtools")>] ToggleDevTools
-  | [<CompiledName("resetzoom")>] ResetZoom
-  | [<CompiledName("zoomin")>] ZoomIn
-  | [<CompiledName("zoomout")>] ZoomOut
-  | [<CompiledName("togglefullscreen")>] ToggleFullScreen
-  | Window
+  /// Minimize current window.
   | Minimize
+  /// Close current window.
   | Close
-  | Help
-  | About
-  | Services
-  | Hide
-  | [<CompiledName("hideothers")>] HideOthers
-  | Unhide
+  /// Quit the application.
   | Quit
-  | [<CompiledName("startspeaking")>] StartSpeaking
-  | [<CompiledName("stopspeaking")>] StopSpeaking
-  | Zoom
+  /// Reload the current window.
+  | Reload
+  /// Reload the current window ignoring the cache.
+  | ForceReload
+  /// Toggle developer tools in the current window.
+  | ToggleDevTools
+  /// Toggle full screen mode on the current window.
+  | ToggleFullScreen
+  /// Reset the focused page's zoom level to the original size.
+  | ResetZoom
+  /// Zoom in the focused page by 10%.
+  | ZoomIn
+  /// Zoom out the focused page by 10%.
+  | ZoomOut
+  /// Whole default "File" menu (Close / Quit)
+  | FileMenu
+  /// Whole default "Edit" menu (Undo, Copy, etc.).
+  | EditMenu
+  /// Whole default "View" menu (Reload, Toggle Developer Tools, etc.)
+  | ViewMenu
+  /// Whole default "Window" menu (Minimize, Zoom, etc.).
+  | WindowMenu
+  /// [macOS] Whole default "App" menu (About, Services, etc.)
+  | AppMenu
+  /// [macOS] Map to the orderFrontStandardAboutPanel action.
+  | About
+  /// [macOS] Map to the `hide` action.
+  | Hide
+  /// [macOS] Map to the `hideOtherApplications` action.
+  | HideOthers
+  /// [macOS] Map to the `unhideAllApplications` action.
+  | Unhide
+  /// [macOS] Map to the `startSpeaking` action.
+  | StartSpeaking
+  /// [macOS] Map to the `stopSpeaking` action.
+  | StopSpeaking
+  /// [macOS] Map to the `arrangeInFront` action.
   | Front
+  /// [macOS] Map to the `performZoom` action.
+  | Zoom
+  /// [macOS] Map to the `toggleTabBar` action.
+  | ToggleTabBar
+  /// [macOS] Map to the `selectNextTab` action.
+  | SelectNextTab
+  /// [macOS] Map to the `selectPreviousTab` action.
+  | SelectPreviousTab
+  /// [macOS] Map to the `mergeAllWindows` action.
+  | MergeAllWindows
+  /// [macOS] Map to the `moveTabToNewWindow` action.
+  | MoveTabToNewWindow
+  /// [macOS] The submenu is a "Window" menu.
+  | Window
+  /// [macOS] The submenu is a "Help" menu.
+  | Help
+  /// [macOS] The submenu is a "Services" menu. This is only intended for use in
+  /// the Application Menu and is not the same as the "Services" submenu used in
+  /// context menus in macOS apps, which is not implemented in Electron.
+  | Services
+  /// [macOS] The submenu is an "Open Recent" menu.
+  | RecentDocuments
+  /// [macOS] Map to the `clearRecentDocuments` action.
+  | ClearRecentDocuments
 
 [<StringEnum; RequireQualifiedAccess>]
 type MenuItemType =
   | Normal
   | Separator
-  | [<CompiledName("Submenu")>] SubMenu
+  | [<CompiledName("submenu")>] SubMenu
   | Checkbox
   | Radio
 
 type MenuItemOptions =
-  /// Will be called with click(menuItem, browserWindow, event) when the menu
-  /// item is clicked.
+  /// Will be called when the menu item is clicked.
   abstract click: (MenuItem -> BrowserWindow -> Event -> unit) with get, set
-  /// Can be undo, redo, cut, copy, paste, pasteandmatchstyle, delete,
-  /// selectall, reload, forcereload, toggledevtools, resetzoom, zoomin,
-  /// zoomout, togglefullscreen, window, minimize, close, help, about, services,
-  /// hide, hideothers, unhide, quit, startspeaking, stopspeaking, close,
-  /// minimize, zoom or front Define the action of the menu item, when specified
-  /// the click property will be ignored. See .
+  /// The action of the menu item, when specified the `click` property will be
+  /// ignored. More information: https://electronjs.org/docs/api/menu-item#roles
   abstract role: MenuItemRole with get, set
-  /// Can be normal, separator, submenu, checkbox or radio.
   abstract ``type``: MenuItemType with get, set
   abstract label: string with get, set
   abstract sublabel: string with get, set
@@ -5936,14 +6097,14 @@ type MenuItemOptions =
   abstract enabled: bool with get, set
   /// If false, the menu item will be entirely hidden.
   abstract visible: bool with get, set
-  /// Should only be specified for checkbox or radio type menu items.
+  /// Should only be specified for MenuItemType.Checkbox and MenuItemType.Radio
+  /// type menu items.
   abstract ``checked``: bool with get, set
   /// If false, the accelerator won't be registered with the system, but it will
   /// still be displayed. Defaults to true.
   abstract registerAccelerator: bool with get, set
-  /// Should be specified for submenu type menu items. If submenu is specified,
-  /// the type: 'submenu' can be omitted. If the value is not a then it will be
-  /// automatically converted to one using Menu.buildFromTemplate.
+  /// Should be specified for MenuItemType.SubMenu type menu items. If this
+  /// property is set, then the `type` property may be omitted.
   abstract submenu: U2<MenuItemOptions [], Menu> with get, set
   /// Unique within a single menu. If defined then it can be used as a reference
   /// to this item by the position attribute.
@@ -6020,7 +6181,8 @@ type NotificationOptions =
   /// A title for the notification, which will be shown at the top of the
   /// notification window when it is shown.
   abstract title: string with get, set
-  /// A subtitle for the notification, which will be displayed below the title.
+  /// [macOS] A subtitle for the notification, which will be displayed below the
+  /// title.
   abstract subtitle: string with get, set
   /// The body text of the notification, which will be displayed below the title
   /// or subtitle.
@@ -6030,17 +6192,17 @@ type NotificationOptions =
   abstract silent: bool with get, set
   /// An icon to use in the notification.
   abstract icon: U2<string, NativeImage> with get, set
-  /// Whether or not to add an inline reply option to the notification.
+  /// [macOS] Whether or not to add an inline reply option to the notification.
   abstract hasReply: bool with get, set
-  /// The placeholder to write in the inline reply input field.
+  /// [macOS] The placeholder to write in the inline reply input field.
   abstract replyPlaceholder: string with get, set
-  /// The name of the sound file to play when the notification is shown.
+  /// [macOS] The name of the sound file to play when the notification is shown.
   abstract sound: string with get, set
-  /// Actions to add to the notification. Please read the available actions and
-  /// limitations in the NotificationAction documentation.
+  /// [macOS] Actions to add to the notification. Please read the available
+  /// actions and limitations in the NotificationAction documentation.
   abstract actions: NotificationAction [] with get, set
-  /// A custom title for the close button of an alert. An empty string will
-  /// cause the default localized text to be used.
+  /// [macOS] A custom title for the close button of an alert. An empty string
+  /// will cause the default localized text to be used.
   abstract closeButtonText: string with get, set
 
 type OnBeforeRedirectDetails =
@@ -6312,14 +6474,12 @@ type PermissionRequestHandlerDetails =
 type PopupOptions =
   /// Default is the focused window.
   abstract window: BrowserWindow with get, set
-  /// Default is the current mouse cursor position. Must be declared if y is
-  /// declared.
+  /// Default is the current mouse cursor position. Must be set if y is set.
   abstract x: int with get, set
-  /// Default is the current mouse cursor position. Must be declared if x is
-  /// declared.
+  /// Default is the current mouse cursor position. Must be set if x is set.
   abstract y: int with get, set
-  /// The index of the menu item to be positioned under the mouse cursor at the
-  /// specified coordinates. Default is -1.
+  /// [macOS] The index of the menu item to be positioned under the mouse cursor
+  /// at the specified coordinates. Default is -1.
   abstract positioningItem: int with get, set
   /// Called when menu is closed.
   abstract callback: (unit -> unit) with get, set
@@ -6454,12 +6614,11 @@ type ResizeOptions =
   abstract width: int with get, set
   /// Defaults to the image's height.
   abstract height: int with get, set
-  /// The desired quality of the resize image. Possible values are good, better
-  /// or best. The default is best. These values express a desired quality/speed
-  /// tradeoff. They are translated into an algorithm-specific method that
-  /// depends on the capabilities (CPU, GPU) of the underlying platform. It is
-  /// possible for all three methods to be mapped to the same algorithm on a
-  /// given platform.
+  /// The desired quality of the resize image. These values express a desired
+  /// quality/speed tradeoff. They are translated into an algorithm-specific
+  /// method that depends on the capabilities (CPU, GPU) of the underlying
+  /// platform. It is possible for all three methods to be mapped to the same
+  /// algorithm on a given platform.
   abstract quality: ResizeQuality with get, set
 
 type ResourceUsage =
