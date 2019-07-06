@@ -10,7 +10,9 @@ open Node.Buffer
 
 
 // TODO: check if U2, U3 etc. can be replaced with overloads
-// TODO: ensure that all onceX, addListenerX, removeListenerX events refer to the onX event
+// TODO: ensure that all onceX, addListenerX, removeListenerX events refer to
+// the onX event
+// TODO: make all references to null and undefined refer to None instead
 
 
 /// All Electron APIs. Consider using `main` or `renderer` as your entry points;
@@ -3290,10 +3292,11 @@ type MenuItemStatic =
   [<EmitConstructor>] abstract Create: options: MenuItemOptions -> MenuItem
 
 type MimeTypedBuffer =
-  /// The mimeType of the Buffer that you are sending.
-  abstract mimeType: string with get, set
   /// The actual Buffer content.
   abstract data: Buffer with get, set
+  /// The mimeType of the Buffer that you are sending.
+  abstract mimeType: string with get, set
+  abstract charset: string with get, set
 
 type NativeImage =
   /// Returns a Buffer that contains the image's PNG encoded data.
@@ -3471,201 +3474,374 @@ type Point =
   abstract x: int with get, set
   abstract y: int with get, set
 
+
+[<StringEnum; RequireQualifiedAccess>]
+type PowerIdleState =
+  | Active
+  | Idle
+  /// Available on supported systems only.
+  | Locked
+  | Unknown
+
 type PowerMonitor =
   inherit EventEmitter<PowerMonitor>
-  /// Emitted when the system is about to lock the screen.
-  [<Emit "$0.on('lock-screen',$1)">] abstract onLockScreen: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.once('lock-screen',$1)">] abstract onceLockScreen: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.addListener('lock-screen',$1)">] abstract addListenerLockScreen: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.removeListener('lock-screen',$1)">] abstract removeListenerLockScreen: listener: (Event -> unit) -> PowerMonitor
-  /// Emitted when the system changes to AC power.
-  [<Emit "$0.on('on-ac',$1)">] abstract onOnAc: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.once('on-ac',$1)">] abstract onceOnAc: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.addListener('on-ac',$1)">] abstract addListenerOnAc: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.removeListener('on-ac',$1)">] abstract removeListenerOnAc: listener: (Event -> unit) -> PowerMonitor
-  /// Emitted when system changes to battery power.
-  [<Emit "$0.on('on-battery',$1)">] abstract onOnBattery: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.once('on-battery',$1)">] abstract onceOnBattery: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.addListener('on-battery',$1)">] abstract addListenerOnBattery: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.removeListener('on-battery',$1)">] abstract removeListenerOnBattery: listener: (Event -> unit) -> PowerMonitor
-  /// Emitted when system is resuming.
-  [<Emit "$0.on('resume',$1)">] abstract onResume: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.once('resume',$1)">] abstract onceResume: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.addListener('resume',$1)">] abstract addListenerResume: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.removeListener('resume',$1)">] abstract removeListenerResume: listener: (Event -> unit) -> PowerMonitor
-  /// Emitted when the system is about to reboot or shut down. If the event
-  /// handler invokes e.preventDefault(), Electron will attempt to delay system
-  /// shutdown in order for the app to exit cleanly. If e.preventDefault() is
-  /// called, the app should exit as soon as possible by calling something like
-  /// app.quit().
-  [<Emit "$0.on('shutdown',$1)">] abstract onShutdown: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.once('shutdown',$1)">] abstract onceShutdown: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.addListener('shutdown',$1)">] abstract addListenerShutdown: listener: (Event -> unit) -> PowerMonitor
-  [<Emit "$0.removeListener('shutdown',$1)">] abstract removeListenerShutdown: listener: (Event -> unit) -> PowerMonitor
   /// Emitted when the system is suspending.
   [<Emit "$0.on('suspend',$1)">] abstract onSuspend: listener: (Event -> unit) -> PowerMonitor
+  /// See onSuspend.
   [<Emit "$0.once('suspend',$1)">] abstract onceSuspend: listener: (Event -> unit) -> PowerMonitor
+  /// See onSuspend.
   [<Emit "$0.addListener('suspend',$1)">] abstract addListenerSuspend: listener: (Event -> unit) -> PowerMonitor
+  /// See onSuspend.
   [<Emit "$0.removeListener('suspend',$1)">] abstract removeListenerSuspend: listener: (Event -> unit) -> PowerMonitor
-  /// Emitted as soon as the systems screen is unlocked.
+  /// Emitted when system is resuming.
+  [<Emit "$0.on('resume',$1)">] abstract onResume: listener: (Event -> unit) -> PowerMonitor
+  /// See onResume.
+  [<Emit "$0.once('resume',$1)">] abstract onceResume: listener: (Event -> unit) -> PowerMonitor
+  /// See onResume.
+  [<Emit "$0.addListener('resume',$1)">] abstract addListenerResume: listener: (Event -> unit) -> PowerMonitor
+  /// See onResume.
+  [<Emit "$0.removeListener('resume',$1)">] abstract removeListenerResume: listener: (Event -> unit) -> PowerMonitor
+  /// [Windows] Emitted when the system changes to AC power.
+  [<Emit "$0.on('on-ac',$1)">] abstract onOnAc: listener: (Event -> unit) -> PowerMonitor
+  /// See onOnAc.
+  [<Emit "$0.once('on-ac',$1)">] abstract onceOnAc: listener: (Event -> unit) -> PowerMonitor
+  /// See onOnAc.
+  [<Emit "$0.addListener('on-ac',$1)">] abstract addListenerOnAc: listener: (Event -> unit) -> PowerMonitor
+  /// See onOnAc.
+  [<Emit "$0.removeListener('on-ac',$1)">] abstract removeListenerOnAc: listener: (Event -> unit) -> PowerMonitor
+  /// [Windows] Emitted when system changes to battery power.
+  [<Emit "$0.on('on-battery',$1)">] abstract onOnBattery: listener: (Event -> unit) -> PowerMonitor
+  /// See onOnBattery.
+  [<Emit "$0.once('on-battery',$1)">] abstract onceOnBattery: listener: (Event -> unit) -> PowerMonitor
+  /// See onOnBattery.
+  [<Emit "$0.addListener('on-battery',$1)">] abstract addListenerOnBattery: listener: (Event -> unit) -> PowerMonitor
+  /// See onOnBattery.
+  [<Emit "$0.removeListener('on-battery',$1)">] abstract removeListenerOnBattery: listener: (Event -> unit) -> PowerMonitor
+  /// [Linux, macOS] Emitted when the system is about to reboot or shut down. If
+  /// the event handler invokes e.preventDefault(), Electron will attempt to
+  /// delay system shutdown in order for the app to exit cleanly. If
+  /// e.preventDefault() is called, the app should exit as soon as possible by
+  /// calling something like app.quit().
+  [<Emit "$0.on('shutdown',$1)">] abstract onShutdown: listener: (Event -> unit) -> PowerMonitor
+  /// See onShutdown.
+  [<Emit "$0.once('shutdown',$1)">] abstract onceShutdown: listener: (Event -> unit) -> PowerMonitor
+  /// See onShutdown.
+  [<Emit "$0.addListener('shutdown',$1)">] abstract addListenerShutdown: listener: (Event -> unit) -> PowerMonitor
+  /// See onShutdown.
+  [<Emit "$0.removeListener('shutdown',$1)">] abstract removeListenerShutdown: listener: (Event -> unit) -> PowerMonitor
+  /// [macOS, Windows] Emitted when the system is about to lock the screen.
+  [<Emit "$0.on('lock-screen',$1)">] abstract onLockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// See onLockScreen.
+  [<Emit "$0.once('lock-screen',$1)">] abstract onceLockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// See onLockScreen.
+  [<Emit "$0.addListener('lock-screen',$1)">] abstract addListenerLockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// See onLockScreen.
+  [<Emit "$0.removeListener('lock-screen',$1)">] abstract removeListenerLockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// [macOS, Windows] Emitted as soon as the systems screen is unlocked.
   [<Emit "$0.on('unlock-screen',$1)">] abstract onUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// See onUnlockScreen.
   [<Emit "$0.once('unlock-screen',$1)">] abstract onceUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// See onUnlockScreen.
   [<Emit "$0.addListener('unlock-screen',$1)">] abstract addListenerUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// See onUnlockScreen.
   [<Emit "$0.removeListener('unlock-screen',$1)">] abstract removeListenerUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  /// Calculate the system idle state. idleThreshold is the amount of time (in
+  /// seconds) before considered idle. callback will be called synchronously on
+  /// some systems and with an idleState argument that describes the system's
+  /// state.
+  abstract querySystemIdleState: idleThreshold: int -> callback: PowerIdleState -> unit
+  /// Calculate system idle time in seconds.
+  abstract querySystemIdleTime: callback: int -> unit
+
 
 [<StringEnum; RequireQualifiedAccess>]
 type PowerSaveBlockerType =
+  /// Prevent the application from being suspended. Keeps system active but
+  /// allows screen to be turned off. Example use cases: downloading a file or
+  /// playing audio.
   | [<CompiledName("prevent-app-suspension")>] PreventAppSuspension
+  /// Prevent the display from going to sleep. Keeps system and screen active.
+  /// Example use case: playing video.
   | [<CompiledName("prevent-display-sleep")>] PreventDisplaySleep
 
 type PowerSaveBlocker =
   inherit EventEmitter<PowerSaveBlocker>
-  abstract isStarted: id: int -> bool
   /// Starts preventing the system from entering lower-power mode. Returns an
-  /// integer identifying the power save blocker. Note: prevent-display-sleep
-  /// has higher precedence over prevent-app-suspension. Only the highest
-  /// precedence type takes effect. In other words, prevent-display-sleep always
-  /// takes precedence over prevent-app-suspension. For example, an API calling
-  /// A requests for prevent-app-suspension, and another calling B requests for
-  /// prevent-display-sleep. prevent-display-sleep will be used until B stops
-  /// its request. After that, prevent-app-suspension is used.
+  /// integer identifying the power save blocker.
+  ///
+  /// Note: PowerSaveBlockerType.PreventDisplaySleep has higher precedence over
+  /// PowerSaveBlockerType.PreventAppSuspension. Only the highest precedence
+  /// type takes effect. In other words, PreventDisplaySleep always takes
+  /// precedence over PreventAppSuspension.
+  ///
+  /// For example, an API calling A requests for PreventAppSuspension, and
+  /// another calling B requests for PreventDisplaySleep. PreventDisplaySleep
+  /// will be used until B stops its request. After that, PreventAppSuspension
+  /// is used.
   abstract start: ``type``: PowerSaveBlockerType -> int
   /// Stops the specified power save blocker.
   abstract stop: id: int -> unit
+  /// Indicates whether the corresponding powerSaveBlocker has started.
+  abstract isStarted: id: int -> bool
 
 type PrinterInfo =
-  abstract description: string with get, set
-  abstract isDefault: bool with get, set
   abstract name: string with get, set
+  abstract description: string with get, set
   abstract status: int with get, set
+  abstract isDefault: bool with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type ProcessType =
+  /// The main process.
+  | Browser
+  /// A renderer process.
+  | Renderer
+  /// A web worker.
+  | Worker
+
+type ProcessVersions =
+  inherit Node.Base.ProcessVersions
+  /// Chrome's version string.
+  abstract chrome: string with get
+  /// Electron's version string.
+  abstract electron: string with get
+
+type Process =
+  inherit Node.Process.Process
+  inherit EventEmitter<Process>
+  /// Emitted when Electron has loaded its internal initialization script and is
+  /// beginning to load the web page or the main script.
+  ///
+  /// It can be used by the preload script to add removed Node global symbols
+  /// back to the global scope when node integration is turned off:
+  [<Emit "$0.on('loaded',$1)">] abstract onLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.once('loaded',$1)">] abstract onceLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.addListener('loaded',$1)">] abstract addListenerLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.removeListener('loaded',$1)">] abstract removeListenerLoaded: listener: (Event -> unit) -> Process
+  /// When app is started by being passed as parameter to the default app, this
+  /// property is Some true in the main process, otherwise it is None.
+  abstract defaultApp: bool option with get, set
+  /// true when the current renderer context is the "main" renderer frame. If
+  /// you want the ID of the current frame you should use webFrame.routingId.
+  abstract isMainFrame: bool with get, set
+  /// For Mac App Store build, this property is true, for other builds it is
+  /// None.
+  abstract mas: bool option with get, set
+  /// Controls ASAR support inside your application. Setting this to true will
+  /// disable the support for asar archives in Node's built-in modules.
+  abstract noAsar: bool with get, set
+  /// Controls whether or not deprecation warnings are printed to stderr.
+  /// Setting this to true will silence deprecation warnings. This property is
+  /// used instead of the --no-deprecation command line flag.
+  abstract noDeprecation: bool with get, set
+  /// Controls whether or not deprecation warnings are printed to stderr when
+  /// formerly callback-based APIs converted to Promises are invoked using
+  /// callbacks. Setting this to true will enable deprecation warnings.
+  abstract enablePromiseAPIs: bool with get, set
+  /// The path to the resources directory.
+  abstract resourcesPath: string with get, set
+  /// When the renderer process is sandboxed, this property is true, otherwise
+  /// it is None.
+  abstract sandboxed: bool option with get, set
+  /// Controls whether or not deprecation warnings will be thrown as exceptions.
+  /// Setting this to true will throw errors for deprecations. This property is
+  /// used instead of the --throw-deprecation command line flag.
+  abstract throwDeprecation: bool with get, set
+  /// Controls whether or not deprecations printed to stderr include their stack
+  /// trace. Setting this to true will print stack traces for deprecations. This
+  /// property is instead of the --trace-deprecation command line flag.
+  abstract traceDeprecation: bool with get, set
+  /// Controls whether or not process warnings printed to stderr include their
+  /// stack trace. Setting this to true will print stack traces for process
+  /// warnings (including deprecations). This property is instead of the
+  /// --trace-warnings command line flag.
+  abstract traceProcessWarnings: bool with get, set
+  /// The current process's type.
+  abstract ``type``: ProcessType with get, set
+  abstract versions: ProcessVersions with get, set
+  /// If the app is running as a Windows Store app (appx), this property is
+  /// true, for otherwise it is None.
+  abstract windowsStore: bool option with get, set
+  /// Causes the main thread of the current process crash.
+  abstract crash: unit -> unit
+  /// Indicates the creation time of the application. The time is represented as
+  /// number of milliseconds since epoch. It returns None if it is unable to get
+  /// the process creation time.
+  abstract getCreationTime: unit -> float option
+  abstract getCPUUsage: unit -> CPUUsage
+  /// [Windows, Linux]
+  abstract getIOCounters: unit -> IOCounters
+  /// Returns an object with V8 heap statistics. Note that all statistics are
+  /// reported in Kilobytes.
+  abstract getHeapStatistics: unit -> HeapStatistics
+  /// Returns an object giving memory usage statistics about the current
+  /// process. Note that all statistics are reported in Kilobytes. This api
+  /// should be called after app ready.
+  abstract getProcessMemoryInfo: unit -> ProcessMemoryInfo
+  /// Returns an object giving memory usage statistics about the entire  Note
+  /// that all statistics are reported in Kilobytes.
+  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo
+  /// Takes a V8 heap snapshot and saves it to `filePath`.
+  abstract takeHeapSnapshot: filePath: string -> bool
+  /// Causes the main thread of the current process hang.
+  abstract hang: unit -> unit
+  /// [macOS, Linux] Sets the file descriptor soft limit to maxDescriptors or
+  /// the OS hard limit, whichever is lower for the current process.
+  abstract setFdLimit: maxDescriptors: int -> unit
 
 type ProcessMetric =
-  /// CPU usage of the process.
-  abstract cpu: CPUUsage with get, set
   /// Process id of the process.
   abstract pid: int with get, set
   /// Process type (Browser or Tab or GPU etc).
   abstract ``type``: string with get, set
+  /// CPU usage of the process.
+  abstract cpu: CPUUsage with get, set
 
 type Product =
-  /// The total size of the content, in bytes.
-  abstract contentLengths: int [] with get, set
-  /// A string that identifies the version of the content.
-  abstract contentVersion: string with get, set
-  /// A Boolean value that indicates whether the App Store has downloadable
-  /// content for this product.
-  abstract downloadable: bool with get, set
-  /// The locale formatted price of the product.
-  abstract formattedPrice: string with get, set
+  /// The string that identifies the product to the Apple App Store.
+  abstract productIdentifier: string with get, set
   /// A description of the product.
   abstract localizedDescription: string with get, set
   /// The name of the product.
   abstract localizedTitle: string with get, set
+  /// A string that identifies the version of the content.
+  abstract contentVersion: string with get, set
+  /// The total size of the content, in bytes.
+  abstract contentLengths: int [] with get, set
   /// The cost of the product in the local currency.
   abstract price: float with get, set
-  /// The string that identifies the product to the Apple App Store.
-  abstract productIdentifier: string with get, set
+  /// The locale formatted price of the product.
+  abstract formattedPrice: string with get, set
+  /// Indicates whether the App Store has downloadable content for this product.
+  /// true if at least one file has been associated with the product.
+  abstract isDownloadable: bool with get, set
 
 type Protocol =
   inherit EventEmitter<Protocol>
-  /// Intercepts scheme protocol and uses handler as the protocol's new handler
-  /// which sends a Buffer as a response.
-  abstract interceptBufferProtocol: scheme: string * handler: (InterceptBufferProtocolRequest -> (Buffer -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Intercepts scheme protocol and uses handler as the protocol's new handler
-  /// which sends a file as a response.
-  abstract interceptFileProtocol: scheme: string * handler: (InterceptFileProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Intercepts scheme protocol and uses handler as the protocol's new handler
-  /// which sends a new HTTP request as a response.
-  abstract interceptHttpProtocol: scheme: string * handler: (InterceptHttpProtocolRequest -> (RedirectRequest -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Same as protocol.registerStreamProtocol, except that it replaces an
-  /// existing protocol handler.
-  abstract interceptStreamProtocol: scheme: string * handler: (InterceptStreamProtocolRequest -> (U2<Node.Stream.Readable<'a>, StreamProtocolResponse<'a>> -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Intercepts scheme protocol and uses handler as the protocol's new handler
-  /// which sends a String as a response.
-  abstract interceptStringProtocol: scheme: string * handler: (InterceptStringProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// The callback will be called with a boolean that indicates whether there is
-  /// already a handler for scheme. Deprecated Soon
-  abstract isProtocolHandled: scheme: string * callback: (bool -> unit) -> unit
-  abstract isProtocolHandled: scheme: string -> Promise<bool>
-  /// Registers a protocol of scheme that will send a Buffer as a response. The
-  /// usage is the same with registerFileProtocol, except that the callback
-  /// should be called with either a Buffer object or an object that has the
-  /// data, mimeType, and charset properties. Example:
-  abstract registerBufferProtocol: scheme: string * handler: (RegisterBufferProtocolRequest -> (U2<Buffer, MimeTypedBuffer> -> unit) -> unit) * ?completion: (Error -> unit) -> unit
+  /// Registers the scheme as standard, secure, bypasses content security policy
+  /// for resources, allows registering ServiceWorker and supports fetch API.
+  ///
+  /// Note: This method can only be used before the ready event of the app
+  /// module gets emitted and can be called only once.
+  ///
+  /// Specify a privilege with the value of true to enable the capability.
+  ///
+  /// A standard scheme adheres to what RFC 3986 calls generic URI syntax. For
+  /// example `http` and `https` are standard schemes, while `file` is not.
+  ///
+  /// Registering a scheme as standard, will allow relative and absolute
+  /// resources to be resolved correctly when served. Otherwise the scheme will
+  /// behave like the file protocol, but without the ability to resolve relative
+  /// URLs.
+  ///
+  /// Registering a scheme as standard will allow access to files through the
+  /// FileSystem API. Otherwise the renderer will throw a security error for the
+  /// scheme.
+  ///
+  /// By default web storage apis (localStorage, sessionStorage, webSQL,
+  /// indexedDB, cookies) are disabled for non standard schemes. So in general
+  /// if you want to register a custom protocol to replace the http protocol,
+  /// you have to register it as a standard scheme.
+  abstract registerSchemesAsPrivileged: customSchemes: CustomScheme [] -> unit
   /// Registers a protocol of scheme that will send the file as a response. The
   /// handler will be called with handler(request, callback) when a request is
   /// going to be created with scheme. completion will be called with
   /// completion(null) when scheme is successfully registered or
-  /// completion(error) when failed. To handle the request, the callback should
-  /// be called with either the file's path or an object that has a path
-  /// property, e.g. callback(filePath) or callback({ path: filePath }). The
-  /// object may also have a headers property which gives a map of headers to
-  /// values for the response headers, e.g. callback({ path: filePath, headers:
-  /// {"Content-Security-Policy": "default-src 'none'"]}). When callback is
-  /// called with nothing, a number, or an object that has an error property,
-  /// the request will fail with the error number you specified. For the
-  /// available error numbers you can use, please see the net error list. By
-  /// default the scheme is treated like http:, which is parsed differently than
-  /// protocols that follow the "generic URI syntax" like file:, so you probably
-  /// want to call protocol.registerStandardSchemes to have your scheme treated
-  /// as a standard scheme.
-  abstract registerFileProtocol: scheme: string * handler: (RegisterFileProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Registers a protocol of scheme that will send an HTTP request as a
-  /// response. The usage is the same with registerFileProtocol, except that the
-  /// callback should be called with a redirectRequest object that has the url,
-  /// method, referrer, uploadData and session properties. By default the HTTP
-  /// request will reuse the current session. If you want the request to have a
-  /// different session you should set session to null. For POST requests the
-  /// uploadData object must be provided.
-  abstract registerHttpProtocol: scheme: string * handler: (RegisterHttpProtocolRequest -> (RedirectRequest -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Note: This method can only be used before the ready event of the app
-  /// module gets emitted and can be called only once. Registers the scheme as
-  /// standard, secure, bypasses content security policy for resources, allows
-  /// registering ServiceWorker and supports fetch API. Specify a privilege with
-  /// the value of true to enable the capability. An example of registering a
-  /// privileged scheme, with bypassing Content Security Policy: A standard
-  /// scheme adheres to what RFC 3986 calls generic URI syntax. For example http
-  /// and https are standard schemes, while file is not. Registering a scheme as
-  /// standard, will allow relative and absolute resources to be resolved
-  /// correctly when served. Otherwise the scheme will behave like the file
-  /// protocol, but without the ability to resolve relative URLs. For example
-  /// when you load following page with custom protocol without registering it
-  /// as standard scheme, the image will not be loaded because non-standard
-  /// schemes can not recognize relative URLs: Registering a scheme as standard
-  /// will allow access to files through the FileSystem API. Otherwise the
-  /// renderer will throw a security error for the scheme. By default web
-  /// storage apis (localStorage, sessionStorage, webSQL, indexedDB, cookies)
-  /// are disabled for non standard schemes. So in general if you want to
-  /// register a custom protocol to replace the http protocol, you have to
-  /// register it as a standard scheme.
-  abstract registerSchemesAsPrivileged: customSchemes: CustomScheme [] -> unit
-  /// Registers a protocol of scheme that will send a Readable as a response.
-  /// The usage is similar to the other register{Any}Protocol, except that the
-  /// callback should be called with either a Readable object or an object that
-  /// has the data, statusCode, and headers properties. Example: It is possible
-  /// to pass any object that implements the readable stream API (emits
-  /// data/end/error events). For example, here's how a file could be returned:
-  abstract registerStreamProtocol: scheme: string * handler: (RegisterStreamProtocolRequest -> (U2<Node.Stream.Readable<'a>, StreamProtocolResponse<'a>> -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Registers a protocol of scheme that will send a String as a response. The
-  /// usage is the same with registerFileProtocol, except that the callback
-  /// should be called with either a String or an object that has the data,
-  /// mimeType, and charset properties.
-  abstract registerStringProtocol: scheme: string * handler: (RegisterStringProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error -> unit) -> unit
-  /// Remove the interceptor installed for scheme and restore its original
+  /// completion(error) when failed.
+  ///
+  /// To handle the request, the handler's callback should be called with either
+  /// the file's path or an object that has a `path` property, e.g.
+  /// callback(filePath) or callback({ path: filePath }). The object may also
+  /// have a `headers` property which gives a map of headers to values for the
+  /// response headers, e.g. callback({ path: filePath, headers:
+  /// {"Content-Security-Policy": "default-src 'none'"]}).
+  ///
+  /// When callback is called with nothing, a number, or an object that has an
+  /// `error` property, the request will fail with the error number you
+  /// specified. For the available error numbers you can use, please see the net
+  /// error list.
+  ///
+  /// By default the scheme is treated like http:, which is parsed differently
+  /// than protocols that follow the "generic URI syntax" like file:, so you
+  /// probably want to call protocol.registerStandardSchemes to have your scheme
+  /// treated as a standard scheme.
+  abstract registerFileProtocol: scheme: string * handler: (RegisterFileProtocolRequest -> (obj -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send a Buffer as a response.
+  ///
+  /// The usage is the same with registerFileProtocol, except for the handler's
+  /// callback signature.
+  abstract registerBufferProtocol: scheme: string * handler: (RegisterBufferProtocolRequest -> (Buffer -> unit) -> unit) * ?completion: (Error -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send a Buffer as a response.
+  ///
+  /// The usage is the same with registerFileProtocol, except for the handler's
+  /// callback signature.
+  abstract registerBufferProtocol: scheme: string * handler: (RegisterBufferProtocolRequest -> (MimeTypedBuffer -> unit) -> unit) * ?completion: (Error -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send a string as a response.
+  ///
+  /// The usage is the same with registerFileProtocol, except for the handler's
+  /// callback signature.
+  abstract registerStringProtocol: scheme: string * handler: (RegisterStringProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send a string as a response.
+  ///
+  /// The usage is the same with registerFileProtocol, except for the handler's
+  /// callback signature.
+  abstract registerStringProtocol: scheme: string * handler: (RegisterStringProtocolRequest -> (MimeTypedBuffer -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send an HTTP request as a
+  /// response.
+  ///
+  /// The usage is the same with registerFileProtocol, except for the handler's
+  /// callback signature.
+  ///
+  /// By default the HTTP request will reuse the current session. If you want
+  /// the request to have a different session you should set `session` to
+  /// `null`.
+  ///
+  /// For POST requests the uploadData object must be provided.
+  abstract registerHttpProtocol: scheme: string * handler: (RegisterHttpProtocolRequest -> (RedirectRequest -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send a `Readable` as a
+  /// response.
+  ///
+  /// The usage is similar to the other register{Any}Protocol, except for the
+  /// handler's callback signature.
+  abstract registerStreamProtocol: scheme: string * handler: (RegisterStreamProtocolRequest -> (Node.Stream.Readable<'a> -> unit) -> unit) * ?completion: (Error -> unit) -> unit
+  /// Registers a protocol of `scheme` that will send a `Readable` as a
+  /// response.
+  ///
+  /// The usage is similar to the other register{Any}Protocol, except for the
+  /// handler's callback signature.
+  abstract registerStreamProtocol: scheme: string * handler: (RegisterStreamProtocolRequest -> (StreamProtocolResponse<'a> -> unit) -> unit) * ?completion: (Error -> unit) -> unit
+  /// Unregisters the custom protocol of `scheme`.
+  abstract unregisterProtocol: scheme: string * ?completion: (Error -> unit) -> unit
+  /// Indicates whether there is already a handler for `scheme`.
+  abstract isProtocolHandled: scheme: string -> Promise<bool>
+  /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
+  /// handler which sends a file as a response.
+  abstract interceptFileProtocol: scheme: string * handler: (InterceptFileProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
+  /// handler which sends a string as a response.
+  abstract interceptStringProtocol: scheme: string * handler: (InterceptStringProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
+  /// handler which sends a Buffer as a response.
+  abstract interceptBufferProtocol: scheme: string * handler: (InterceptBufferProtocolRequest -> (Buffer -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
+  /// handler which sends a new HTTP request as a response.
+  abstract interceptHttpProtocol: scheme: string * handler: (InterceptHttpProtocolRequest -> (RedirectRequest -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Same as protocol.registerStreamProtocol, except that it replaces an
+  /// existing protocol handler.
+  abstract interceptStreamProtocol: scheme: string * handler: (InterceptStreamProtocolRequest -> (U2<Node.Stream.Readable<'a>, StreamProtocolResponse<'a>> -> unit) -> unit) * ?completion: (Error -> unit) -> unit
+  /// Remove the interceptor installed for `scheme` and restore its original
   /// handler.
   abstract uninterceptProtocol: scheme: string * ?completion: (Error -> unit) -> unit
-  /// Unregisters the custom protocol of scheme.
-  abstract unregisterProtocol: scheme: string * ?completion: (Error -> unit) -> unit
 
 type Rectangle =
-  /// The height of the rectangle.
-  abstract height: int with get, set
-  /// The width of the rectangle.
-  abstract width: int with get, set
   /// The x coordinate of the origin of the rectangle.
   abstract x: int with get, set
   /// The y coordinate of the origin of the rectangle.
   abstract y: int with get, set
+  /// The width of the rectangle.
+  abstract width: int with get, set
+  /// The height of the rectangle.
+  abstract height: int with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type ReferrerPolicy =
@@ -3679,33 +3855,40 @@ type ReferrerPolicy =
   | [<CompiledName("strict-origin")>] StrictOrigin
 
 type Referrer =
-  /// Can be default, unsafe-url, no-referrer-when-downgrade, no-referrer,
-  /// origin, strict-origin-when-cross-origin, same-origin or strict-origin. See
-  /// the for more details on the meaning of these values.
-  abstract policy: ReferrerPolicy with get, set
   /// HTTP Referrer URL.
   abstract url: string with get, set
+  /// See the Referrer-Policy spec for more details on the meaning of these
+  /// values:
+  /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+  abstract policy: ReferrerPolicy with get, set
 
 type Remote =
   inherit MainInterface
-  abstract getCurrentWebContents: unit -> WebContents
+  /// Returns the object returned by require(module) in the main process.
+  /// Modules specified by their relative path will resolve relative to the
+  /// entrypoint of the main process.
+  abstract require: ``module``: string -> obj option
+  /// Returns the window to which this web page belongs.
+  ///
   /// Note: Do not use removeAllListeners on BrowserWindow. Use of this can
   /// remove all blur listeners, disable click events on touch bar buttons, and
   /// other unintended consequences.
   abstract getCurrentWindow: unit -> BrowserWindow
+  /// Returns the web contents of this web page.
+  abstract getCurrentWebContents: unit -> WebContents
+  /// Returns the global variable of name (e.g. global[name]) in the main
+  /// process.
   abstract getGlobal: name: string -> obj option
-  /// e.g.
-  abstract require: ``module``: string -> obj option
-  /// The process object in the main process. This is the same as
+  /// The `process` object in the main process. This is the same as
   /// remote.getGlobal('process') but is cached.
-  abstract ``process``: NodeExtensions.Process with get, set
+  abstract ``process``: Process with get, set
 
 type RemoveClientCertificate =
+  /// clientCertificate.
+  abstract ``type``: string with get, set
   /// Origin of the server whose associated client certificate must be removed
   /// from the cache.
   abstract origin: string with get, set
-  /// clientCertificate.
-  abstract ``type``: string with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type RemovePasswordScheme =
@@ -3715,163 +3898,231 @@ type RemovePasswordScheme =
   | Negotiate
 
 type RemovePassword =
+  /// password.
+  abstract ``type``: string with get, set
   /// When provided, the authentication info related to the origin will only be
   /// removed otherwise the entire cache will be cleared.
   abstract origin: string with get, set
-  /// Credentials of the authentication. Must be provided if removing by origin.
-  abstract password: string with get, set
-  /// Realm of the authentication. Must be provided if removing by origin.
-  abstract realm: string with get, set
-  /// Scheme of the authentication. Can be basic, digest, ntlm, negotiate. Must
-  /// be provided if removing by origin.
+  /// Scheme of the authentication. Must be provided if removing by `origin`.
   abstract scheme: RemovePasswordScheme with get, set
-  /// password.
-  abstract ``type``: string with get, set
-  /// Credentials of the authentication. Must be provided if removing by origin.
+  /// Realm of the authentication. Must be provided if removing by `origin`.
+  abstract realm: string with get, set
+  /// Credentials of the authentication. Must be provided if removing by
+  /// `origin`.
   abstract username: string with get, set
+  /// Credentials of the authentication. Must be provided if removing by
+  /// `origin`.
+  abstract password: string with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type DisplayMetricChangeType =
+  | Bounds
+  | WorkArea
+  | ScaleFactor
+  | Rotation
 
 type Screen =
   inherit EventEmitter<Screen>
-  /// Emitted when newDisplay has been added.
+  /// Emitted when a display has been added.
   [<Emit "$0.on('display-added',$1)">] abstract onDisplayAdded: listener: (Event -> Display -> unit) -> Screen
+  /// See onDisplayAdded.
   [<Emit "$0.once('display-added',$1)">] abstract onceDisplayAdded: listener: (Event -> Display -> unit) -> Screen
+  /// See onDisplayAdded.
   [<Emit "$0.addListener('display-added',$1)">] abstract addListenerDisplayAdded: listener: (Event -> Display -> unit) -> Screen
+  /// See onDisplayAdded.
   [<Emit "$0.removeListener('display-added',$1)">] abstract removeListenerDisplayAdded: listener: (Event -> Display -> unit) -> Screen
-  /// Emitted when one or more metrics change in a display. The changedMetrics
-  /// is an array of strings that describe the changes. Possible changes are
-  /// bounds, workArea, scaleFactor and rotation.
-  [<Emit "$0.on('display-metrics-changed',$1)">] abstract onDisplayMetricsChanged: listener: (Event -> Display -> string [] -> unit) -> Screen
-  [<Emit "$0.once('display-metrics-changed',$1)">] abstract onceDisplayMetricsChanged: listener: (Event -> Display -> string [] -> unit) -> Screen
-  [<Emit "$0.addListener('display-metrics-changed',$1)">] abstract addListenerDisplayMetricsChanged: listener: (Event -> Display -> string [] -> unit) -> Screen
-  [<Emit "$0.removeListener('display-metrics-changed',$1)">] abstract removeListenerDisplayMetricsChanged: listener: (Event -> Display -> string [] -> unit) -> Screen
-  /// Emitted when oldDisplay has been removed.
+  /// Emitted when a display has been removed.
   [<Emit "$0.on('display-removed',$1)">] abstract onDisplayRemoved: listener: (Event -> Display -> unit) -> Screen
+  /// See onDisplayRemoved.
   [<Emit "$0.once('display-removed',$1)">] abstract onceDisplayRemoved: listener: (Event -> Display -> unit) -> Screen
+  /// See onDisplayRemoved.
   [<Emit "$0.addListener('display-removed',$1)">] abstract addListenerDisplayRemoved: listener: (Event -> Display -> unit) -> Screen
+  /// See onDisplayRemoved.
   [<Emit "$0.removeListener('display-removed',$1)">] abstract removeListenerDisplayRemoved: listener: (Event -> Display -> unit) -> Screen
-  /// Converts a screen DIP point to a screen physical point. The DPI scale is
-  /// performed relative to the display containing the DIP point.
-  abstract dipToScreenPoint: point: Point -> Point
-  /// Converts a screen DIP rect to a screen physical rect. The DPI scale is
-  /// performed relative to the display nearest to window. If window is null,
-  /// scaling will be performed to the display nearest to rect.
-  abstract dipToScreenRect: window: BrowserWindow option * rect: Rectangle -> Rectangle
-  abstract getAllDisplays: unit -> Display []
+  /// Emitted when one or more metrics change in a display.
+  [<Emit "$0.on('display-metrics-changed',$1)">] abstract onDisplayMetricsChanged: listener: (Event -> Display -> DisplayMetricChangeType [] -> unit) -> Screen
+  /// See onDisplayMetricsChanged.
+  [<Emit "$0.once('display-metrics-changed',$1)">] abstract onceDisplayMetricsChanged: listener: (Event -> Display -> DisplayMetricChangeType [] -> unit) -> Screen
+  /// See onDisplayMetricsChanged.
+  [<Emit "$0.addListener('display-metrics-changed',$1)">] abstract addListenerDisplayMetricsChanged: listener: (Event -> Display -> DisplayMetricChangeType [] -> unit) -> Screen
+  /// See onDisplayMetricsChanged.
+  [<Emit "$0.removeListener('display-metrics-changed',$1)">] abstract removeListenerDisplayMetricsChanged: listener: (Event -> Display -> DisplayMetricChangeType [] -> unit) -> Screen
   /// The current absolute position of the mouse pointer.
   abstract getCursorScreenPoint: unit -> Point
-  abstract getDisplayMatching: rect: Rectangle -> Display
-  abstract getDisplayNearestPoint: point: Point -> Display
+  /// Returns the primary display.
   abstract getPrimaryDisplay: unit -> Display
-  /// Converts a screen physical point to a screen DIP point. The DPI scale is
-  /// performed relative to the display containing the physical point.
+  /// Returns the displays that are currently available.
+  abstract getAllDisplays: unit -> Display []
+  /// Returns the display nearest the specified point.
+  abstract getDisplayNearestPoint: point: Point -> Display
+  /// Returns the display that most closely intersects the provided bounds.
+  abstract getDisplayMatching: rect: Rectangle -> Display
+  /// [Windows] Converts a screen physical point to a screen DIP point. The DPI
+  /// scale is performed relative to the display containing the physical point.
   abstract screenToDipPoint: point: Point -> Point
-  /// Converts a screen physical rect to a screen DIP rect. The DPI scale is
-  /// performed relative to the display nearest to window. If window is null,
-  /// scaling will be performed to the display nearest to rect.
+  /// [Windows] Converts a screen DIP point to a screen physical point. The DPI
+  /// scale is performed relative to the display containing the DIP point.
+  abstract dipToScreenPoint: point: Point -> Point
+  /// [Windows] Converts a screen physical rect to a screen DIP rect. The DPI
+  /// scale is performed relative to the display nearest to `window`. If
+  /// `window` is None, scaling will be performed to the display nearest to
+  /// `rect`.
   abstract screenToDipRect: window: BrowserWindow option * rect: Rectangle -> Rectangle
+  /// [Windows] Converts a screen DIP rect to a screen physical rect. The DPI
+  /// scale is performed relative to the display nearest to `window`. If
+  /// `window` is nullNone, scaling will be performed to the display nearest to
+  /// `rect`.
+  abstract dipToScreenRect: window: BrowserWindow option * rect: Rectangle -> Rectangle
 
 type ScrubberItem =
-  /// The image to appear in this item.
-  abstract icon: NativeImage option with get, set
   /// The text to appear in this item.
   abstract label: string option with get, set
+  /// The image to appear in this item.
+  abstract icon: NativeImage option with get, set
 
 type SegmentedControlSegment =
-  /// Whether this segment is selectable. Default: true.
-  abstract enabled: bool option with get, set
-  /// The image to appear in this segment.
-  abstract icon: NativeImage option with get, set
   /// The text to appear in this segment.
   abstract label: string option with get, set
+  /// The image to appear in this segment.
+  abstract icon: NativeImage option with get, set
+  /// Whether this segment is selectable. Default: true.
+  abstract enabled: bool option with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type PermissionRequestHandlerPermission =
+  | Media
+  | Geolocation
+  | Notifications
+  | MidiSysex
+  | PointerLock
+  | Fullscreen
+  | OpenExternal
+
+[<StringEnum; RequireQualifiedAccess>]
+type PermissionCheckHandlerPermission =
+  | Media
 
 type Session =
   inherit EventEmitter<Session>
-  /// Emitted when Electron is about to download item in webContents. Calling
-  /// event.preventDefault() will cancel the download and item will not be
-  /// available from next tick of the process.
+  /// Emitted when Electron is about to download item in webContents.
+  ///
+  /// Calling event.preventDefault() will cancel the download and the
+  /// DownloadItem will not be available from next tick of the process.
   [<Emit "$0.on('will-download',$1)">] abstract onWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
+  /// See onWillDownload.
   [<Emit "$0.once('will-download',$1)">] abstract onceWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
+  /// See onWillDownload.
   [<Emit "$0.addListener('will-download',$1)">] abstract addListenerWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
+  /// See onWillDownload.
   [<Emit "$0.removeListener('will-download',$1)">] abstract removeListenerWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
-  /// Dynamically sets whether to always send credentials for HTTP NTLM or
-  /// Negotiate authentication.
-  abstract allowNTLMCredentialsForDomains: domains: string -> unit
-  /// Clears the session’s HTTP authentication cache.
-  abstract clearAuthCache: options: U2<RemovePassword, RemoveClientCertificate> * ?callback: (Event -> unit) -> unit
+  /// Callback is invoked with the session's current cache size in bytes.
+  abstract getCacheSize: callback: (int -> unit) -> unit
   /// Clears the session’s HTTP cache.
-  abstract clearCache: callback: (Event -> unit) -> unit
-  /// Clears the host resolver cache.
-  abstract clearHostResolverCache: ?callback: (Event -> unit) -> unit
-  /// Clears the data of web storages.
-  abstract clearStorageData: ?options: ClearStorageDataOptions * ?callback: (Event -> unit) -> unit
-  /// Allows resuming cancelled or interrupted downloads from previous Session.
-  /// The API will generate a DownloadItem that can be accessed with the
-  /// will-download event. The DownloadItem will not have any WebContents
-  /// associated with it and the initial state will be interrupted. The download
-  /// will start only when the resume API is called on the DownloadItem.
-  abstract createInterruptedDownload: options: CreateInterruptedDownloadOptions -> unit
-  /// Disables any network emulation already active for the session. Resets to
-  /// the original network configuration.
-  abstract disableNetworkEmulation: unit -> unit
-  /// Emulates network with the given configuration for the session.
-  abstract enableNetworkEmulation: options: EnableNetworkEmulationOptions -> unit
+  abstract clearCache: callback: (unit -> unit) -> unit
+  /// Clears the data of web storages. The callback is called when the operation
+  /// is done.
+  abstract clearStorageData: ?options: ClearStorageDataOptions * ?callback: (unit -> unit) -> unit
   /// Writes any unwritten DOMStorage data to disk.
   abstract flushStorageData: unit -> unit
-  abstract getBlobData: identifier: string * callback: (Buffer -> unit) -> unit
-  /// Callback is invoked with the session's current cache size.
-  abstract getCacheSize: callback: (int -> unit) -> unit
-  abstract getPreloads: unit -> string []
-  abstract getUserAgent: unit -> string
-  /// Resolves the proxy information for url. The callback will be called with
+  /// Sets the proxy settings.
+  ///
+  /// See the Electron documentation for details:
+  /// https://electronjs.org/docs/api/session#sessetproxyconfig-callback
+  abstract setProxy: config: ProxyConfig * callback: (Event -> unit) -> unit
+  /// Resolves the proxy information for `url`. The callback will be called with
   /// callback(proxy) when the request is performed.
   abstract resolveProxy: url: string * callback: (string -> unit) -> unit
-  /// Sets the certificate verify proc for session, the proc will be called with
-  /// proc(request, callback) whenever a server certificate verification is
-  /// requested. Calling callback(0) accepts the certificate, calling
-  /// callback(-2) rejects it. Calling setCertificateVerifyProc(null) will
-  /// revert back to default certificate verify proc.
-  abstract setCertificateVerifyProc: proc: (CertificateVerifyProcRequest -> (int -> unit) -> unit) -> unit
   /// Sets download saving directory. By default, the download directory will be
   /// the Downloads under the respective app folder.
   abstract setDownloadPath: path: string -> unit
-  /// Sets the handler which can be used to respond to permission checks for the
-  /// session. Returning true will allow the permission and false will reject
-  /// it. To clear the handler, call setPermissionCheckHandler(null).
-  abstract setPermissionCheckHandler: handler: (WebContents -> string -> string -> PermissionCheckHandlerDetails -> bool) option -> unit
+  /// Emulates network with the given configuration for the session.
+  abstract enableNetworkEmulation: options: EnableNetworkEmulationOptions -> unit
+  /// Disables any network emulation already active for the session. Resets to
+  /// the original network configuration.
+  abstract disableNetworkEmulation: unit -> unit
+  /// Sets the certificate verify proc for `session`, the `proc` will be called
+  /// with proc(request, callback) whenever a server certificate verification is
+  /// requested. Calling callback(0) accepts the certificate, calling
+  /// callback(-2) rejects it, calling callback(-3) uses the verification result
+  /// from chromium. See more codes here:
+  /// https://cs.chromium.org/chromium/src/net/base/net_error_list.h
+  ///
+  /// Calling setCertificateVerifyProc(None) will revert back to default
+  /// certificate verify proc.
+  abstract setCertificateVerifyProc: proc: (CertificateVerifyProcRequest -> (int -> unit) -> unit) option -> unit
   /// Sets the handler which can be used to respond to permission requests for
   /// the session. Calling callback(true) will allow the permission and
   /// callback(false) will reject it. To clear the handler, call
-  /// setPermissionRequestHandler(null).
-  abstract setPermissionRequestHandler: handler: (WebContents -> string -> (bool -> unit) -> PermissionRequestHandlerDetails -> unit) option -> unit
-  /// Adds scripts that will be executed on ALL web contents that are associated
-  /// with this session just before normal preload scripts run.
-  abstract setPreloads: preloads: string [] -> unit
-  /// Sets the proxy settings. When pacScript and proxyRules are provided
-  /// together, the proxyRules option is ignored and pacScript configuration is
-  /// applied. The proxyRules has to follow the rules below: For example: The
-  /// proxyBypassRules is a comma separated list of rules described below:
-  abstract setProxy: config: ProxyConfig * callback: (Event -> unit) -> unit
-  /// Overrides the userAgent and acceptLanguages for this session. The
-  /// acceptLanguages must a comma separated ordered list of language codes, for
-  /// example "en-US,fr,de,ko,zh-CN,ja". This doesn't affect existing
-  /// WebContents, and each WebContents can use webContents.setUserAgent to
-  /// override the session-wide user agent.
+  /// setPermissionRequestHandler(None).
+  abstract setPermissionRequestHandler: handler: (WebContents -> PermissionRequestHandlerPermission -> (bool -> unit) -> PermissionRequestHandlerDetails -> unit) option -> unit
+  /// Sets the handler which can be used to respond to permission checks for the
+  /// session. Returning true will allow the permission and false will reject
+  /// it. To clear the handler, call setPermissionCheckHandler(null). The third
+  /// handler argument is `requestingOrigin`, the origin URL of the permission
+  /// check.
+  abstract setPermissionCheckHandler: handler: (WebContents -> PermissionCheckHandlerPermission -> string -> PermissionCheckHandlerDetails -> bool) option -> unit
+  /// Clears the host resolver cache. The callback is called when the operation
+  /// is done.
+  abstract clearHostResolverCache: ?callback: (unit -> unit) -> unit
+  /// Dynamically sets whether to always send credentials for HTTP NTLM or
+  /// Negotiate authentication. `domains` is a comma-separated list of servers
+  /// for which integrated authentication is enabled.
+  abstract allowNTLMCredentialsForDomains: domains: string -> unit
+  /// <summary>
+  ///   Overrides the `userAgent` and `acceptLanguages` for this session.
+  ///
+  ///   This doesn't affect existing WebContents, and each WebContents can use
+  ///   webContents.setUserAgent to override the session-wide user agent.
+  /// </summary>
+  /// <param name="userAgent"></param>
+  /// <param name="acceptLanguages">
+  ///   A comma separated ordered list of language codes, for example
+  ///   "en-US,fr,de,ko,zh-CN,ja".
+  /// </param>
   abstract setUserAgent: userAgent: string * ?acceptLanguages: string -> unit
+  /// Returns the user agent for this session.
+  abstract getUserAgent: unit -> string
+  /// <param name="identifier">Valid UUID</param>
+  abstract getBlobData: identifier: string * callback: (Buffer -> unit) -> unit
+  /// Allows resuming cancelled or interrupted downloads from previous Session.
+  /// The API will generate a DownloadItem that can be accessed with the
+  /// `will-download` event. The DownloadItem will not have any WebContents
+  /// associated with it and the initial state will be interrupted. The download
+  /// will start only when the resume API is called on the DownloadItem.
+  abstract createInterruptedDownload: options: CreateInterruptedDownloadOptions -> unit
+  /// Clears the session’s HTTP authentication cache.
+  abstract clearAuthCache: options: RemovePassword * ?callback: (unit -> unit) -> unit
+  /// Clears the session’s HTTP authentication cache.
+  abstract clearAuthCache: options: RemoveClientCertificate * ?callback: (unit -> unit) -> unit
+  /// Adds scripts that will be executed on ALL web contents that are associated
+  /// with this session just before normal `preload` scripts run.
+  abstract setPreloads: preloads: string [] -> unit
+  /// Returns an array of paths to preload scripts that have been registered.
+  abstract getPreloads: unit -> string []
+  /// A Cookies object for this session.
   abstract cookies: Cookies with get, set
-  abstract netLog: NetLog with get, set
-  abstract protocol: Protocol with get, set
+  /// A WebRequest object for this session.
   abstract webRequest: WebRequest with get, set
+  /// A Protocol object for this session.
+  abstract protocol: Protocol with get, set
+  /// A NetLog object for this session.
+  abstract netLog: NetLog with get, set
 
 type SessionStatic =
-  /// If partition starts with persist:, the page will use a persistent session
-  /// available to all pages in the app with the same partition. if there is no
-  /// persist: prefix, the page will use an in-memory session. If the partition
-  /// is empty then default session of the app will be returned. To create a
-  /// Session with options, you have to ensure the Session with the partition
-  /// has never been used before. There is no way to change the options of an
-  /// existing Session object.
+  /// Returns a session instance from `partition` string. When there is an
+  /// existing Session with the same `partition`, it will be returned; otherwise
+  /// a new Session instance will be created with `options`.
+  ///
+  /// If partition starts with `persist:`, the page will use a persistent
+  /// session available to all pages in the app with the same partition. if
+  /// there is no `persist:` prefix, the page will use an in-memory session. If
+  /// the partition is empty then default session of the app will be returned.
+  ///
+  /// To create a Session with `options`, you have to ensure the Session with
+  /// the partition has never been used before. There is no way to change the
+  /// options of an existing Session object.
   abstract fromPartition: partition: string * ?options: FromPartitionOptions -> Session
-  /// A Session object, the default session object of the app.
+  /// The default session object of the app.
   abstract defaultSession: Session with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -3929,10 +4180,10 @@ type Size =
 type StreamProtocolResponse<'a> =
   /// A Node.js readable stream representing the response body.
   abstract data: Node.Stream.Readable<'a> with get, set
-  /// An object containing the response headers.
-  abstract headers: obj with get, set
   /// The HTTP response code.
   abstract statusCode: int with get, set
+  /// An object containing the response headers.
+  abstract headers: obj with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type SetAppearance =
@@ -5564,12 +5815,9 @@ type StorageQuota =
 type ClearStorageDataOptions =
   /// Should follow window.location.origin’s representation scheme://host:port.
   abstract origin: string with get, set
-  /// The types of storages to clear, can contain: appcache, cookies,
-  /// filesystem, indexdb, localstorage, shadercache, websql, serviceworkers,
-  /// cachestorage.
+  /// The types of storages to clear.
   abstract storages: StorageType [] with get, set
-  /// The types of quotas to clear, can contain: temporary, persistent,
-  /// syncable.
+  /// The types of quotas to clear.
   abstract quotas: StorageQuota [] with get, set
 
 type CommandLine =
@@ -6460,15 +6708,15 @@ type PermissionRequestMediaType =
   | Audio
 
 type PermissionCheckHandlerDetails =
-  /// The security orign of the media check.
+  /// The security orign of the `media` check.
   abstract securityOrigin: string with get, set
-  /// The type of media access being requested, can be video, audio or unknown
+  /// The type of media access being requested.
   abstract mediaType: PermissionCheckMediaType with get, set
 
 type PermissionRequestHandlerDetails =
   /// The url of the openExternal request.
   abstract externalURL: string with get, set
-  /// The types of media access being requested, elements can be video or audio
+  /// The types of media access being requested
   abstract mediaTypes: PermissionRequestMediaType [] with get, set
 
 type PopupOptions =
@@ -6522,8 +6770,14 @@ type CustomSchemePrivileges =
   abstract corsEnabled: bool with get, set
 
 type ProcessMemoryInfo =
-  /// and The amount of memory currently pinned to actual physical RAM in
-  /// Kilobytes.
+  /// [Linux, Windows] The amount of memory currently pinned to actual physical
+  /// RAM in Kilobytes.
+  ///
+  /// Chromium does not provide `residentSet` value for macOS. This is because
+  /// macOS performs in-memory compression of pages that haven't been recently
+  /// used. As a result the resident set size value is not what one would
+  /// expect. `private` memory is more representative of the actual
+  /// pre-compression memory usage of the process on macOS.
   abstract residentSet: int with get, set
   /// The amount of memory not shared by other processes, such as JS heap or
   /// HTML content in Kilobytes.
@@ -6556,11 +6810,17 @@ type ClipboardBookmark =
   /// the bookmark is unavailable.
   abstract url: string with get, set
 
+type RedirectRequestUploadData =
+  /// MIME type of the content.
+  abstract contentType: string with get, set
+  /// Content to be sent.
+  abstract data: string with get, set
+
 type RedirectRequest =
   abstract url: string with get, set
   abstract method: string with get, set
   abstract session: Session option with get, set
-  abstract uploadData: UploadData with get, set
+  abstract uploadData: RedirectRequestUploadData with get, set
 
 type RegisterBufferProtocolRequest =
   abstract url: string with get, set
@@ -6691,13 +6951,15 @@ type GetDesktopCapturerSourcesOptions =
   abstract fetchWindowIcons: bool with get, set
 
 type SystemMemoryInfo =
-  /// The total amount of physical memory in Kilobytes available to the
+  /// The total amount of physical memory in Kilobytes available to the system.
   abstract total: int with get, set
   /// The total amount of memory not being used by applications or disk cache.
   abstract free: int with get, set
-  /// The total amount of swap memory in Kilobytes available to the
+  /// [Windows, Linux] The total amount of swap memory in Kilobytes available to
+  /// the system.
   abstract swapTotal: int with get, set
-  /// The free amount of swap memory in Kilobytes available to the
+  /// [Windows, Linux] The free amount of swap memory in Kilobytes available to
+  /// the system.
   abstract swapFree: int with get, set
 
 type ToBitmapOptions =
@@ -7050,115 +7312,6 @@ type DefaultFontFamily =
   abstract cursive: string with get, set
   /// Defaults to Impact.
   abstract fantasy: string with get, set
-
-
-module NodeExtensions =
-
-  [<StringEnum; RequireQualifiedAccess>]
-  type ProcessType =
-    | Browser
-    | Renderer
-    | Worker
-
-  type ProcessVersions =
-    inherit Node.Base.ProcessVersions
-    /// A String representing Chrome's version string.
-    abstract chrome: string with get
-    /// A String representing Electron's version string.
-    abstract electron: string with get
-
-  type Process =
-    inherit Node.Process.Process
-    inherit EventEmitter<Process>
-    /// Emitted when Electron has loaded its internal initialization script and
-    /// is beginning to load the web page or the main script. It can be used by
-    /// the preload script to add removed Node global symbols back to the global
-    /// scope when node integration is turned off:
-    [<Emit "$0.on('loaded',$1)">] abstract onLoaded: listener: (Event -> unit) -> Process
-    [<Emit "$0.once('loaded',$1)">] abstract onceLoaded: listener: (Event -> unit) -> Process
-    [<Emit "$0.addListener('loaded',$1)">] abstract addListenerLoaded: listener: (Event -> unit) -> Process
-    [<Emit "$0.removeListener('loaded',$1)">] abstract removeListenerLoaded: listener: (Event -> unit) -> Process
-    /// Causes the main thread of the current process crash.
-    abstract crash: unit -> unit
-    abstract getCPUUsage: unit -> CPUUsage
-    /// Indicates the creation time of the application. The time is represented
-    /// as number of milliseconds since epoch. It returns null if it is unable
-    /// to get the process creation time.
-    abstract getCreationTime: unit -> float option
-    /// Returns an object with V8 heap statistics. Note that all statistics are
-    /// reported in Kilobytes.
-    abstract getHeapStatistics: unit -> HeapStatistics
-    abstract getIOCounters: unit -> IOCounters
-    /// Returns an object giving memory usage statistics about the current
-    /// process. Note that all statistics are reported in Kilobytes. This api
-    /// should be called after app ready. Chromium does not provide residentSet
-    /// value for macOS. This is because macOS performs in-memory compression of
-    /// pages that haven't been recently used. As a result the resident set size
-    /// value is not what one would expect. private memory is more
-    /// representative of the actual pre-compression memory usage of the process
-    /// on macOS.
-    abstract getProcessMemoryInfo: unit -> ProcessMemoryInfo
-    /// Returns an object giving memory usage statistics about the entire  Note
-    /// that all statistics are reported in Kilobytes.
-    abstract getSystemMemoryInfo: unit -> SystemMemoryInfo
-    /// Causes the main thread of the current process hang.
-    abstract hang: unit -> unit
-    /// Sets the file descriptor soft limit to maxDescriptors or the OS hard
-    /// limit, whichever is lower for the current process.
-    abstract setFdLimit: maxDescriptors: int -> unit
-    /// Takes a V8 heap snapshot and saves it to filePath.
-    abstract takeHeapSnapshot: filePath: string -> bool
-    /// A Boolean. When app is started by being passed as parameter to the
-    /// default app, this property is true in the main process, otherwise it is
-    /// undefined.
-    abstract defaultApp: bool option with get, set
-    /// A Boolean that controls whether or not deprecation warnings are printed
-    /// to stderr when formerly callback-based APIs converted to Promises are
-    /// invoked using callbacks. Setting this to true will enable deprecation
-    /// warnings.
-    abstract enablePromiseAPIs: bool with get, set
-    /// A Boolean, true when the current renderer context is the "main" renderer
-    /// frame. If you want the ID of the current frame you should use
-    /// webFrame.routingId.
-    abstract isMainFrame: bool with get, set
-    /// A Boolean. For Mac App Store build, this property is true, for other
-    /// builds it is undefined.
-    abstract mas: bool option with get, set
-    /// A Boolean that controls ASAR support inside your application. Setting
-    /// this to true will disable the support for asar archives in Node's
-    /// built-in modules.
-    abstract noAsar: bool with get, set
-    /// A Boolean that controls whether or not deprecation warnings are printed
-    /// to stderr. Setting this to true will silence deprecation warnings. This
-    /// property is used instead of the --no-deprecation command line flag.
-    abstract noDeprecation: bool with get, set
-    /// A String representing the path to the resources directory.
-    abstract resourcesPath: string with get, set
-    /// A Boolean. When the renderer process is sandboxed, this property is
-    /// true, otherwise it is undefined.
-    abstract sandboxed: bool option with get, set
-    /// A Boolean that controls whether or not deprecation warnings will be
-    /// thrown as exceptions. Setting this to true will throw errors for
-    /// deprecations. This property is used instead of the --throw-deprecation
-    /// command line flag.
-    abstract throwDeprecation: bool with get, set
-    /// A Boolean that controls whether or not deprecations printed to stderr
-    /// include their stack trace. Setting this to true will print stack traces
-    /// for deprecations. This property is instead of the --trace-deprecation
-    /// command line flag.
-    abstract traceDeprecation: bool with get, set
-    /// A Boolean that controls whether or not process warnings printed to
-    /// stderr include their stack trace. Setting this to true will print stack
-    /// traces for process warnings (including deprecations). This property is
-    /// instead of the --trace-warnings command line flag.
-    abstract traceProcessWarnings: bool with get, set
-    /// A String representing the current process's type, can be "browser" (i.e.
-    /// main process), "renderer", or "worker" (i.e. web worker).
-    abstract ``type``: ProcessType with get, set
-    /// A Boolean. If the app is running as a Windows Store app (appx), this
-    /// property is true, for otherwise it is undefined.
-    abstract windowsStore: bool option with get, set
-    abstract versions: ProcessVersions with get, set
 
 
 module Helpers =
