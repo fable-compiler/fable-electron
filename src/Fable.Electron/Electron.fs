@@ -91,12 +91,12 @@ type TrayInputEvent =
   abstract shiftKey: bool with get, set
   abstract ctrlKey: bool with get, set
   abstract metaKey: bool with get, set
+  /// Whether an accelerator was used to trigger the event as opposed to another user gesture like mouse click
+  abstract triggeredByAccelerator: bool with get, set
 
 type CommonInterface =
-  /// Perform copy and paste operations on the system clipboard. In the renderer
-  /// process context it depends on the remote module on Linux, and is therefore
-  /// not available when this module is disabled. On Linux, there is also a
-  /// selection clipboard. To manipulate it you need to pass
+  /// Perform copy and paste operations on the system clipboard. On Linux, there
+  /// is also a selection clipboard. To manipulate it you need to pass
   /// ClipboardType.Selection to relevant methods.
   ///
   /// https://electronjs.org/docs/api/clipboard
@@ -111,14 +111,6 @@ type CommonInterface =
   ///
   /// https://electronjs.org/docs/api/native-image
   abstract NativeImage: NativeImageStatic with get, set
-  /// Retrieve information about screen size, displays, cursor position, etc.
-  /// You cannot require or use this module until the `ready` event of the `app`
-  /// module is emitted. In the renderer process context it depends on the
-  /// `remote` module, and is therefore not available when this module is
-  /// disabled.
-  ///
-  /// https://electronjs.org/docs/api/screen
-  abstract screen: Screen with get, set
   /// Manage files and URLs using their default applications. Provides functions
   /// related to desktop integration.
   ///
@@ -214,6 +206,12 @@ type MainInterface =
   ///
   /// https://electronjs.org/docs/api/protocol
   abstract protocol: Protocol with get, set
+  /// Retrieve information about screen size, displays, cursor position, etc.
+  /// You cannot require or use this module until the `ready` event of the `app`
+  /// module is emitted.
+  ///
+  /// https://electronjs.org/docs/api/screen
+  abstract screen: Screen with get, set
   /// Manage browser sessions, cookies, cache, proxy settings, etc.
   ///
   /// https://electronjs.org/docs/api/session
@@ -656,6 +654,19 @@ type App =
   [<Emit "$0.addListener('gpu-process-crashed',$1)">] abstract addListenerGpuProcessCrashed: listener: (Event -> bool -> unit) -> App
   /// See onGpuProcessCrashed.
   [<Emit "$0.removeListener('gpu-process-crashed',$1)">] abstract removeListenerGpuProcessCrashed: listener: (Event -> bool -> unit) -> App
+  /// Emitted when the renderer process of `webContents` crashes or is killed.
+  ///
+  /// Extra parameters:
+  ///
+  ///   - webContents
+  ///   - killed
+  [<Emit "$0.on('renderer-process-crashed',$1)">] abstract onRendererProcessCrashed: listener: (Event -> WebContents -> bool -> unit) -> App
+  /// See onRendererProcessCrashed.
+  [<Emit "$0.once('renderer-process-crashed',$1)">] abstract onceRendererProcessCrashed: listener: (Event -> WebContents -> bool -> unit) -> App
+  /// See onRendererProcessCrashed.
+  [<Emit "$0.addListener('renderer-process-crashed',$1)">] abstract addListenerRendererProcessCrashed: listener: (Event -> WebContents -> bool -> unit) -> App
+  /// See onRendererProcessCrashed.
+  [<Emit "$0.removeListener('renderer-process-crashed',$1)">] abstract removeListenerRendererProcessCrashed: listener: (Event -> WebContents -> bool -> unit) -> App
   /// [macOS, Windows] Emitted when Chrome's accessibility support changes. This
   /// event fires when assistive technologies, such as screen readers, are
   /// enabled or disabled. See
@@ -844,9 +855,17 @@ type App =
   abstract focus: unit -> unit
   /// [macOS] Hides all application windows without minimizing them.
   abstract hide: unit -> unit
-  /// [macOs] Shows application windows after they were hidden. Does not
+  /// [macOS] Shows application windows after they were hidden. Does not
   /// automatically focus them.
   abstract show: unit -> unit
+  /// Sets or creates a directory your app's logs which can then be manipulated
+  /// with app.getPath() or app.setPath(pathName, newPath). `path` must be
+  /// absolute.
+  ///
+  /// On macOS, this directory will be set by default to
+  /// /Library/Logs/YourAppName, and on Linux and Windows it will be placed
+  /// inside your userData directory.
+  abstract setAppLogsPath: path: string -> unit
   /// Returns the current application directory.
   abstract getAppPath: unit -> string
   /// Returns the specified special directory or file. On failure, an `Error` is
@@ -926,6 +945,13 @@ type App =
   /// your app's info.plist, which can not be modified at runtime. You can
   /// however change the file with a simple text editor or script during build
   /// time. Please refer to Apple's documentation for details.
+  ///
+  /// Note: In a Windows Store environment (when packaged as an `appx`) this API
+  /// will return `true` for all calls but the registry key it sets won't be
+  /// accessible by other applications.  In order to register your Windows Store
+  /// application as a default protocol handler you must declare the protocol in
+  /// your manifest:
+  /// https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol
   ///
   /// The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme
   /// internally.
@@ -1087,20 +1113,19 @@ type App =
   /// you'll want to set the launch path to Update.exe, and pass arguments that
   /// specify your application name.
   abstract setLoginItemSettings: settings: SetLoginItemSettings -> unit
-  /// [macOS, Windows] Returns true if Chrome's accessibility support is
-  /// enabled, false otherwise. This API will return true if the use of
-  /// assistive technologies, such as screen readers, has been detected. See
-  /// chromium.org/developers/design-documents/accessibility for more details.
-  abstract isAccessibilitySupportEnabled: unit -> bool
-  /// [macOS, Windows] Manually enables Chrome's accessibility support, allowing
-  /// to expose accessibility switch to users in application settings. See
-  /// Chromium's accessibility docs for more details. Disabled by default.
+  /// `true` if Chrome's accessibility support is enabled, `false` otherwise.
+  /// This property will be `true` if the use of assistive technologies, such as
+  /// screen readers, has been detected. Setting this property to `true`
+  /// manually enables Chrome's accessibility support, allowing developers to
+  /// expose accessibility switch to users in application settings.
   ///
-  /// This API must be called after the ready event is emitted.
+  /// See Chromium's accessibility docs for more details. Disabled by default.
+  ///
+  /// This API must be called after the `ready` event is emitted.
   ///
   /// Note: Rendering accessibility tree can significantly affect the
   /// performance of your app. It should not be enabled by default.
-  abstract setAccessibilitySupportEnabled: enabled: bool -> unit
+  abstract accessibilitySupportEnabled: bool with get, set
   /// [macOS, Linux] Show the app's about panel options. These options can be
   /// overridden with app.setAboutPanelOptions(options).
   abstract showAboutPanel: unit -> unit
@@ -1109,6 +1134,11 @@ type App =
   /// details. On Linux, values must be set in order to be shown; there are no
   /// defaults.
   abstract setAboutPanelOptions: options: AboutPanelOptions -> unit
+  /// Returns a value indicating whether or not the current OS version allows
+  /// for native emoji pickers.
+  abstract isEmojiPanelSupported: unit -> bool
+  /// [macOS, Windows] Show the platform's native emoji picker.
+  abstract showEmojiPanel: unit -> unit
   /// [macOS (Mac App Store)] Start accessing a security scoped resource. With
   /// this method Electron applications that are packaged for the Mac App Store
   /// may reach outside their sandbox to access files chosen by the user. See
@@ -1142,10 +1172,49 @@ type App =
   /// and tell you exactly what went wrong
   abstract moveToApplicationsFolder: unit -> bool
   abstract dock: Dock with get, set
+  /// Gets or sets the application menu on macOS, and each window's top menu on
+  /// Windows and Linux.
+  ///
+  /// On Windows and Linux, you can use a `&` in the top-level item name to
+  /// indicate which letter should get a generated accelerator. For example,
+  /// using &File for the file menu would result in a generated Alt-F
+  /// accelerator that opens the associated menu. The indicated character in the
+  /// button label gets an underline. The & character is not displayed on the
+  /// button label.
+  ///
+  /// Passing None will suppress the default menu. On Windows and Linux, this
+  /// has the additional effect of removing the menu bar from the window.
+  ///
+  /// Note: The default menu will be created automatically if the app does not
+  /// set one. It contains standard items such as File, Edit, View, Window and
+  /// Help.
+  ///
+  /// Note: The Menu instance doesn't support dynamic addition or removal of
+  /// menu items. Instance properties can still be dynamically modified.
+  abstract applicationMenu: Menu option with get, set
+  /// The user agent string Electron will use as a global fallback.
+  ///
+  /// This is the user agent that will be used when no user agent is set at the
+  /// webContents or session level.  Useful for ensuring your entire app has the
+  /// same user agent. Set to a custom value as early as possible in your app's
+  /// initialization to ensure that your overridden value is used.
+  abstract userAgentFallback: string with get, set
   /// Returns true if the app is packaged, false otherwise. For many apps, this
   /// property can be used to distinguish development and production
   /// environments.
   abstract isPackaged: bool with get, set
+  /// A `Boolean` which when `true` disables the overrides that Electron has in
+  /// place to ensure renderer processes are restarted on every navigation. The
+  /// current default value for this property is `false`.
+  ///
+  /// The intention is for these overrides to become disabled by default and
+  /// then at some point in the future this property will be removed. This
+  /// property impacts which native modules you can use in the renderer process.
+  /// For more information on the direction Electron is going with renderer
+  /// process restarts and usage of native modules in the renderer process
+  /// please check out this tracking issue:
+  /// https://github.com/electron/electron/issues/18397
+  abstract allowRendererProcessReuse: bool with get, set
 
 type AutoUpdater =
   inherit EventEmitter<AutoUpdater>
@@ -1801,7 +1870,7 @@ type BrowserWindow =
   abstract setAlwaysOnTop: flag: bool * ?level: AlwaysOnTopLevel * ?relativeLevel: int -> unit
   /// Indicates whether the window is always on top of other windows.
   abstract isAlwaysOnTop: unit -> bool
-  /// [macOS, Windows] Moves window to top(z-order) regardless of focus
+  /// Moves window to top(z-order) regardless of focus
   abstract moveTop: unit -> unit
   /// Moves window to the center of the screen.
   abstract center: unit -> unit
@@ -1875,7 +1944,7 @@ type BrowserWindow =
   /// Same as webContents.reload.
   abstract reload: unit -> unit
   /// [Windows, Linux] Sets the menu as the window's menu bar.
-  abstract setMenu: menu: Menu option -> unit
+  abstract setMenu: menu: Menu -> unit
   /// [Windows, Linux] Remove the window's menu bar.
   abstract removeMenu: unit -> unit
   /// Sets progress value in progress bar. Valid range is [0, 1.0].
@@ -2043,6 +2112,9 @@ type BrowserWindow =
   /// Note: The BrowserView API is currently experimental and may change or be
   /// removed in future Electron releases.
   abstract getBrowserViews: unit -> BrowserView []
+  /// [macOS] Determines whether the window is excluded from the application’s
+  /// Windows menu. `false` by default.
+  abstract excludedFromShownWindowsMenu: bool with get, set
 
 type BrowserWindowStatic =
   /// Instantiates a BrowserWindow.
@@ -2412,6 +2484,10 @@ type Clipboard =
   /// Writes `data` to the clipboard.
   abstract write: data: ClipboardData * ?``type``: ClipboardType -> unit
 
+type TraceBufferUsage =
+  abstract value: float with get, set
+  abstract percentage: float with get, set
+
 type ContentTracing =
   inherit EventEmitter<ContentTracing>
   /// Get a set of category groups. The category groups can change as new code
@@ -2451,13 +2527,8 @@ type ContentTracing =
   /// once all child processes have acknowledged the stopRecording request
   abstract stopRecording: resultFilePath: string -> Promise<string>
   /// Get the maximum usage across processes of trace buffer as a percentage of
-  /// the full state. When the TraceBufferUsage value is determined the `callback`
-  /// is called.
-  ///
-  /// Callback arguments:
-  ///   - value
-  ///   - percentage
-  abstract getTraceBufferUsage: callback: (float -> float -> unit) -> unit
+  /// the full state.
+  abstract getTraceBufferUsage: unit -> Promise<TraceBufferUsage>
 
 type Cookie =
   /// The name of the cookie.
@@ -2653,67 +2724,89 @@ type DesktopCapturerSource =
   /// depends on what the application provides.
   abstract appIcon: NativeImage option with get, set
 
+type OpenDialogResult =
+  /// Whether or not the dialog was canceled.
+  abstract canceled: bool with get, set
+  /// An array of file paths chosen by the user. If the dialog is cancelled this
+  /// will be an empty array.
+  abstract filePaths: string [] with get, set  // TODO: check that this is an empty array and not undefined/null when cancelled, also update `bookmarks` accordingly
+  /// [macOS Mac App Store only] An array matching the filePaths array of base64
+  /// encoded strings which contains security scoped bookmark data.
+  /// securityScopedBookmarks must be enabled for this to be populated.
+  abstract bookmarks: string [] with get, set
+
+type SaveDialogResult =
+  /// Whether or not the dialog was canceled.
+  abstract canceled: bool with get, set
+  /// If the dialog is canceled this will be None.
+  abstract filePath : string option with get, set
+  /// [macOS Mac App Store only] Base64 encoded string which contains the
+  /// security scoped bookmark data for the saved file. securityScopedBookmarks
+  /// must be enabled for this to be present.
+  abstract bookmarks: string [] with get, set
+
+type MessageBoxResult =
+  /// The index of the clicked button.
+  abstract response: int with get, set
+  /// The checked state of the checkbox if checkboxLabel was set. Otherwise
+  /// false
+  abstract checkboxChecked: bool with get, set
+
 type Dialog =
   inherit EventEmitter<Dialog>
   /// Returns the file paths chosen by the user, or None if the dialog was
   /// canceled.
-  abstract showOpenDialog: options: OpenDialogOptions -> string [] option
-  /// Calls the callback with the file paths chosen by the user, or None if the
-  /// dialog was canceled. The second callback argument is populated only on Mac
-  /// App Store builds and only if `securityScopedBookmarks` is enabled, and
-  /// contains an array matching the `filePaths` array of base64 encoded strings
-  /// which contains security scoped bookmark data.
-  abstract showOpenDialog: options: OpenDialogOptions * callback: (string [] option -> string [] -> unit) -> unit
+  abstract showOpenDialogSync: options: OpenDialogOptions -> string [] option  // TODO: is the return type correct? Is it empty or undefined when cancelled?
   /// Returns an array of file paths chosen by the user.
   ///
   /// The `browserWindow` argument allows the dialog to attach itself to a
   /// parent window, making it modal.
-  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions -> string [] option
-  /// Calls the callback with the file paths chosen by the user, or None if the
-  /// dialog was canceled. The second callback argument is populated only on Mac
-  /// App Store builds and only if `securityScopedBookmarks` is enabled, and
-  /// contains an array matching the `filePaths` array of base64 encoded strings
-  /// which contains security scoped bookmark data.
+  abstract showOpenDialogSync: browserWindow: BrowserWindow * options: OpenDialogOptions -> string [] option  // TODO: is the return type correct? Is it empty or undefined when cancelled?
+  /// Display an Open dialog and returns the file paths chosen by the user.
+  abstract showOpenDialog: options: OpenDialogOptions -> Promise<OpenDialogResult>
+  /// Display an Open dialog and returns the file paths chosen by the user.
   ///
   /// The `browserWindow` argument allows the dialog to attach itself to a
   /// parent window, making it modal.
-  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions * callback: (string [] option -> string [] -> unit) -> unit
+  abstract showOpenDialog: browserWindow: BrowserWindow * options: OpenDialogOptions -> Promise<OpenDialogResult>
   /// Returns the path of the file chosen by the user, or None if the dialog was
   /// canceled.
-  abstract showSaveDialog: options: SaveDialogOptions -> string option
-  /// Calls the callback with the path of the file chosen by the user, or None
-  /// if the dialog was canceled. The second callback argument is present only
-  /// on Mac App Store builds and only if `securityScopedBookmarks` is enabled,
-  /// and is a base64 encoded string which contains security scoped bookmark
-  /// data for the saved file.
-  abstract showSaveDialog: options: SaveDialogOptions * callback: (string option -> string option -> unit) -> unit
+  ///
+  /// Note: On macOS, using the asynchronous version is recommended to avoid
+  /// issues when expanding and collapsing the dialog.
+  abstract showSaveDialogSync: options: SaveDialogOptions -> string option
   /// Returns the path of the file chosen by the user, or None if the dialog was
   /// canceled.
   ///
   /// The `browserWindow` argument allows the dialog to attach itself to a
   /// parent window, making it modal.
-  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions -> string option
-  /// Calls the callback with the path of the file chosen by the user, or None
-  /// if the dialog was canceled. The second callback argument is present only
-  /// on Mac App Store builds and only if `securityScopedBookmarks` is enabled,
-  /// and is a base64 encoded string which contains security scoped bookmark
-  /// data for the saved file.
+  ///
+  /// Note: On macOS, using the asynchronous version is recommended to avoid
+  /// issues when expanding and collapsing the dialog.
+  abstract showSaveDialogSync: browserWindow: BrowserWindow * options: SaveDialogOptions -> string option
+  /// Display a Save dialog and returns the file path chosen by the user.
+  abstract showSaveDialog: options: SaveDialogOptions -> Promise<SaveDialogResult>
+  /// Display a Save dialog and returns the file path chosen by the user.
   ///
   /// The `browserWindow` argument allows the dialog to attach itself to a
   /// parent window, making it modal.
-  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions * callback: (string option -> string option -> unit) -> unit
-  /// Shows a message box and returns the index of the clicked button.
-  abstract showMessageBox: options: MessageBoxOptions -> int
-  /// Shows a message box and calls the callback with 1) the index of the
-  /// clicked button and 2) the checked state of the checkbox if `checkboxLabel`
-  /// was set, otherwise `false`.
-  abstract showMessageBox: options: MessageBoxOptions * callback: (int -> bool -> unit) -> unit
-  /// Shows a message box and returns the index of the clicked button.
-  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions -> int
-  /// Shows a message box and calls the callback with 1) the index of the
-  /// clicked button and 2) the checked state of the checkbox if `checkboxLabel`
-  /// was set, otherwise `false`.
-  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions * callback: (int -> bool -> unit) -> unit
+  abstract showSaveDialog: browserWindow: BrowserWindow * options: SaveDialogOptions -> Promise<SaveDialogResult>
+  /// Shows a message box, it will block the process until the message box is
+  /// closed. It returns the index of the clicked button.
+  abstract showMessageBoxSync: options: MessageBoxOptions -> int
+  /// Shows a message box, it will block the process until the message box is
+  /// closed. It returns the index of the clicked button.
+  ///
+  /// The browserWindow argument allows the dialog to attach itself to a parent
+  /// window, making it modal.
+  abstract showMessageBoxSync: browserWindow: BrowserWindow * options: MessageBoxOptions -> int
+  /// Shows a message box, it will block the process until the message box is closed.
+  abstract showMessageBox: options: MessageBoxOptions -> Promise<MessageBoxResult>
+  /// Shows a message box, it will block the process until the message box is closed.
+  ///
+  /// The browserWindow argument allows the dialog to attach itself to a parent
+  /// window, making it modal.
+  abstract showMessageBox: browserWindow: BrowserWindow * options: MessageBoxOptions -> Promise<MessageBoxResult>
   /// Displays a modal dialog that shows an error message.
   ///
   /// This API can be called safely before the `ready` event the app module
@@ -2724,15 +2817,21 @@ type Dialog =
   /// [macOS, Windows] Displays a modal dialog that shows a message and
   /// certificate information, and gives the user the option of
   /// trusting/importing the certificate.
-  abstract showCertificateTrustDialog: options: CertificateTrustDialogOptions * callback: (Event -> unit) -> unit  // TODO: is Event correct?
+  abstract showCertificateTrustDialog: options: CertificateTrustDialogOptions -> Promise<unit>
   /// [macOS] Displays a modal dialog that shows a message and certificate
   /// information, and gives the user the option of trusting/importing the
   /// certificate.
-  abstract showCertificateTrustDialog: browserWindow: BrowserWindow * options: CertificateTrustDialogOptions * callback: (Event -> unit) -> unit  // TODO: is Event correct?
+  abstract showCertificateTrustDialog: browserWindow: BrowserWindow * options: CertificateTrustDialogOptions -> Promise<unit>
 
 
 [<StringEnum; RequireQualifiedAccess>]
 type DisplayTouchSupport =
+  | Available
+  | Unavailable
+  | Unknown
+
+[<StringEnum; RequireQualifiedAccess>]
+type DisplayAccelerometerSupport =
   | Available
   | Unavailable
   | Unknown
@@ -2745,10 +2844,22 @@ type Display =
   /// Output device's pixel scale factor.
   abstract scaleFactor: float with get, set
   abstract touchSupport: DisplayTouchSupport with get, set
+  /// Whether or not the display is a monochrome display.
+  abstract monochrome: bool with get, set
+  abstract accelerometerSupport: DisplayAccelerometerSupport with get, set
+  /// Represents a color space (three-dimensional object which contains all
+  /// realizable color combinations) for the purpose of color conversions
+  abstract colorSpace: string with get, set
+  /// The number of bits per pixel.
+  abstract colorDepth: int with get, set
+  /// The number of bits per color component.
+  abstract depthPerComponent: int with get, set
   abstract bounds: Rectangle with get, set
   abstract size: Size with get, set
   abstract workArea: Rectangle with get, set
   abstract workAreaSize: Size with get, set
+  /// `true` for an internal display and `false` for an external display
+  abstract ``internal``: bool with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type DownloadItemState =
@@ -2947,6 +3058,9 @@ type InAppPurchase =
   ///
   ///   You should listen for the `transactions-updated` event as soon as
   ///   possible and certainly before you call `purchaseProduct`.
+  ///
+  ///   Returns a promise that resolves with `true` if the product is valid and
+  ///   added to the payment queue.
   /// </summary>
   /// <param name="productID">
   ///   The identifiers of the product to purchase. (The identifier of
@@ -2955,21 +3069,12 @@ type InAppPurchase =
   /// <param name="quantity">
   ///   The number of items the user wants to purchase.
   /// </param>
-  /// <param name="callback">
-  ///   The callback called when the payment is added to the PaymentQueue. The
-  ///   boolean value indicates whether the product is valid and added to the
-  ///   payment queue.
-  /// </param>
-  abstract purchaseProduct: productID: string * ?quantity: int * ?callback: (bool -> unit) -> unit
+  abstract purchaseProduct: productID: string * ?quantity: int -> Promise<bool>
   /// <summary>
   ///   Retrieves the product descriptions.
   /// </summary>
   /// <param name="productIDs">The identifiers of the products to get.</param>
-  /// <param name="callback">
-  ///   The callback called with the products or an empty array if the products
-  ///   don't exist.
-  /// </param>
-  abstract getProducts: productIDs: string [] * callback: (Product [] -> unit) -> unit
+  abstract getProducts: productIDs: string [] -> Promise<Product []>
   /// Indicates whether a user can make a payment.
   abstract canMakePayments: unit -> bool
   /// Returns the path to the receipt.
@@ -3166,6 +3271,8 @@ type JumpListItem =
   /// the icon that should be displayed for this task. If a resource file
   /// contains only one icon, this property should be set to zero.
   abstract iconIndex: int option with get, set
+  /// The working directory. Default is empty.
+  abstract workingDirectory: string option with get, set
 
 type MemoryUsageDetails =
   abstract count: int with get, set
@@ -3204,29 +3311,6 @@ type Menu =
 
 type MenuStatic =
   [<EmitConstructor>] abstract Create: unit -> Menu
-  /// Sets `menu` as the application menu on macOS. On Windows and Linux, the
-  /// `menu` will be set as each window's top menu.
-  ///
-  /// Also on Windows and Linux, you can use a `&` in the top-level item name to
-  /// indicate which letter should get a generated accelerator. For example,
-  /// using &File for the file menu would result in a generated Alt-F
-  /// accelerator that opens the associated menu. The indicated character in the
-  /// button label gets an underline. The & character is not displayed on the
-  /// button label.
-  ///
-  /// Passing None will suppress the default menu. On Windows and Linux, this
-  /// has the additional effect of removing the menu bar from the window.
-  ///
-  /// Note: The default menu will be created automatically if the app does not
-  /// set one. It contains standard items such as File, Edit, View, Window and
-  /// Help.
-  abstract setApplicationMenu: menu: Menu option -> unit
-  /// Returns the application menu, if set, or None, if not set.
-  ///
-  /// Note: The returned Menu instance doesn't support dynamic addition or
-  /// removal of menu items. Instance properties can still be dynamically
-  /// modified.
-  abstract getApplicationMenu: unit -> Menu option
   /// [macOS] Sends the `action` to the first responder of application. This is
   /// used for emulating default macOS menu behaviors. Usually you would use the
   /// `role` property of a MenuItem.
@@ -3351,7 +3435,12 @@ type NativeImageStatic =
   /// method returns an empty image if the path does not exist, cannot be read,
   /// or is not a valid image.
   abstract createFromPath: path: string -> NativeImage
-  /// Creates a new NativeImage instance from buffer.
+  /// Creates a new `NativeImage` instance from `buffer` that contains the raw
+  /// bitmap pixel data returned by `toBitmap()`. The specific format is
+  /// platform-dependent.
+  abstract createFromBitmap: buffer: Buffer * ?options: NativeImageFromBufferOptions -> NativeImage
+  /// Creates a new NativeImage instance from buffer. Tries to decode as PNG or
+  /// JPEG first.
   abstract createFromBuffer: buffer: Buffer * ?options: NativeImageFromBufferOptions -> NativeImage
   /// Creates a new NativeImage instance from `dataURL`.
   abstract createFromDataURL: dataURL: string -> NativeImage
@@ -3391,7 +3480,10 @@ type NetLog =
   abstract startLogging: path: string -> unit
   /// Stops recording network events. If not called, net logging will
   /// automatically end when app quits.
-  abstract stopLogging: ?callback: (string -> unit) -> unit
+  ///
+  /// Returns a promise that resolves with a file path to which network logs
+  /// were recorded.
+  abstract stopLogging: unit -> Promise<string>
   /// Indicates whether network logs are recorded.
   abstract currentlyLogging: bool with get, set
   /// The path to the current log file.
@@ -3546,12 +3638,10 @@ type PowerMonitor =
   /// See onUnlockScreen.
   [<Emit "$0.removeListener('unlock-screen',$1)">] abstract removeListenerUnlockScreen: listener: (Event -> unit) -> PowerMonitor
   /// Calculate the system idle state. idleThreshold is the amount of time (in
-  /// seconds) before considered idle. callback will be called synchronously on
-  /// some systems and with an idleState argument that describes the system's
-  /// state.
-  abstract querySystemIdleState: idleThreshold: int -> callback: PowerIdleState -> unit
+  /// seconds) before considered idle.
+  abstract getSystemIdleState: idleThreshold: int -> PowerIdleState
   /// Calculate system idle time in seconds.
-  abstract querySystemIdleTime: callback: int -> unit
+  abstract getSystemIdleTime: unit -> int
 
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -3677,10 +3767,15 @@ type Process =
   /// Returns an object giving memory usage statistics about the current
   /// process. Note that all statistics are reported in Kilobytes. This api
   /// should be called after app ready.
-  abstract getProcessMemoryInfo: unit -> ProcessMemoryInfo
+  abstract getProcessMemoryInfo: unit -> Promise<ProcessMemoryInfo>
   /// Returns an object giving memory usage statistics about the entire  Note
   /// that all statistics are reported in Kilobytes.
-  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo
+  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo  // TODO: does this return Promise, too?
+  /// Returns the version of the host operating system.
+  ///
+  /// Note: It returns the actual operating system version instead of kernel
+  /// version on macOS unlike `os.release()`.
+  abstract getSystemVersion: unit -> string
   /// Takes a V8 heap snapshot and saves it to `filePath`.
   abstract takeHeapSnapshot: filePath: string -> bool
   /// Causes the main thread of the current process hang.
@@ -3763,7 +3858,7 @@ type Protocol =
   ///
   /// By default the scheme is treated like http:, which is parsed differently
   /// than protocols that follow the "generic URI syntax" like file:, so you
-  /// probably want to call protocol.registerStandardSchemes to have your scheme
+  /// probably want to call protocol.registerSchemesAsPrivileged to have your scheme
   /// treated as a standard scheme.
   abstract registerFileProtocol: scheme: string * handler: (RegisterFileProtocolRequest -> (obj -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
   /// Registers a protocol of `scheme` that will send a Buffer as a response.
@@ -3883,37 +3978,6 @@ type Remote =
   /// remote.getGlobal('process') but is cached.
   abstract ``process``: Process with get, set
 
-type RemoveClientCertificate =
-  /// clientCertificate.
-  abstract ``type``: string with get, set
-  /// Origin of the server whose associated client certificate must be removed
-  /// from the cache.
-  abstract origin: string with get, set
-
-[<StringEnum; RequireQualifiedAccess>]
-type RemovePasswordScheme =
-  | Basic
-  | Digest
-  | Ntlm
-  | Negotiate
-
-type RemovePassword =
-  /// password.
-  abstract ``type``: string with get, set
-  /// When provided, the authentication info related to the origin will only be
-  /// removed otherwise the entire cache will be cleared.
-  abstract origin: string with get, set
-  /// Scheme of the authentication. Must be provided if removing by `origin`.
-  abstract scheme: RemovePasswordScheme with get, set
-  /// Realm of the authentication. Must be provided if removing by `origin`.
-  abstract realm: string with get, set
-  /// Credentials of the authentication. Must be provided if removing by
-  /// `origin`.
-  abstract username: string with get, set
-  /// Credentials of the authentication. Must be provided if removing by
-  /// `origin`.
-  abstract password: string with get, set
-
 [<StringEnum; RequireQualifiedAccess>]
 type DisplayMetricChangeType =
   | Bounds
@@ -4015,23 +4079,29 @@ type Session =
   [<Emit "$0.addListener('will-download',$1)">] abstract addListenerWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
   /// See onWillDownload.
   [<Emit "$0.removeListener('will-download',$1)">] abstract removeListenerWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
-  /// Callback is invoked with the session's current cache size in bytes.
-  abstract getCacheSize: callback: (int -> unit) -> unit
+  /// Returns the session's current cache size, in bytes.
+  abstract getCacheSize: unit -> Promise<int>
   /// Clears the session’s HTTP cache.
-  abstract clearCache: callback: (unit -> unit) -> unit
-  /// Clears the data of web storages. The callback is called when the operation
-  /// is done.
-  abstract clearStorageData: ?options: ClearStorageDataOptions * ?callback: (unit -> unit) -> unit
+  ///
+  /// Returns a promise that resolves when the cache clear operation is
+  /// complete.
+  abstract clearCache: unit -> Promise<unit>
+  /// Clears the data of web storages.
+  ///
+  /// Returns a promise that resolves when the storage data has been cleared.
+  abstract clearStorageData: ?options: ClearStorageDataOptions -> Promise<unit>
   /// Writes any unwritten DOMStorage data to disk.
   abstract flushStorageData: unit -> unit
   /// Sets the proxy settings.
   ///
+  /// Returns a promise that resolves when the proxy setting process is
+  /// complete.
+  ///
   /// See the Electron documentation for details:
-  /// https://electronjs.org/docs/api/session#sessetproxyconfig-callback
-  abstract setProxy: config: ProxyConfig * callback: (Event -> unit) -> unit
-  /// Resolves the proxy information for `url`. The callback will be called with
-  /// callback(proxy) when the request is performed.
-  abstract resolveProxy: url: string * callback: (string -> unit) -> unit
+  /// https://electronjs.org/docs/api/session#sessetproxyconfig
+  abstract setProxy: config: ProxyConfig -> Promise<unit>
+  /// Returns a promise that resolves with the proxy information for `url`.
+  abstract resolveProxy: url: string -> Promise<string>
   /// Sets download saving directory. By default, the download directory will be
   /// the Downloads under the respective app folder.
   abstract setDownloadPath: path: string -> unit
@@ -4054,16 +4124,25 @@ type Session =
   /// the session. Calling callback(true) will allow the permission and
   /// callback(false) will reject it. To clear the handler, call
   /// setPermissionRequestHandler(None).
+  ///
+  /// The WebContents parameter is the WebContents requesting the permission.
+  /// Please note that if the request comes from a subframe you should use
+  /// PermissionRequestHandlerDetails.requestingUrl to check the request origin.
   abstract setPermissionRequestHandler: handler: (WebContents -> PermissionRequestHandlerPermission -> (bool -> unit) -> PermissionRequestHandlerDetails -> unit) option -> unit
   /// Sets the handler which can be used to respond to permission checks for the
   /// session. Returning true will allow the permission and false will reject
   /// it. To clear the handler, call setPermissionCheckHandler(null). The third
   /// handler argument is `requestingOrigin`, the origin URL of the permission
   /// check.
+  ///
+  /// The WebContents parameter is the WebContents requesting the permission.
+  /// Please note that if the request comes from a subframe you should use
+  /// PermissionRequestHandlerDetails.requestingUrl to check the request origin.
   abstract setPermissionCheckHandler: handler: (WebContents -> PermissionCheckHandlerPermission -> string -> PermissionCheckHandlerDetails -> bool) option -> unit
-  /// Clears the host resolver cache. The callback is called when the operation
-  /// is done.
-  abstract clearHostResolverCache: ?callback: (unit -> unit) -> unit
+  /// Clears the host resolver cache.
+  ///
+  /// Returns a promise that resolves when the operation is complete.
+  abstract clearHostResolverCache: unit -> Promise<unit>
   /// Dynamically sets whether to always send credentials for HTTP NTLM or
   /// Negotiate authentication. `domains` is a comma-separated list of servers
   /// for which integrated authentication is enabled.
@@ -4083,7 +4162,7 @@ type Session =
   /// Returns the user agent for this session.
   abstract getUserAgent: unit -> string
   /// <param name="identifier">Valid UUID</param>
-  abstract getBlobData: identifier: string * callback: (Buffer -> unit) -> unit
+  abstract getBlobData: identifier: string -> Promise<Buffer>
   /// Allows resuming cancelled or interrupted downloads from previous Session.
   /// The API will generate a DownloadItem that can be accessed with the
   /// `will-download` event. The DownloadItem will not have any WebContents
@@ -4091,9 +4170,10 @@ type Session =
   /// will start only when the resume API is called on the DownloadItem.
   abstract createInterruptedDownload: options: CreateInterruptedDownloadOptions -> unit
   /// Clears the session’s HTTP authentication cache.
-  abstract clearAuthCache: options: RemovePassword * ?callback: (unit -> unit) -> unit
-  /// Clears the session’s HTTP authentication cache.
-  abstract clearAuthCache: options: RemoveClientCertificate * ?callback: (unit -> unit) -> unit
+  ///
+  /// Returns a promise that resolves when the session’s HTTP authentication
+  /// cache has been cleared.
+  abstract clearAuthCache: unit -> Promise<unit>
   /// Adds scripts that will be executed on ALL web contents that are associated
   /// with this session just before normal `preload` scripts run.
   abstract setPreloads: preloads: string [] -> unit
@@ -4136,8 +4216,7 @@ type WriteShortcutLinkOperation =
 
 type Shell =
   /// Show the given file in a file manager. If possible, select the file.
-  /// Returns a value indicating whether the item was successfully shown.
-  abstract showItemInFolder: fullPath: string -> bool
+  abstract showItemInFolder: fullPath: string -> unit
   /// Open the given file in the desktop's default manner. Returns a value
   /// indicating whether the item was successfully opened.
   abstract openItem: fullPath: string -> bool
@@ -4383,6 +4462,17 @@ type SystemPrefsSystemColor =
   | Red
   | Yellow
 
+type SystemAnimationSettings =
+  /// True if rich animations should be rendered. Looks at session type (e.g.
+  /// remote desktop) and accessibility settings to give guidance for heavy
+  /// animations.
+  abstract shouldRenderRichAnimation: bool with get, set
+  /// Determines on a per-platform basis whether scroll animations (e.g.
+  /// produced by home/end key) should be enabled.
+  abstract scrollAnimationsEnabledBySystem: bool with get, set
+  /// Determines whether the user desires reduced motion based on platform APIs.
+  abstract prefersReducedMotion: bool with get, set
+
 type SystemPreferences =
   inherit EventEmitter<SystemPreferences>
   /// [Windows] Called with the new RGBA color the user assigned to be their
@@ -4520,6 +4610,32 @@ type SystemPreferences =
   /// override the system default and override the value of
   /// getEffectiveAppearance.
   abstract setAppLevelAppearance: appearance: SetAppearance option -> unit
+  /// [macOS] Returns a value indicating whether or not this device has the
+  /// ability to use Touch ID.
+  ///
+  /// Note: This API will return `false` on macOS systems older than Sierra
+  /// 10.12.2.
+  abstract canPromptTouchID: unit -> bool
+  /// <summary>
+  ///   Returns a promise that resolves if the user has successfully
+  ///   authenticated with Touch ID.
+  ///
+  ///   This API itself will not protect your user data; rather, it is a
+  ///   mechanism to allow you to do so. Native apps will need to set Access
+  ///   Control Constants like `kSecAccessControlUserPresence` on the their
+  ///   keychain entry so that reading it would auto-prompt for Touch ID
+  ///   biometric consent. This could be done with
+  ///   [`node-keytar`](https://github.com/atom/node-keytar), such that one
+  ///   would store an encryption key with `node-keytar` and only fetch it if
+  ///   `promptTouchID()` resolves.
+  ///
+  ///   Note: This API will return a rejected Promise on macOS systems older
+  ///   than Sierra 10.12.2.
+  /// </summary>
+  /// <param name="reason">
+  ///   The reason you are asking for Touch ID authentication
+  /// </param>
+  abstract promptTouchID: reason: string -> Promise<unit>
   /// <summary>
   ///   [macOS] Returns true if the current process is a trusted accessibility
   ///   client and false if it is not.
@@ -4553,6 +4669,8 @@ type SystemPreferences =
   /// method will always return true if your system is running 10.13 High Sierra
   /// or lower.
   abstract askForMediaAccess: mediaType: MediaAccessType -> Promise<bool>
+  /// Returns an object with system animation settings.
+  abstract getAnimationSettings: unit -> SystemAnimationSettings
 
 type Task =
   /// Path of the program to execute, usually you should specify
@@ -4572,6 +4690,8 @@ type Task =
   /// icons, set this value to identify the icon. If an icon file consists of
   /// one icon, this value is 0.
   abstract iconIndex: int with get, set
+  /// The working directory. Default is empty.
+  abstract workingDirectory: string with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type ThumbarButtonFlag =
@@ -4980,6 +5100,9 @@ type Tray =
   /// [macOS] Sets the title displayed aside of the tray icon in the status bar
   /// (Support ANSI colors).
   abstract setTitle: title: string -> unit
+  /// [macOS] Returns the title displayed next to the tray icon in the status
+  /// bar.
+  abstract getTitle: unit -> string
   /// [macOS] Sets when the tray's icon background becomes highlighted (in
   /// blue). Default is HighlightMode.Selection.
   ///
@@ -5184,8 +5307,9 @@ type SendInputEvent =
 
 type SendKeyboardEvent =
   inherit SendInputEvent
-  /// The character that will be sent as the keyboard event.
-  abstract keyCode: Helpers.Key with get, set
+  /// The character that will be sent as the keyboard event. Must be a valid
+  /// accelerator key. (You can use `!!Helpers.Key.A` etc. if you want.)
+  abstract keyCode: string with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type SendMouseEventButton =
@@ -5528,6 +5652,22 @@ type WebContents =
   [<Emit "$0.addListener('before-input-event',$1)">] abstract addListenerBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
   /// See onBeforeInputEvent.
   [<Emit "$0.removeListener('before-input-event',$1)">] abstract removeListenerBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
+  /// Emitted when the window enters a full-screen state triggered by HTML API.
+  [<Emit "$0.on('enter-html-full-screen',$1)">] abstract onEnterHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// See onEnterHtmlFullScreen.
+  [<Emit "$0.once('enter-html-full-screen',$1)">] abstract onceEnterHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// See onEnterHtmlFullScreen.
+  [<Emit "$0.addListener('enter-html-full-screen',$1)">] abstract addEnterHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// See onEnterHtmlFullScreen.
+  [<Emit "$0.removeListener('enter-html-full-screen',$1)">] abstract removeEnterHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// Emitted when the window leaves a full-screen state triggered by HTML API.
+  [<Emit "$0.on('leave-html-full-screen',$1)">] abstract onLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// See onLeaveHtmlFullScreen.
+  [<Emit "$0.once('leave-html-full-screen',$1)">] abstract onceLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// See onLeaveHtmlFullScreen.
+  [<Emit "$0.addListener('leave-html-full-screen',$1)">] abstract addLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// See onLeaveHtmlFullScreen.
+  [<Emit "$0.removeListener('leave-html-full-screen',$1)">] abstract removeLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
   /// Emitted when DevTools is opened.
   [<Emit "$0.on('devtools-opened',$1)">] abstract onDevtoolsOpened: listener: (Event -> unit) -> WebContents
   /// See onDevtoolsOpened.
@@ -5890,14 +6030,13 @@ type WebContents =
   abstract insertCSS: css: string -> unit
   /// Evaluates `code` in page.
   ///
+  /// The returned promise resolves with the result of the executed code or is
+  /// rejected if the result of the code is a rejected promise.
+  ///
   /// In the browser window some HTML APIs like `requestFullScreen` can only be
   /// invoked by a gesture from the user. Setting `userGesture` to `true` will
   /// remove this limitation.
-  ///
-  /// If the result of the executed code is a promise the callback result will
-  /// be the resolved value of the promise. We recommend that you use the
-  /// returned Promise to handle code that results in a Promise.
-  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> unit) -> Promise<obj option>
+  abstract executeJavaScript: code: string * ?userGesture: bool -> Promise<obj option>
   /// Ignore application menu shortcuts while this web contents is focused.
   abstract setIgnoreMenuShortcuts: ignore: bool -> unit
   /// Mute the audio on the current web page.
@@ -5960,13 +6099,6 @@ type WebContents =
   /// Captures a snapshot of the page within rect. Omitting rect will capture
   /// the whole visible page.
   abstract capturePage: ?rect: Rectangle -> Promise<NativeImage>
-  /// Checks if any ServiceWorker is registered and returns a boolean as
-  /// response to callback.
-  abstract hasServiceWorker: callback: (bool -> unit) -> unit
-  /// Unregisters any ServiceWorker if present and returns a boolean as response
-  /// to callback when the JS promise is fulfilled or false when the JS promise
-  /// is rejected.
-  abstract unregisterServiceWorker: callback: (bool -> unit) -> unit
   /// Get the system printer list.
   abstract getPrinters: unit -> PrinterInfo []
   /// Prints window's web page. The callback indicates whether the print call
@@ -5985,15 +6117,14 @@ type WebContents =
   /// Prints window's web page as PDF with Chromium's preview printing custom
   /// settings.
   ///
-  /// The callback will be called with callback(error, data) on completion. The
-  /// data is a Buffer that contains the generated PDF data.
+  /// Returns a promise that resolves with the generated PDF data.
   ///
   /// The landscape will be ignored if `@page` CSS at-rule is used in the web
   /// page.
   ///
   /// Use `page-break-before: always;` CSS style to force to print to a new
   /// page.
-  abstract printToPDF: options: PrintToPDFOptions * callback: (Error option -> Buffer option -> unit) -> unit
+  abstract printToPDF: options: PrintToPDFOptions -> Promise<Buffer>
   /// Adds the specified path to DevTools workspace. Must be used after DevTools
   /// creation.
   abstract addWorkSpace: path: string -> unit
@@ -6025,6 +6156,8 @@ type WebContents =
   abstract toggleDevTools: unit -> unit
   /// Starts inspecting element at position (x, y).
   abstract inspectElement: x: int * y: int -> unit
+  /// Opens the developer tools for the shared worker context.
+  abstract inspectSharedWorker: unit -> unit
   /// Opens the developer tools for the service worker context.
   abstract inspectServiceWorker: unit -> unit
   /// Send an asynchronous message to renderer process via `channel`, you can
@@ -6075,9 +6208,8 @@ type WebContents =
   abstract endFrameSubscription: unit -> unit
   /// Sets the item as dragging item for current drag-drop operation.
   abstract startDrag: item: DraggedItem -> unit
-  /// Returns true if the process of saving page has been initiated
-  /// successfully.
-  abstract savePage: fullPath: string * saveType: WebContentSaveType * callback: (Error -> unit) -> bool
+  /// Returns a promise that resolves if the page is saved.
+  abstract savePage: fullPath: string * saveType: WebContentSaveType -> Promise<unit>
   /// [macOS] Shows pop-up dictionary that searches the selected word on the
   /// page.
   abstract showDefinitionForSelection: unit -> unit
@@ -6171,38 +6303,46 @@ type WebFrame =
   /// asynchronously and calls the callback function with an array of misspelt
   /// words when complete. An example of using node-spellchecker as provider:
   abstract setSpellCheckProvider: language: string * provider: SpellCheckProvider -> unit
+  /// Inserts the specified CSS source code as a style sheet in the document.99
+  abstract insertCSS: css: string -> unit
   /// Inserts text to the focused element.
   abstract insertText: text: string -> unit
   /// Evaluates `code` in page.
   ///
+  /// Returns a promise that resolves with the result of the executed code or is
+  /// rejected if the result of the code is a rejected promise.
+  ///
   /// In the browser window some HTML APIs like requestFullScreen can only be
   /// invoked by a gesture from the user. Setting userGesture to true will
   /// remove this limitation.
-  ///
-  /// The callback is called after the script has been executed.
-  ///
-  /// The promise resolves with the result of the executed code or is rejected
-  /// if the result of the code is a rejected promise.
-  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> unit) -> Promise<obj option>
+  abstract executeJavaScript: code: string * ?userGesture: bool -> Promise<obj option>
   /// <summary>
   ///   Work like executeJavaScript but evaluates scripts in an isolated
   ///   context.
+  ///
+  ///   Returns a promise that resolves with the result of the executed code or
+  ///   is rejected if the result of the code is a rejected promise.
+  ///
+  ///   In the browser window some HTML APIs like requestFullScreen can only be
+  ///   invoked by a gesture from the user. Setting userGesture to true will
+  ///   remove this limitation.
   /// </summary>
   /// <param name="worldId">
   ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   999 is the world used by Electrons contextIsolation feature. Chrome
+  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
   ///   provide any integer here.
   /// </param>
   /// <param name="scripts"></param>
   /// <param name="userGesture">Default is false</param>
-  /// <param name="callback">Called after script has been executed</param>
-  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool * ?callback: (obj option -> unit) -> unit
+  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool -> Promise<obj option>
   /// <summary>
   ///   Set the content security policy of the isolated world.
   /// </summary>
   /// <param name="worldId">
   ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   999 is the world used by Electrons contextIsolation feature. Chrome
+  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
   ///   provide any integer here.
   /// </param>
   /// <param name="csp"></param>
@@ -6212,7 +6352,8 @@ type WebFrame =
   /// </summary>
   /// <param name="worldId">
   ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   999 is the world used by Electrons contextIsolation feature. Chrome
+  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
   ///   provide any integer here.
   /// </param>
   /// <param name="name"></param>
@@ -6222,7 +6363,8 @@ type WebFrame =
   /// </summary>
   /// <param name="worldId">
   ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   999 is the world used by Electrons contextIsolation feature. Chrome
+  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
   ///   provide any integer here.
   /// </param>
   /// <param name="securityOrigin"></param>
@@ -6233,7 +6375,8 @@ type WebFrame =
   /// </summary>
   /// <param name="worldId">
   ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   999 is the world used by Electrons contextIsolation feature. Chrome
+  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
   ///   provide any integer here.
   /// </param>
   /// <param name="info"></param>
@@ -6432,6 +6575,13 @@ type AutoResizeOptions =
   /// If true, the view's height will grow and shrink together with the window.
   /// false by default.
   abstract height: bool with get, set
+  /// If `true`, the view's x position and width will grow and shrink
+  /// proportionly with the window. `false` by default.
+  abstract vertical: bool with get, set
+  /// If `true`, the view's y position and height will grow and shrink
+  /// proportinaly with the window. `false` by default.
+  abstract horizontal: bool with get, set
+
 
 type GetBitmapOptions =
   /// Defaults to 1.0.
@@ -6848,8 +6998,9 @@ type Dock =
   abstract getBadge: unit -> string
   /// [macOS] Hides the dock icon.
   abstract hide: unit -> unit
-  /// [macOS] Shows the dock icon.
-  abstract show: unit -> unit
+  /// [macOS] Shows the dock icon. The promise resolves when the dock icon is
+  /// shown.
+  abstract show: unit -> Promise<unit>
   /// [macOS] Indicates whether the dock icon is visible. The app.dock.show()
   /// call is asynchronous so this method might not return true immediately
   /// after that call.
@@ -7180,6 +7331,11 @@ type MenuItemOptions =
   abstract icon: U2<NativeImage, string> with get, set
   /// If false, the menu item will be greyed out and unclickable.
   abstract enabled: bool with get, set
+  /// [macOS] Default is `true`, and when `false` will prevent the accelerator
+  /// from triggering the item if the item is not visible. This property is only
+  /// usable on macOS High Sierra 10.13 or newer. On Windows and Linux this has
+  /// no effect, since accelerators always work when items are hidden.
+  abstract acceleratorWorksWhenHidden: bool with get, set
   /// If false, the menu item will be entirely hidden.
   abstract visible: bool with get, set
   /// Should only be specified for MenuItemType.Checkbox and MenuItemType.Radio
@@ -7551,12 +7707,20 @@ type PermissionCheckHandlerDetails =
   abstract securityOrigin: string with get, set
   /// The type of media access being requested.
   abstract mediaType: PermissionCheckMediaType with get, set
+  /// The last URL the requesting frame loaded
+  abstract requestingUrl: string with get, set
+  /// Whether the frame making the request is the main frame
+  abstract isMainFrame: bool with get, set
 
 type PermissionRequestHandlerDetails =
   /// The url of the openExternal request.
-  abstract externalURL: string with get, set
+  abstract externalURL: string option with get, set
   /// The types of media access being requested
-  abstract mediaTypes: PermissionRequestMediaType [] with get, set
+  abstract mediaTypes: PermissionRequestMediaType [] option with get, set
+  /// The last URL the requesting frame loaded
+  abstract requestingUrl: string with get, set
+  /// Whether the frame making the request is the main frame
+  abstract isMainFrame: bool with get, set
 
 type PopupOptions =
   /// Default is the focused window.
@@ -7793,7 +7957,9 @@ type GetDesktopCapturerSourcesOptions =
   /// captured.
   abstract types: DesktopCapturerSourceType [] with get, set
   /// The size that the media source thumbnail should be scaled to. Default is
-  /// 150 x 150.
+  /// 150 x 150. Set width or height to 0 when you do not need the thumbnails.
+  /// This will save the processing time required for capturing the content of
+  /// each window and screen.
   abstract thumbnailSize: Size with get, set
   /// Set to true to enable fetching window icons. The default value is false.
   /// When false the appIcon property of the sources return null. Same if a
@@ -8174,6 +8340,9 @@ type WebPreferences =
   abstract navigateOnDragDrop: bool with get, set
   /// Autoplay policy to apply to content in the window.
   abstract autoplayPolicy: AutoplayPolicy with get, set
+  /// Whether to prevent the window from resizing when entering HTML Fullscreen.
+  /// Default is `false`.
+  abstract disableHtmlFullscreenWindowResize: bool with get, set
 
 type DefaultFontFamily =
   /// Defaults to Times New Roman.
@@ -8336,22 +8505,78 @@ module Helpers =
     | [<CompiledName("F23")>] F23
     /// Function key 24.
     | [<CompiledName("F24")>] F24
-    /// ~
-    | [<CompiledName("~")>] Tilde
+    /// )
+    | [<CompiledName(")")>] RParen
+    /// (
+    | [<CompiledName("(")>] LParen
     /// !
     | [<CompiledName("!")>] Exclamation
+    /// ?
+    | [<CompiledName("?")>] Question
     /// @
     | [<CompiledName("@")>] At
     /// #
     | [<CompiledName("#")>] Hash
-    /// Dollar
+    /// $
     | [<CompiledName("$")>] Dollar
-    // TODO: more punctuation?
+    /// %
+    | [<CompiledName("%")>] Percent
+    /// ^
+    | [<CompiledName("^")>] Caret
+    /// &
+    | [<CompiledName("&")>] Ampersand
+    /// *
+    | [<CompiledName("*")>] Asterisk
+    /// :
+    | [<CompiledName(":")>] Colon
+    /// ;
+    | [<CompiledName(";")>] Semicolon
+    /// =
+    | [<CompiledName("=")>] Equals
+    /// <
+    | [<CompiledName("<")>] LessThan
+    /// >
+    | [<CompiledName(">")>] GreaterThan
+    /// ,
+    | [<CompiledName(",")>] Comma
+    /// _
+    | [<CompiledName("_")>] Underscore
+    /// -
+    | [<CompiledName("-")>] Dash
+    /// Alias for Dash
+    | [<CompiledName("-")>] Hyphen
+    /// .
+    | [<CompiledName(".")>] Dot
+    /// /
+    | [<CompiledName(".")>] ForwardSlash
+    /// \
+    | [<CompiledName("\\")>] Backslash
+    /// ~
+    | [<CompiledName("~")>] Tilde
+    /// `
+    | [<CompiledName("`")>] Backtick
+    /// {
+    | [<CompiledName("{")>] LBrace
+    /// }
+    | [<CompiledName("}")>] RBrace
+    /// [
+    | [<CompiledName("[")>] LBracket
+    /// ]
+    | [<CompiledName("]")>] RBracket
+    /// |
+    | [<CompiledName("|")>] Pipe
+    /// '
+    | [<CompiledName("'")>] SingleQuote
+    /// Alias for SingleQuote
+    | [<CompiledName("'")>] Apostrophe
+    /// "
+    | [<CompiledName("\"")>] DoubleQuote
     | [<CompiledName("Plus")>] Plus
     | [<CompiledName("Space")>] Space
     | [<CompiledName("Tab")>] Tab
     | [<CompiledName("Capslock")>] Capslock
     | [<CompiledName("Numlock")>] Numlock
+    | [<CompiledName("Scrolllock")>] ScrollLock
     | [<CompiledName("Backspace")>] Backspace
     | [<CompiledName("Delete")>] Delete
     | [<CompiledName("Insert")>] Insert

@@ -2,10 +2,6 @@
 
 Fable bindings for [Electron](https://electronjs.org/).
 
-## Current status
-
-The bindings are based on the Typescript definitions for Electron 5.0 using [ts2fable](https://fable.io/ts2fable/) and have been cleaned and improved by hand. However, a thorough pass through the generated bindings in order to cross-check them with the Electron documentation is still ongoing, hence the beta status. The bindings should be safe to use, but some (likely minor) breaking changes may occur before the final version is released.
-
 Contributions are welcome!
 --------------------------
 
@@ -66,6 +62,6 @@ let accelerator = "Ctrl+="
 
 1. Make necessary changes to the code
 2. Update the changelog
-3. Update the version and release notes in the package info, as well as the message stating which Electron version the bindings are created for in the package description.
-4. Commit and tag the commit (this is what triggers deployment from  AppVeyor). For consistency, the tag should ideally be identical to the package version number.
+3. Update the version and release notes in the package info, as well as the supported Electron versions in the `NpmPackage` node
+4. Commit and tag the commit (this is what triggers deployment from  AppVeyor). For consistency, the tag should be identical to the package version number.
 5. Push the changes and the tag to the repo. If AppVeyor build succeeds, the package is automatically published to NuGet.
