@@ -8,11 +8,11 @@ open Browser.Types
 open Node.Base
 open Node.Buffer
 
-
 // TODO: check if U2, U3 etc. can be replaced with overloads
 // TODO: ensure that all onceX, addListenerX, removeListenerX events refer to
 // the onX event
 // TODO: make all references to null and undefined refer to None instead
+// TODO: go through all usages of Event and check that it really is Event at runtime
 
 
 /// All Electron APIs. Consider using `main` or `renderer` as your entry points;
@@ -4127,63 +4127,72 @@ type SessionStatic =
 
 [<StringEnum; RequireQualifiedAccess>]
 type WriteShortcutLinkOperation =
+  /// Creates a new shortcut, overwriting if necessary.
   | Create
+  /// Updates specified properties only on an existing shortcut.
   | Update
+  /// Overwrites an existing shortcut, fails if the shortcut doesn't exist.
   | Replace
 
 type Shell =
-  /// Play the beep sound.
-  abstract beep: unit -> unit
-  /// Move the given file to trash and returns a boolean status for the
-  /// operation.
-  abstract moveItemToTrash: fullPath: string -> bool
+  /// Show the given file in a file manager. If possible, select the file.
+  /// Returns a value indicating whether the item was successfully shown.
+  abstract showItemInFolder: fullPath: string -> bool
+  /// Open the given file in the desktop's default manner. Returns a value
+  /// indicating whether the item was successfully opened.
+  abstract openItem: fullPath: string -> bool
+  /// Open the given external protocol URL in the desktop's default manner. (For
+  /// example, mailto: URLs in the user's default mail agent). `url` must be max
+  /// 2081 characters on Windows. Returns a value indicating whether an
+  /// application was available to open the URL.
+  abstract openExternalSync: url: string * ?options: OpenExternalOptions -> bool
   /// Open the given external protocol URL in the desktop's default manner. (For
   /// example, mailto: URLs in the user's default mail agent).
   abstract openExternal: url: string * ?options: OpenExternalOptions -> Promise<unit>
-  /// Open the given external protocol URL in the desktop's default manner. (For
-  /// example, mailto: URLs in the user's default mail agent).
-  abstract openExternalSync: url: string * ?options: OpenExternalOptions -> bool
-  /// Open the given file in the desktop's default manner.
-  abstract openItem: fullPath: string -> bool
-  /// Resolves the shortcut link at shortcutPath. An exception will be thrown
-  /// when any error happens.
-  abstract readShortcutLink: shortcutPath: string -> ShortcutDetails
-  /// Show the given file in a file manager. If possible, select the file.
-  abstract showItemInFolder: fullPath: string -> bool
-  /// Creates or updates a shortcut link at shortcutPath.
+  /// Move the given file to trash and returns a value indicating whether the
+  /// item was successfully moved to the trash.
+  abstract moveItemToTrash: fullPath: string -> bool
+  /// Play the beep sound.
+  abstract beep: unit -> unit
+  /// [Windows] Creates or updates a shortcut link at shortcutPath. Returns a
+  /// value indicating whether the shortcut was created successfully.
   abstract writeShortcutLink: shortcutPath: string * operation: WriteShortcutLinkOperation * options: ShortcutDetails -> bool
-  /// Creates or updates a shortcut link at shortcutPath.
+  /// [Windows] Creates or updates a shortcut link at shortcutPath. Returns a
+  /// value indicating whether the shortcut was created successfully.
   abstract writeShortcutLink: shortcutPath: string * options: ShortcutDetails -> bool
+  /// [Windows] Resolves the shortcut link at shortcutPath. An exception will be
+  /// thrown when any error happens.
+  abstract readShortcutLink: shortcutPath: string -> ShortcutDetails
 
 type ShortcutDetails =
-  /// The Application User Model ID. Default is empty.
-  abstract appUserModelId: string option with get, set
+  /// The target to launch from this shortcut.
+  abstract target: string with get, set
+  /// The working directory. Default is empty.
+  abstract cwd: string option with get, set
   /// The arguments to be applied to target when launching from this shortcut.
   /// Default is empty.
   abstract args: string option with get, set
-  /// The working directory. Default is empty.
-  abstract cwd: string option with get, set
   /// The description of the shortcut. Default is empty.
   abstract description: string option with get, set
-  /// The path to the icon, can be a DLL or EXE. icon and iconIndex have to be
-  /// set together. Default is empty, which uses the target's icon.
+  /// The path to the icon, can be a DLL or EXE. `icon` and `iconIndex` have to
+  /// be set together. Default is empty, which uses the target's icon.
   abstract icon: string option with get, set
-  /// The resource ID of icon when icon is a DLL or EXE. Default is 0.
+  /// The resource ID of icon when `icon` is a DLL or EXE. Default is 0.
   abstract iconIndex: int option with get, set
-  /// The target to launch from this shortcut.
-  abstract target: string with get, set
+  /// The Application User Model ID. Default is empty.
+  abstract appUserModelId: string option with get, set
 
 type Size =
   abstract height: int with get, set
   abstract width: int with get, set
 
 type StreamProtocolResponse<'a> =
-  /// A Node.js readable stream representing the response body.
-  abstract data: Node.Stream.Readable<'a> with get, set
   /// The HTTP response code.
   abstract statusCode: int with get, set
   /// An object containing the response headers.
   abstract headers: obj with get, set
+  /// A Node.js readable stream representing the response body.
+  abstract data: Node.Stream.Readable<'a> with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type SetAppearance =
@@ -4221,68 +4230,145 @@ type UserDefaultValueType =
   | Dictionary
 
 [<StringEnum; RequireQualifiedAccess>]
-type SystemPrefsColor =
+type SystemPrefsColorWin =
+  /// ("3d-dark-shadow") Dark shadow for three-dimensional display elements.
   | [<CompiledName("3d-dark-shadow")>] DarkShadow3D
+  /// ("3d-face") Face color for three-dimensional display elements and for
+  /// dialog box backgrounds.
   | [<CompiledName("3d-face")>] Face3D
+  /// ("3d-highlight") Highlight color for three-dimensional display elements.
   | [<CompiledName("3d-highlight")>] Highlight3D
+  /// ("3d-light") Light color for three-dimensional display elements.
   | [<CompiledName("3d-light")>] Light3D
+  /// ("3d-shadow") Shadow color for three-dimensional display elements.
   | [<CompiledName("3d-shadow")>] Shadow3D
+  /// Active window border.
   | [<CompiledName("active-border")>] ActiveBorder
+  /// Active window title bar. Specifies the left side color in the color
+  /// gradient of an active window's title bar if the gradient effect is
+  /// enabled.
   | [<CompiledName("active-caption")>] ActiveCaption
+  /// Right side color in the color gradient of an active window's title bar.
   | [<CompiledName("active-caption-gradient")>] ActiveCaptionGradient
+  /// Background color of multiple document interface (MDI) applications.
   | [<CompiledName("app-workspace")>] AppWorkspace
+  /// Text on push buttons.
   | [<CompiledName("button-text")>] ButtonText
+  /// Text in caption, size box, and scroll bar arrow box.
   | [<CompiledName("caption-text")>] CaptionText
+  /// Desktop background color.
   | [<CompiledName("desktop")>] Desktop
+  /// Grayed (disabled) text.
   | [<CompiledName("disabled-text")>] DisabledText
-  | [<CompiledName("highlight-text")>] HighlightText
-  | [<CompiledName("hotlight")>] Hotlight
-  | [<CompiledName("inactive-border")>] InactiveBorder
-  | [<CompiledName("inactive-caption")>] InactiveCaption
-  | [<CompiledName("inactive-caption-gradient")>] InactiveCaptionGradient
-  | [<CompiledName("inactive-caption-text")>] InactiveCaptionText
-  | [<CompiledName("info-background")>] InfoBackground
-  | [<CompiledName("info-text")>] InfoText
-  | [<CompiledName("menu")>] Menu
-  | [<CompiledName("menu-highlight")>] MenuHighlight
-  | [<CompiledName("menubar")>] MenuBar
-  | [<CompiledName("menu-text")>] MenuText
-  | [<CompiledName("scrollbar")>] Scrollbar
-  | [<CompiledName("window")>] Window
-  | [<CompiledName("window-frame")>] WindowFrame
-  | [<CompiledName("window-text")>] WindowText
-  | [<CompiledName("alternate-selected-control-text")>] AlternateSelectedControlText
-  | [<CompiledName("control-background")>] ControlBackground
-  | [<CompiledName("control")>] Control
-  | [<CompiledName("control-text")>] ControlText
-  | [<CompiledName("disabled-control-text")>] DisabledControlText
-  | [<CompiledName("find-highlight")>] FindHighlight
-  | [<CompiledName("grid")>] Grid
-  | [<CompiledName("header-text")>] HeaderText
+  /// Item(s) selected in a control.
   | [<CompiledName("highlight")>] Highlight
+  /// Text of item(s) selected in a control.
+  | [<CompiledName("highlight-text")>] HighlightText
+  /// Color for a hyperlink or hot-tracked item.
+  | [<CompiledName("hotlight")>] Hotlight
+  /// Inactive window border.
+  | [<CompiledName("inactive-border")>] InactiveBorder
+  /// Inactive window caption. Specifies the left side color in the color
+  /// gradient of an inactive window's title bar if the gradient effect is
+  /// enabled.
+  | [<CompiledName("inactive-caption")>] InactiveCaption
+  /// Right side color in the color gradient of an inactive window's title bar.
+  | [<CompiledName("inactive-caption-gradient")>] InactiveCaptionGradient
+  /// Color of text in an inactive caption.
+  | [<CompiledName("inactive-caption-text")>] InactiveCaptionText
+  /// Background color for tooltip controls.
+  | [<CompiledName("info-background")>] InfoBackground
+  /// Text color for tooltip controls.
+  | [<CompiledName("info-text")>] InfoText
+  /// Menu background.
+  | [<CompiledName("menu")>] Menu
+  /// The color used to highlight menu items when the menu appears as a flat
+  /// menu.
+  | [<CompiledName("menu-highlight")>] MenuHighlight
+  /// The background color for the menu bar when menus appear as flat menus.
+  | [<CompiledName("menubar")>] MenuBar
+  /// Text in menus.
+  | [<CompiledName("menu-text")>] MenuText
+  /// Scroll bar gray area.
+  | [<CompiledName("scrollbar")>] Scrollbar
+  /// Window background.
+  | [<CompiledName("window")>] Window
+  /// Window frame.
+  | [<CompiledName("window-frame")>] WindowFrame
+  /// Text in windows.
+  | [<CompiledName("window-text")>] WindowText
+
+[<StringEnum; RequireQualifiedAccess>]
+type SystemPrefsColorMac =
+  /// The text on a selected surface in a list or table.
+  | [<CompiledName("alternate-selected-control-text")>] AlternateSelectedControlText
+  /// The background of a large interface element, such as a browser or table.
+  | [<CompiledName("control-background")>] ControlBackground
+  /// The surface of a control.
+  | [<CompiledName("control")>] Control
+  /// The text of a control that isn’t disabled.
+  | [<CompiledName("control-text")>] ControlText
+  /// The text of a control that’s disabled.
+  | [<CompiledName("disabled-control-text")>] DisabledControlText
+  /// The color of a find indicator.
+  | [<CompiledName("find-highlight")>] FindHighlight
+  /// The gridlines of an interface element such as a table.
+  | [<CompiledName("grid")>] Grid
+  /// The text of a header cell in a table.
+  | [<CompiledName("header-text")>] HeaderText
+  /// The virtual light source onscreen.
+  | [<CompiledName("highlight")>] Highlight
+  /// The ring that appears around the currently focused control when using the
+  /// keyboard for interface navigation.
   | [<CompiledName("keyboard-focus-indicator")>] KeyboardFocusIndicator
+  /// The text of a label containing primary content.
   | [<CompiledName("label")>] Label
+  /// A link to other content.
   | [<CompiledName("link")>] Link
+  /// A placeholder string in a control or text view.
   | [<CompiledName("placeholder-text")>] PlaceholderText
+  /// The text of a label of lesser importance than a tertiary label such as
+  /// watermark text.
   | [<CompiledName("quaternary-label")>] QuaternaryLabel
+  /// The background of a scrubber in the Touch Bar.
   | [<CompiledName("scrubber-textured-background")>] ScrubberTexturedBackground
+  /// The text of a label of lesser importance than a normal label such as a
+  /// label used to represent a subheading or additional information.
   | [<CompiledName("secondary-label")>] SecondaryLabel
+  /// The background for selected content in a key window or view.
   | [<CompiledName("selected-content-background")>] SelectedContentBackground
+  /// The surface of a selected control.
   | [<CompiledName("selected-control")>] SelectedControl
+  /// The text of a selected control.
   | [<CompiledName("selected-control-text")>] SelectedControlText
+  /// The text of a selected menu.
   | [<CompiledName("selected-menu-item")>] SelectedMenuItem
+  /// The background of selected text.
   | [<CompiledName("selected-text-background")>] SelectedTextBackground
+  /// Selected text.
   | [<CompiledName("selected-text")>] SelectedText
+  /// A separator between different sections of content.
   | [<CompiledName("separator")>] Separator
+  /// The virtual shadow cast by a raised object onscreen.
   | [<CompiledName("shadow")>] Shadow
+  /// The text of a label of lesser importance than a secondary label such as a
+  /// label used to represent disabled text.
   | [<CompiledName("tertiary-label")>] TertiaryLabel
+  /// Text background.
   | [<CompiledName("text-background")>] TextBackground
+  ///  The text in a document.
   | [<CompiledName("text")>] Text
+  /// The background behind a document's content.
   | [<CompiledName("under-page-background")>] UnderPageBackground
+  /// The selected content in a non-key window or view.
   | [<CompiledName("unemphasized-selected-content-background")>] UnemphasizedSelectedContentBackground
+  /// A background for selected text in a non-key window or view.
   | [<CompiledName("unemphasized-selected-text-background")>] UnemphasizedSelectedTextBackground
+  /// Selected text in a non-key window or view.
   | [<CompiledName("unemphasized-selected-text")>] UnemphasizedSelectedText
+  /// The background of a window.
   | [<CompiledName("window-background")>] WindowBackground
+  /// The text in the window's titlebar area. 
   | [<CompiledName("window-frame-text")>] WindowFrameText
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -4299,147 +4385,210 @@ type SystemPrefsSystemColor =
 
 type SystemPreferences =
   inherit EventEmitter<SystemPreferences>
+  /// [Windows] Called with the new RGBA color the user assigned to be their
+  /// system accent color.
   [<Emit "$0.on('accent-color-changed',$1)">] abstract onAccentColorChanged: listener: (Event -> string -> unit) -> SystemPreferences
+  /// See onAccentColorChanged.
   [<Emit "$0.once('accent-color-changed',$1)">] abstract onceAccentColorChanged: listener: (Event -> string -> unit) -> SystemPreferences
+  /// See onAccentColorChanged.
   [<Emit "$0.addListener('accent-color-changed',$1)">] abstract addListenerAccentColorChanged: listener: (Event -> string -> unit) -> SystemPreferences
+  /// See onAccentColorChanged.
   [<Emit "$0.removeListener('accent-color-changed',$1)">] abstract removeListenerAccentColorChanged: listener: (Event -> string -> unit) -> SystemPreferences
-  /// NOTE: This event is only emitted after you have called
+  /// [Windows]
+  [<Emit "$0.on('color-changed',$1)">] abstract onColorChanged: listener: (Event -> unit) -> SystemPreferences
+  /// See onColorChanged.
+  [<Emit "$0.once('color-changed',$1)">] abstract onceColorChanged: listener: (Event -> unit) -> SystemPreferences
+  /// See onColorChanged.
+  [<Emit "$0.addListener('color-changed',$1)">] abstract addListenerColorChanged: listener: (Event -> unit) -> SystemPreferences
+  /// See onColorChanged.
+  [<Emit "$0.removeListener('color-changed',$1)">] abstract removeListenerColorChanged: listener: (Event -> unit) -> SystemPreferences
+  /// [Windows] Called with true if an inverted color scheme (a high contrast
+  /// color scheme with light text and dark backgrounds) is being used, false
+  /// otherwise.
+  [<Emit "$0.on('inverted-color-scheme-changed',$1)">] abstract onInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// See onInvertedColorSchemeChanged.
+  [<Emit "$0.once('inverted-color-scheme-changed',$1)">] abstract onceInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// See onInvertedColorSchemeChanged.
+  [<Emit "$0.addListener('inverted-color-scheme-changed',$1)">] abstract addListenerInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// See onInvertedColorSchemeChanged.
+  [<Emit "$0.removeListener('inverted-color-scheme-changed',$1)">] abstract removeListenerInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// [Windows] Called with true if a high contrast theme is being used, false
+  /// otherwise.
+  [<Emit "$0.on('high-contrast-color-scheme-changed',$1)">] abstract onHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// See onHighContrastColorSchemeChanged.
+  [<Emit "$0.once('high-contrast-color-scheme-changed',$1)">] abstract onceHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// See onHighContrastColorSchemeChanged.
+  [<Emit "$0.addListener('high-contrast-color-scheme-changed',$1)">] abstract addListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// See onHighContrastColorSchemeChanged.
+  [<Emit "$0.removeListener('high-contrast-color-scheme-changed',$1)">] abstract removeListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// [macOS]
+  ///
+  /// Note: This event is only emitted after you have called
   /// startAppLevelAppearanceTrackingOS
   [<Emit "$0.on('appearance-changed',$1)">] abstract onAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
+  /// See onAppearanceChanged.
   [<Emit "$0.once('appearance-changed',$1)">] abstract onceAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
+  /// See onAppearanceChanged.
   [<Emit "$0.addListener('appearance-changed',$1)">] abstract addListenerAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
+  /// See onAppearanceChanged.
   [<Emit "$0.removeListener('appearance-changed',$1)">] abstract removeListenerAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
-  [<Emit "$0.on('color-changed',$1)">] abstract onColorChanged: listener: (Event -> unit) -> SystemPreferences
-  [<Emit "$0.once('color-changed',$1)">] abstract onceColorChanged: listener: (Event -> unit) -> SystemPreferences
-  [<Emit "$0.addListener('color-changed',$1)">] abstract addListenerColorChanged: listener: (Event -> unit) -> SystemPreferences
-  [<Emit "$0.removeListener('color-changed',$1)">] abstract removeListenerColorChanged: listener: (Event -> unit) -> SystemPreferences
-  [<Emit "$0.on('high-contrast-color-scheme-changed',$1)">] abstract onHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.once('high-contrast-color-scheme-changed',$1)">] abstract onceHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.addListener('high-contrast-color-scheme-changed',$1)">] abstract addListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.removeListener('high-contrast-color-scheme-changed',$1)">] abstract removeListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.on('inverted-color-scheme-changed',$1)">] abstract onInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.once('inverted-color-scheme-changed',$1)">] abstract onceInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.addListener('inverted-color-scheme-changed',$1)">] abstract addListenerInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  [<Emit "$0.removeListener('inverted-color-scheme-changed',$1)">] abstract removeListenerInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
+  /// [macOS] Whether the system is in Dark Mode.
+  abstract isDarkMode: unit -> bool
+  /// [macOS] Whether the Swipe between pages setting is on.
+  abstract isSwipeTrackingFromScrollEventsEnabled: unit -> bool
+  /// [macOS] Posts `event` as native notifications of macOS. The userInfo is an
+  /// object that contains the user information dictionary sent along with the
+  /// notification. Set deliverImmediately=true to post notifications
+  /// immediately even when the subscribing app is inactive.
+  abstract postNotification: event: string * userInfo: obj option * ?deliverImmediately: bool -> unit
+  /// [macOS] Posts `event` as native notifications of macOS. The userInfo is an
+  /// object that contains the user information dictionary sent along with the
+  /// notification.
+  abstract postLocalNotification: event: string * userInfo: obj option -> unit
+  /// [macOS] Posts `event` as native notifications of macOS. The userInfo is an
+  /// object that contains the user information dictionary sent along with the
+  /// notification.
+  abstract postWorkspaceNotification: event: string * userInfo: obj option -> unit
+  /// [macOS] Subscribes to native notifications of macOS, callback will be
+  /// called with callback(event, userInfo) when the corresponding event
+  /// happens. The userInfo is an object that contains the user information
+  /// dictionary sent along with the notification.
+  ///
+  /// The id of the subscriber is returned, which can be used to unsubscribe the
+  /// event. Under the hood this API subscribes to
+  /// NSDistributedNotificationCenter.
+  abstract subscribeNotification: event: string * callback: (string -> obj option -> unit) -> int
+  /// [macOS] Same as subscribeNotification, but uses NSNotificationCenter for
+  /// local defaults. This is necessary for events such as
+  /// NSUserDefaultsDidChangeNotification.
+  abstract subscribeLocalNotification: event: string * callback: (string -> obj option -> unit) -> int
+  /// [macOS] Same as subscribeNotification, but uses
+  /// NSWorkspace.sharedWorkspace.notificationCenter. This is necessary for
+  /// events such as NSWorkspaceDidActivateApplicationNotification.
+  abstract subscribeWorkspaceNotification: event: string * callback: (string -> obj option -> unit) -> int
+  /// [macOS] Removes the subscriber with `id`.
+  abstract unsubscribeNotification: id: int -> unit
+  /// [macOS] Same as unsubscribeNotification, but removes the subscriber from
+  /// NSNotificationCenter.
+  abstract unsubscribeLocalNotification: id: int -> unit
+  /// [macOS] Same as unsubscribeNotification, but removes the subscriber from
+  /// NSWorkspace.sharedWorkspace.notificationCenter.
+  abstract unsubscribeWorkspaceNotification: id: int -> unit
+  /// [macOS] Add the specified defaults to your application's NSUserDefaults.
+  abstract registerDefaults: defaults: obj option -> unit
+  /// [macOS] Returns the value of `key` in NSUserDefaults.
+  abstract getUserDefault: key: string * ``type``: UserDefaultValueType -> obj option
+  /// [macOS] Set the value of key in NSUserDefaults. Note that `type` should
+  /// match actual type of value. An exception is thrown if they don't.
+  abstract setUserDefault: key: string * ``type``: UserDefaultValueType * value: string -> unit
+  /// [macOS] Removes the key in NSUserDefaults. This can be used to restore the
+  /// default or global value of a key previously set with setUserDefault.
+  abstract removeUserDefault: key: string -> unit
+  /// [Windows] Returns true if DWM composition (Aero Glass) is enabled, and
+  /// false otherwise.
+  abstract isAeroGlassEnabled: unit -> bool
+  /// [Windows, macOS] Returns the user's current system wide accent color
+  /// preference in RGBA hexadecimal form.
+  ///
+  /// This API is only available on macOS 10.14 Mojave or newer.
+  abstract getAccentColor: unit -> string
+  /// [Windows] Returns the system color setting in RGB hexadecimal form
+  /// (#ABCDEF). See the Windows docs for more details.
+  abstract getColor: color: SystemPrefsColorWin -> string
+  /// [macOS] Returns the system color setting in RGB hexadecimal form
+  /// (#ABCDEF). See the MacOS docs for more details.
+  abstract getColor: color: SystemPrefsColorMac -> string
+  /// [macOS] Returns one of several standard system colors that automatically
+  /// adapt to vibrancy and changes in accessibility settings like 'Increase
+  /// contrast' and 'Reduce transparency'. See Apple Documentation for more
+  /// details.
+  abstract getSystemColor: color: SystemPrefsSystemColor -> string
+  /// [Windows] Returns true if an inverted color scheme (a high contrast color
+  /// scheme with light text and dark backgrounds) is active, false otherwise.
+  abstract isInvertedColorScheme: unit -> bool
+  /// [Windows] Returns true if a high contrast theme is active, false
+  /// otherwise.
+  abstract isHighContrastColorScheme: unit -> bool
+  /// [macOS] Gets the macOS appearance setting that is currently applied to
+  /// your application, maps to NSApplication.effectiveAppearance.
+  abstract getEffectiveAppearance: unit -> GetAppearance
+  /// [macOS] Gets the macOS appearance setting that you have declared you want
+  /// for your application, maps to NSApplication.appearance. You can use the
+  /// setAppLevelAppearance API to set this value.
+  abstract getAppLevelAppearance: unit -> GetAppearance option
+  /// [macOS] Sets the appearance setting for your application, this should
+  /// override the system default and override the value of
+  /// getEffectiveAppearance.
+  abstract setAppLevelAppearance: appearance: SetAppearance option -> unit
+  /// <summary>
+  ///   [macOS] Returns true if the current process is a trusted accessibility
+  ///   client and false if it is not.
+  /// </summary>
+  /// <param name="prompt">
+  ///   whether or not the user will be informed via prompt if the current
+  ///   process is untrusted.
+  /// </param>
+  abstract isTrustedAccessibilityClient: prompt: bool -> bool
+  /// [macOS] This user consent was not required until macOS 10.14 Mojave, so
+  /// this method will always return MediaAccessStatus.Granted if your system is
+  /// running 10.13 High Sierra or lower.
+  abstract getMediaAccessStatus: mediaType: string -> MediaAccessStatus
+  /// Returns a promise that resolves with true if consent was granted and false
+  /// if it was denied. If an invalid mediaType is passed, the promise will be
+  /// rejected. If an access request was denied and later is changed through the
+  /// System Preferences pane, a restart of the app will be required for the new
+  /// permissions to take effect. If access has already been requested and
+  /// denied, it must be changed through the preference pane; an alert will not
+  /// pop up and the promise will resolve with the existing access status.
+  ///
   /// Important: In order to properly leverage this API, you must set the
   /// NSMicrophoneUsageDescription and NSCameraUsageDescription strings in your
   /// app's Info.plist file. The values for these keys will be used to populate
   /// the permission dialogs so that the user will be properly informed as to
   /// the purpose of the permission request. See Electron Application
   /// Distribution for more information about how to set these in the context of
-  /// Electron. This user consent was not required until macOS 10.14 Mojave, so
-  /// this method will always return true if your system is running 10.13 High
-  /// Sierra or lower.
-  abstract askForMediaAccess: mediaType: MediaAccessType -> Promise<bool>
-  /// This API is only available on macOS 10.14 Mojave or newer.
-  abstract getAccentColor: unit -> string
-  /// Gets the macOS appearance setting that you have declared you want for your
-  /// application, maps to NSApplication.appearance. You can use the
-  /// setAppLevelAppearance API to set this value.
-  abstract getAppLevelAppearance: unit -> GetAppearance
-  abstract getColor: color: SystemPrefsColor -> string
-  /// Gets the macOS appearance setting that is currently applied to your
-  /// application, maps to NSApplication.effectiveAppearance Please note that
-  /// until Electron is built targeting the 10.14 SDK, your application's
-  /// effectiveAppearance will default to 'light' and won't inherit the OS
-  /// preference. In the interim in order for your application to inherit the OS
-  /// preference you must set the NSRequiresAquaSystemAppearance key in your
-  /// apps Info.plist to false.  If you are using electron-packager or
-  /// electron-forge just set the enableDarwinDarkMode packager option to true.
-  /// See the Electron Packager API for more details.
-  abstract getEffectiveAppearance: unit -> GetAppearance
+  /// Electron.
+  ///
   /// This user consent was not required until macOS 10.14 Mojave, so this
-  /// method will always return granted if your system is running 10.13 High
-  /// Sierra or lower.
-  abstract getMediaAccessStatus: mediaType: string -> MediaAccessStatus
-  /// Returns one of several standard system colors that automatically adapt to
-  /// vibrancy and changes in accessibility settings like 'Increase contrast'
-  /// and 'Reduce transparency'. See Apple Documentation for  more details.
-  abstract getSystemColor: color: SystemPrefsSystemColor -> string
-  abstract getUserDefault: key: string * ``type``: UserDefaultValueType -> obj option
-  /// An example of using it to determine if you should create a transparent
-  /// window or not (transparent windows won't work correctly when DWM
-  /// composition is disabled):
-  abstract isAeroGlassEnabled: unit -> bool
-  abstract isDarkMode: unit -> bool
-  abstract isHighContrastColorScheme: unit -> bool
-  abstract isInvertedColorScheme: unit -> bool
-  abstract isSwipeTrackingFromScrollEventsEnabled: unit -> bool
-  abstract isTrustedAccessibilityClient: prompt: bool -> bool
-  /// Posts event as native notifications of macOS. The userInfo is an Object
-  /// that contains the user information dictionary sent along with the
-  /// notification.
-  abstract postLocalNotification: event: string * userInfo: obj option -> unit
-  /// Posts event as native notifications of macOS. The userInfo is an Object
-  /// that contains the user information dictionary sent along with the
-  /// notification.
-  abstract postNotification: event: string * userInfo: obj option * ?deliverImmediately: bool -> unit
-  /// Posts event as native notifications of macOS. The userInfo is an Object
-  /// that contains the user information dictionary sent along with the
-  /// notification.
-  abstract postWorkspaceNotification: event: string * userInfo: obj option -> unit
-  /// Add the specified defaults to your application's NSUserDefaults.
-  abstract registerDefaults: defaults: obj option -> unit
-  /// Removes the key in NSUserDefaults. This can be used to restore the default
-  /// or global value of a key previously set with setUserDefault.
-  abstract removeUserDefault: key: string -> unit
-  /// Sets the appearance setting for your application, this should override the
-  /// system default and override the value of getEffectiveAppearance.
-  abstract setAppLevelAppearance: appearance: SetAppearance -> unit
-  /// Set the value of key in NSUserDefaults. Note that type should match actual
-  /// type of value. An exception is thrown if they don't. Some popular key and
-  /// types are:
-  abstract setUserDefault: key: string * ``type``: UserDefaultValueType * value: string -> unit
-  /// Same as subscribeNotification, but uses NSNotificationCenter for local
-  /// defaults. This is necessary for events such as
-  /// NSUserDefaultsDidChangeNotification.
-  abstract subscribeLocalNotification: event: string * callback: (string -> obj option -> unit) -> int
-  /// Subscribes to native notifications of macOS, callback will be called with
-  /// callback(event, userInfo) when the corresponding event happens. The
-  /// userInfo is an Object that contains the user information dictionary sent
-  /// along with the notification. The id of the subscriber is returned, which
-  /// can be used to unsubscribe the event. Under the hood this API subscribes
-  /// to NSDistributedNotificationCenter, example values of event are:
-  abstract subscribeNotification: event: string * callback: (string -> obj option -> unit) -> int
-  /// Same as subscribeNotification, but uses
-  /// NSWorkspace.sharedWorkspace.notificationCenter. This is necessary for
-  /// events such as NSWorkspaceDidActivateApplicationNotification.
-  abstract subscribeWorkspaceNotification: event: string * callback: (string -> obj option -> unit) -> int
-  /// Same as unsubscribeNotification, but removes the subscriber from
-  /// NSNotificationCenter.
-  abstract unsubscribeLocalNotification: id: int -> unit
-  /// Removes the subscriber with id.
-  abstract unsubscribeNotification: id: int -> unit
-  /// Same as unsubscribeNotification, but removes the subscriber from
-  /// NSWorkspace.sharedWorkspace.notificationCenter.
-  abstract unsubscribeWorkspaceNotification: id: int -> unit
+  /// method will always return true if your system is running 10.13 High Sierra
+  /// or lower.
+  abstract askForMediaAccess: mediaType: MediaAccessType -> Promise<bool>
 
 type Task =
+  /// Path of the program to execute, usually you should specify
+  /// process.execPath which opens the current program.
+  abstract program: string with get, set
   /// The command line arguments when program is executed.
   abstract arguments: string with get, set
+  /// The string to be displayed in a JumpList.
+  abstract title: string with get, set
   /// Description of this task.
   abstract description: string with get, set
-  /// The icon index in the icon file. If an icon file consists of two or more
-  /// icons, set this value to identify the icon. If an icon file consists of
-  /// one icon, this value is 0.
-  abstract iconIndex: int with get, set
   /// The absolute path to an icon to be displayed in a JumpList, which can be
   /// an arbitrary resource file that contains an icon. You can usually specify
   /// process.execPath to show the icon of the program.
   abstract iconPath: string with get, set
-  /// Path of the program to execute, usually you should specify
-  /// process.execPath which opens the current program.
-  abstract program: string with get, set
-  /// The string to be displayed in a JumpList.
-  abstract title: string with get, set
+  /// The icon index in the icon file. If an icon file consists of two or more
+  /// icons, set this value to identify the icon. If an icon file consists of
+  /// one icon, this value is 0.
+  abstract iconIndex: int with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type ThumbarButtonFlag =
+  /// The button is active and available to the user.
   | Enabled
+  /// The button is disabled. It is present, but has a visual state indicating
+  /// it will not respond to user action.
   | Disabled
+  /// When the button is clicked, the thumbnail window closes immediately.
   | [<CompiledName("dismissonclick")>] DismissOnClick
+  /// Do not draw a button border, use only the image.
   | [<CompiledName("nobackground")>] NoBackground
+  /// The button is not shown to the user.
   | Hidden
+  /// The button is enabled but not interactive; no pressed button state is
+  /// drawn. This value is intended for instances where the button is used in a
+  /// notification.
   | [<CompiledName("noninteractive")>] NonInteractive
 
 type ThumbarButton =
@@ -4458,9 +4607,15 @@ type ITouchBarItem =
 type TouchBarButton =
   inherit EventEmitter<TouchBarButton>
   inherit ITouchBarItem
-  abstract backgroundColor: string with get, set
-  abstract icon: NativeImage with get, set
+  /// The button's current text. Changing this value immediately updates the
+  /// button in the touch bar.
   abstract label: string with get, set
+  /// A hex code representing the button's current background color. Changing
+  /// this value immediately updates the button in the touch bar.
+  abstract backgroundColor: string with get, set
+  /// The button's current icon. Changing this value immediately updates the
+  /// button in the touch bar.
+  abstract icon: NativeImage with get, set
 
 type TouchBarButtonStatic =
   [<EmitConstructor>] abstract Create: options: TouchBarButtonOptions -> TouchBarButton
@@ -4468,7 +4623,11 @@ type TouchBarButtonStatic =
 type TouchBarColorPicker =
   inherit EventEmitter<TouchBarColorPicker>
   inherit ITouchBarItem
+  /// the color picker's available colors to select. Changing this value
+  /// immediately updates the color picker in the touch bar.
   abstract availableColors: string [] with get, set
+  /// The color picker's currently selected color. Changing this value
+  /// immediately updates the color picker in the touch bar.
   abstract selectedColor: string with get, set
 
 type TouchBarColorPickerStatic =
@@ -4484,7 +4643,11 @@ type TouchBarGroupStatic =
 type TouchBarLabel =
   inherit EventEmitter<TouchBarLabel>
   inherit ITouchBarItem
+  /// The label's current text. Changing this value immediately updates the
+  /// label in the touch bar.
   abstract label: string with get, set
+  /// A hex code representing the label's current text color. Changing this
+  /// value immediately updates the label in the touch bar.
   abstract textColor: string with get, set
 
 type TouchBarLabelStatic =
@@ -4493,21 +4656,53 @@ type TouchBarLabelStatic =
 type TouchBarPopover =
   inherit EventEmitter<TouchBarPopover>
   inherit ITouchBarItem
-  abstract icon: NativeImage with get, set
+  /// The popover's current button text. Changing this value immediately updates
+  /// the popover in the touch bar.
   abstract label: string with get, set
+  /// The popover's current button icon. Changing this value immediately updates
+  /// the popover in the touch bar.
+  abstract icon: NativeImage with get, set
 
 type TouchBarPopoverStatic =
   [<EmitConstructor>] abstract Create: options: TouchBarPopoverOptions -> TouchBarPopover
 
+[<StringEnum; RequireQualifiedAccess>]
+type TouchBarScrubberStyle =
+  /// Maps to [NSScrubberSelectionStyle roundedBackgroundStyle].
+  | Background
+  /// Maps to [NSScrubberSelectionStyle outlineOverlayStyle].
+  | Outline
+
+[<StringEnum; RequireQualifiedAccess>]
+type TouchBarScrubberMode =
+  /// Maps to NSScrubberModeFixed.
+  | Fixed
+  /// Maps to NSScrubberModeFree.
+  | Free
+
 type TouchBarScrubber =
   inherit EventEmitter<TouchBarScrubber>
   inherit ITouchBarItem
-  abstract continuous: bool with get, set
+  /// The items in this scrubber. Updating this value immediately updates the
+  /// control in the touch bar. Updating deep properties inside this array does
+  /// not update the touch bar.
   abstract items: ScrubberItem [] with get, set
-  abstract mode: string with get, set
-  abstract overlayStyle: string with get, set
-  abstract selectedStyle: string with get, set
+  /// The style that selected items in the scrubber should have. Updating this
+  /// value immediately updates the control in the touch bar.
+  abstract selectedStyle: TouchBarScrubberStyle option with get, set
+  /// The style that selected items in the scrubber should have. This style is
+  /// overlayed on top of the scrubber item instead of being placed behind it.
+  /// Updating this value immediately updates the control in the touch bar.
+  abstract overlayStyle: TouchBarScrubberStyle option with get, set
+  /// Whether to show the left / right selection arrows in this scrubber.
+  /// Updating this value immediately updates the control in the touch bar.
   abstract showArrowButtons: bool with get, set
+  /// The mode of this scrubber. Updating this value immediately updates the
+  /// control in the touch bar.
+  abstract mode: TouchBarScrubberMode with get, set
+  /// Whether this scrubber is continuous or not. Updating this value
+  /// immediately updates the control in the touch bar.
+  abstract continuous: bool with get, set
 
 type TouchBarScrubberStatic =
   [<EmitConstructor>] abstract Create: options: TouchBarScrubberOptions -> TouchBarScrubber
@@ -4515,9 +4710,17 @@ type TouchBarScrubberStatic =
 type TouchBarSegmentedControl =
   inherit EventEmitter<TouchBarSegmentedControl>
   inherit ITouchBarItem
-  abstract segments: SegmentedControlSegment [] with get, set
+  /// The controls current segment style. Updating this value immediately
+  /// updates the control in the touch bar.
   abstract segmentStyle: string with get, set
-  abstract selectedIndex: int with get, set
+  /// The segments in this control. Updating this value immediately updates the
+  /// control in the touch bar. Updating deep properties inside this array does
+  /// not update the touch bar.
+  abstract segments: SegmentedControlSegment [] with get, set
+  /// The currently selected segment. Changing this value immediately updates
+  /// the control in the touch bar. User interaction with the touch bar will
+  /// update this value automatically.
+  abstract selectedIndex: int option with get, set
 
 type TouchBarSegmentedControlStatic =
   [<EmitConstructor>] abstract Create: options: TouchBarSegmentedControlOptions -> TouchBarSegmentedControl
@@ -4525,10 +4728,18 @@ type TouchBarSegmentedControlStatic =
 type TouchBarSlider =
   inherit EventEmitter<TouchBarSlider>
   inherit ITouchBarItem
+  /// The slider's current text. Changing this value immediately updates the
+  /// slider in the touch bar.
   abstract label: string with get, set
-  abstract maxValue: float with get, set
-  abstract minValue: float with get, set
-  abstract value: float with get, set
+  /// The slider's current value. Changing this value immediately updates the
+  /// slider in the touch bar.
+  abstract value: int with get, set
+  /// The slider's current minimum value. Changing this value immediately
+  /// updates the slider in the touch bar.
+  abstract minValue: int with get, set
+  /// The slider's current maximum value. Changing this value immediately
+  /// updates the slider in the touch bar.
+  abstract maxValue: int with get, set
 
 type TouchBarSliderStatic =
   [<EmitConstructor>] abstract Create: options: TouchBarSliderOptions -> TouchBarSlider
@@ -4542,9 +4753,20 @@ type TouchBarSpacerStatic =
 
 type TouchBar =
   inherit EventEmitter<TouchBar>
-  abstract escapeItem: ITouchBarItem with get, set
+  /// A TouchBarItem that will replace the "esc" button on the touch bar when
+  /// set. Setting to None restores the default "esc" button. Changing this
+  /// value immediately updates the escape item in the touch bar.
+  abstract escapeItem: ITouchBarItem option with get, set
 
 type TouchBarStatic =
+  /// Creates a new touch bar with the specified items. Use
+  /// BrowserWindow.setTouchBar to add the TouchBar to a window.
+  ///
+  /// Note: The TouchBar API is currently experimental and may change or be
+  /// removed in future Electron releases.
+  ///
+  /// Tip: If you don't have a MacBook with Touch Bar, you can use Touch Bar
+  /// Simulator to test Touch Bar usage in your app.
   [<EmitConstructor>] abstract Create: options: TouchBarOptions -> TouchBar
   abstract TouchBarButton: TouchBarButtonStatic with get, set
   abstract TouchBarColorPicker: TouchBarColorPickerStatic with get, set
@@ -4557,20 +4779,20 @@ type TouchBarStatic =
   abstract TouchBarSpacer: TouchBarSpacerStatic with get, set
 
 type TraceCategoriesAndOptions =
-  /// – is a filter to control what category groups should be traced. A filter
-  /// can have an optional prefix to exclude category groups that contain a
+  /// A filter to control what category groups should be traced. A filter can
+  /// have an optional `-` prefix to exclude category groups that contain a
   /// matching category. Having both included and excluded category patterns in
-  /// the same list is not supported. Examples: test_MyTest*,
-  /// test_MyTest*,test_OtherStuff, -excluded_category1,-excluded_category2.
+  /// the same list is not supported. Examples: `test_MyTest*`,
+  /// `test_MyTest*,test_OtherStuff`, `-excluded_category1,-excluded_category2`.
   abstract categoryFilter: string with get, set
   /// Controls what kind of tracing is enabled, it is a comma-delimited sequence
-  /// of the following strings: record-until-full, record-continuously,
-  /// trace-to-console, enable-sampling, enable-systrace, e.g.
-  /// 'record-until-full,enable-sampling'. The first 3 options are trace
+  /// of the following strings: `record-until-full`, `record-continuously`,
+  /// `trace-to-console`, `enable-sampling`, `enable-systrace`. Example:
+  /// "record-until-full,enable-sampling". The first 3 options are trace
   /// recording modes and hence mutually exclusive. If more than one trace
   /// recording modes appear in the traceOptions string, the last one takes
   /// precedence. If none of the trace recording modes are specified, recording
-  /// mode is record-until-full. The trace option will first be reset to the
+  /// mode is `record-until-full`. The trace option will first be reset to the
   /// default option (record_mode set to record-until-full, enable_sampling and
   /// enable_systrace set to false) before options parsed from traceOptions are
   /// applied on it.
@@ -4590,172 +4812,237 @@ type TransactionState =
   | Deferred
 
 type Transaction =
+  /// A string that uniquely identifies a successful payment transaction.
+  abstract transactionIdentifier: string with get, set
+  /// The date the transaction was added to the App Store’s payment queue.
+  abstract transactionDate: string with get, set
+  /// The identifier of the restored transaction by the App Store.
+  abstract originalTransactionIdentifier: string with get, set
+  /// The transaction state.
+  abstract transactionState: TransactionState with get, set
   /// The error code if an error occurred while processing the transaction.
   abstract errorCode: int with get, set
   /// The error message if an error occurred while processing the transaction.
   abstract errorMessage: string with get, set
-  /// The identifier of the restored transaction by the App Store.
-  abstract originalTransactionIdentifier: string with get, set
   abstract payment: Payment with get, set
-  /// The date the transaction was added to the App Store’s payment queue.
-  abstract transactionDate: string with get, set
-  /// A string that uniquely identifies a successful payment transaction.
-  abstract transactionIdentifier: string with get, set
-  /// The transaction state, can be purchasing, purchased, failed, restored or
-  /// deferred.
-  abstract transactionState: TransactionState with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type HighlightMode =
+  /// Highlight the tray icon when it is clicked and also when its context menu
+  /// is open.
   | Selection
+  /// Always highlight the tray icon.
   | Always
+  /// Never highlight the tray icon.
   | Never
 
 type Tray =
   inherit EventEmitter<Tray>
-  /// Emitted when the tray balloon is clicked.
-  [<Emit "$0.on('balloon-click',$1)">] abstract onBalloonClick: listener: (Event -> unit) -> Tray
-  [<Emit "$0.once('balloon-click',$1)">] abstract onceBalloonClick: listener: (Event -> unit) -> Tray
-  [<Emit "$0.addListener('balloon-click',$1)">] abstract addListenerBalloonClick: listener: (Event -> unit) -> Tray
-  [<Emit "$0.removeListener('balloon-click',$1)">] abstract removeListenerBalloonClick: listener: (Event -> unit) -> Tray
-  /// Emitted when the tray balloon is closed because of timeout or user
-  /// manually closes it.
-  [<Emit "$0.on('balloon-closed',$1)">] abstract onBalloonClosed: listener: (Event -> unit) -> Tray
-  [<Emit "$0.once('balloon-closed',$1)">] abstract onceBalloonClosed: listener: (Event -> unit) -> Tray
-  [<Emit "$0.addListener('balloon-closed',$1)">] abstract addListenerBalloonClosed: listener: (Event -> unit) -> Tray
-  [<Emit "$0.removeListener('balloon-closed',$1)">] abstract removeListenerBalloonClosed: listener: (Event -> unit) -> Tray
-  /// Emitted when the tray balloon shows.
-  [<Emit "$0.on('balloon-show',$1)">] abstract onBalloonShow: listener: (Event -> unit) -> Tray
-  [<Emit "$0.once('balloon-show',$1)">] abstract onceBalloonShow: listener: (Event -> unit) -> Tray
-  [<Emit "$0.addListener('balloon-show',$1)">] abstract addListenerBalloonShow: listener: (Event -> unit) -> Tray
-  [<Emit "$0.removeListener('balloon-show',$1)">] abstract removeListenerBalloonShow: listener: (Event -> unit) -> Tray
-  /// Emitted when the tray icon is clicked.
+  /// Emitted when the tray icon is clicked. The listener gets the bounds of the
+  /// tray icon and the position of the event.
   [<Emit "$0.on('click',$1)">] abstract onClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  /// See onClick.
   [<Emit "$0.once('click',$1)">] abstract onceClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  /// See onClick.
   [<Emit "$0.addListener('click',$1)">] abstract addListenerClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  /// See onClick.
   [<Emit "$0.removeListener('click',$1)">] abstract removeListenerClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
-  /// Emitted when the tray icon is double clicked.
+  /// [macOS, Windows] Emitted when the tray icon is right clicked. The listener
+  /// gets the bounds of the tray icon.
+  [<Emit "$0.on('right-click',$1)">] abstract onRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// See onRightClick.
+  [<Emit "$0.once('right-click',$1)">] abstract onceRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// See onRightClick.
+  [<Emit "$0.addListener('right-click',$1)">] abstract addListenerRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// See onRightClick.
+  [<Emit "$0.removeListener('right-click',$1)">] abstract removeListenerRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// [macOS, Windows] Emitted when the tray icon is double clicked. The
+  /// listener gets the bounds of the tray icon.
   [<Emit "$0.on('double-click',$1)">] abstract onDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// See onDoubleClick.
   [<Emit "$0.once('double-click',$1)">] abstract onceDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// See onDoubleClick.
   [<Emit "$0.addListener('double-click',$1)">] abstract addListenerDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  /// See onDoubleClick.
   [<Emit "$0.removeListener('double-click',$1)">] abstract removeListenerDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
-  /// Emitted when a drag operation ends on the tray or ends at another
+  /// [Windows] Emitted when the tray balloon shows.
+  [<Emit "$0.on('balloon-show',$1)">] abstract onBalloonShow: listener: (Event -> unit) -> Tray
+  /// See onBalloonShow.
+  [<Emit "$0.once('balloon-show',$1)">] abstract onceBalloonShow: listener: (Event -> unit) -> Tray
+  /// See onBalloonShow.
+  [<Emit "$0.addListener('balloon-show',$1)">] abstract addListenerBalloonShow: listener: (Event -> unit) -> Tray
+  /// See onBalloonShow.
+  [<Emit "$0.removeListener('balloon-show',$1)">] abstract removeListenerBalloonShow: listener: (Event -> unit) -> Tray
+  /// [Windows] Emitted when the tray balloon is clicked.
+  [<Emit "$0.on('balloon-click',$1)">] abstract onBalloonClick: listener: (Event -> unit) -> Tray
+  /// See onBalloonClick.
+  [<Emit "$0.once('balloon-click',$1)">] abstract onceBalloonClick: listener: (Event -> unit) -> Tray
+  /// See onBalloonClick.
+  [<Emit "$0.addListener('balloon-click',$1)">] abstract addListenerBalloonClick: listener: (Event -> unit) -> Tray
+  /// See onBalloonClick.
+  [<Emit "$0.removeListener('balloon-click',$1)">] abstract removeListenerBalloonClick: listener: (Event -> unit) -> Tray
+  /// [Windows] Emitted when the tray balloon is closed because of timeout or
+  /// user manually closes it.
+  [<Emit "$0.on('balloon-closed',$1)">] abstract onBalloonClosed: listener: (Event -> unit) -> Tray
+  /// See onBalloonClosed.
+  [<Emit "$0.once('balloon-closed',$1)">] abstract onceBalloonClosed: listener: (Event -> unit) -> Tray
+  /// See onBalloonClosed.
+  [<Emit "$0.addListener('balloon-closed',$1)">] abstract addListenerBalloonClosed: listener: (Event -> unit) -> Tray
+  /// See onBalloonClosed.
+  [<Emit "$0.removeListener('balloon-closed',$1)">] abstract removeListenerBalloonClosed: listener: (Event -> unit) -> Tray
+  /// [macOS] Emitted when any dragged items are dropped on the tray icon.
+  [<Emit "$0.on('drop',$1)">] abstract onDrop: listener: (Event -> unit) -> Tray
+  /// See onDrop.
+  [<Emit "$0.once('drop',$1)">] abstract onceDrop: listener: (Event -> unit) -> Tray
+  /// See onDrop.
+  [<Emit "$0.addListener('drop',$1)">] abstract addListenerDrop: listener: (Event -> unit) -> Tray
+  /// See onDrop.
+  [<Emit "$0.removeListener('drop',$1)">] abstract removeListenerDrop: listener: (Event -> unit) -> Tray
+  /// [macOS] Emitted when dragged files are dropped in the tray icon. The
+  /// listener receives the paths of the dropped files.
+  [<Emit "$0.on('drop-files',$1)">] abstract onDropFiles: listener: (Event -> string [] -> unit) -> Tray
+  /// See onDropFiles.
+  [<Emit "$0.once('drop-files',$1)">] abstract onceDropFiles: listener: (Event -> string [] -> unit) -> Tray
+  /// See onDropFiles.
+  [<Emit "$0.addListener('drop-files',$1)">] abstract addListenerDropFiles: listener: (Event -> string [] -> unit) -> Tray
+  /// See onDropFiles.
+  [<Emit "$0.removeListener('drop-files',$1)">] abstract removeListenerDropFiles: listener: (Event -> string [] -> unit) -> Tray
+  /// [macOS] Emitted when dragged text is dropped in the tray icon. The
+  /// listener receives the dropped text string.
+  [<Emit "$0.on('drop-text',$1)">] abstract onDropText: listener: (Event -> string -> unit) -> Tray
+  /// See onDropText.
+  [<Emit "$0.once('drop-text',$1)">] abstract onceDropText: listener: (Event -> string -> unit) -> Tray
+  /// See onDropText.
+  [<Emit "$0.addListener('drop-text',$1)">] abstract addListenerDropText: listener: (Event -> string -> unit) -> Tray
+  /// See onDropText.
+  [<Emit "$0.removeListener('drop-text',$1)">] abstract removeListenerDropText: listener: (Event -> string -> unit) -> Tray
+  /// [macOS] Emitted when a drag operation enters the tray icon.
+  [<Emit "$0.on('drag-enter',$1)">] abstract onDragEnter: listener: (Event -> unit) -> Tray
+  /// See onDragEnter.
+  [<Emit "$0.once('drag-enter',$1)">] abstract onceDragEnter: listener: (Event -> unit) -> Tray
+  /// See onDragEnter.
+  [<Emit "$0.addListener('drag-enter',$1)">] abstract addListenerDragEnter: listener: (Event -> unit) -> Tray
+  /// See onDragEnter.
+  [<Emit "$0.removeListener('drag-enter',$1)">] abstract removeListenerDragEnter: listener: (Event -> unit) -> Tray
+  /// [macOS] Emitted when a drag operation exits the tray icon.
+  [<Emit "$0.on('drag-leave',$1)">] abstract onDragLeave: listener: (Event -> unit) -> Tray
+  /// See onDragLeave.
+  [<Emit "$0.once('drag-leave',$1)">] abstract onceDragLeave: listener: (Event -> unit) -> Tray
+  /// See onDragLeave.
+  [<Emit "$0.addListener('drag-leave',$1)">] abstract addListenerDragLeave: listener: (Event -> unit) -> Tray
+  /// See onDragLeave.
+  [<Emit "$0.removeListener('drag-leave',$1)">] abstract removeListenerDragLeave: listener: (Event -> unit) -> Tray
+  /// [macOS] Emitted when a drag operation ends on the tray or ends at another
   /// location.
   [<Emit "$0.on('drag-end',$1)">] abstract onDragEnd: listener: (Event -> unit) -> Tray
+  /// See onDragEnd.
   [<Emit "$0.once('drag-end',$1)">] abstract onceDragEnd: listener: (Event -> unit) -> Tray
+  /// See onDragEnd.
   [<Emit "$0.addListener('drag-end',$1)">] abstract addListenerDragEnd: listener: (Event -> unit) -> Tray
+  /// See onDragEnd.
   [<Emit "$0.removeListener('drag-end',$1)">] abstract removeListenerDragEnd: listener: (Event -> unit) -> Tray
-  /// Emitted when a drag operation enters the tray icon.
-  [<Emit "$0.on('drag-enter',$1)">] abstract onDragEnter: listener: (Event -> unit) -> Tray
-  [<Emit "$0.once('drag-enter',$1)">] abstract onceDragEnter: listener: (Event -> unit) -> Tray
-  [<Emit "$0.addListener('drag-enter',$1)">] abstract addListenerDragEnter: listener: (Event -> unit) -> Tray
-  [<Emit "$0.removeListener('drag-enter',$1)">] abstract removeListenerDragEnter: listener: (Event -> unit) -> Tray
-  /// Emitted when a drag operation exits the tray icon.
-  [<Emit "$0.on('drag-leave',$1)">] abstract onDragLeave: listener: (Event -> unit) -> Tray
-  [<Emit "$0.once('drag-leave',$1)">] abstract onceDragLeave: listener: (Event -> unit) -> Tray
-  [<Emit "$0.addListener('drag-leave',$1)">] abstract addListenerDragLeave: listener: (Event -> unit) -> Tray
-  [<Emit "$0.removeListener('drag-leave',$1)">] abstract removeListenerDragLeave: listener: (Event -> unit) -> Tray
-  /// Emitted when any dragged items are dropped on the tray icon.
-  [<Emit "$0.on('drop',$1)">] abstract onDrop: listener: (Event -> unit) -> Tray
-  [<Emit "$0.once('drop',$1)">] abstract onceDrop: listener: (Event -> unit) -> Tray
-  [<Emit "$0.addListener('drop',$1)">] abstract addListenerDrop: listener: (Event -> unit) -> Tray
-  [<Emit "$0.removeListener('drop',$1)">] abstract removeListenerDrop: listener: (Event -> unit) -> Tray
-  /// Emitted when dragged files are dropped in the tray icon.
-  [<Emit "$0.on('drop-files',$1)">] abstract onDropFiles: listener: (Event -> string [] -> unit) -> Tray
-  [<Emit "$0.once('drop-files',$1)">] abstract onceDropFiles: listener: (Event -> string [] -> unit) -> Tray
-  [<Emit "$0.addListener('drop-files',$1)">] abstract addListenerDropFiles: listener: (Event -> string [] -> unit) -> Tray
-  [<Emit "$0.removeListener('drop-files',$1)">] abstract removeListenerDropFiles: listener: (Event -> string [] -> unit) -> Tray
-  /// Emitted when dragged text is dropped in the tray icon.
-  [<Emit "$0.on('drop-text',$1)">] abstract onDropText: listener: (Event -> string -> unit) -> Tray
-  [<Emit "$0.once('drop-text',$1)">] abstract onceDropText: listener: (Event -> string -> unit) -> Tray
-  [<Emit "$0.addListener('drop-text',$1)">] abstract addListenerDropText: listener: (Event -> string -> unit) -> Tray
-  [<Emit "$0.removeListener('drop-text',$1)">] abstract removeListenerDropText: listener: (Event -> string -> unit) -> Tray
-  /// Emitted when the mouse enters the tray icon.
+  /// [macOS] Emitted when the mouse enters the tray icon. The listener receives
+  /// the position of the event.
   [<Emit "$0.on('mouse-enter',$1)">] abstract onMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseEnter.
   [<Emit "$0.once('mouse-enter',$1)">] abstract onceMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseEnter.
   [<Emit "$0.addListener('mouse-enter',$1)">] abstract addListenerMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseEnter.
   [<Emit "$0.removeListener('mouse-enter',$1)">] abstract removeListenerMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
-  /// Emitted when the mouse exits the tray icon.
+  /// [macOS] Emitted when the mouse exits the tray icon. The listener receives
+  /// the position of the event.
   [<Emit "$0.on('mouse-leave',$1)">] abstract onMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseLeave.
   [<Emit "$0.once('mouse-leave',$1)">] abstract onceMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseLeave.
   [<Emit "$0.addListener('mouse-leave',$1)">] abstract addListenerMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseLeave.
   [<Emit "$0.removeListener('mouse-leave',$1)">] abstract removeListenerMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
-  /// Emitted when the mouse moves in the tray icon.
+  /// [macOS] Emitted when the mouse moves in the tray icon. The listener
+  /// receives the position of the event.
   [<Emit "$0.on('mouse-move',$1)">] abstract onMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseMove.
   [<Emit "$0.once('mouse-move',$1)">] abstract onceMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseMove.
   [<Emit "$0.addListener('mouse-move',$1)">] abstract addListenerMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  /// See onMouseMove.
   [<Emit "$0.removeListener('mouse-move',$1)">] abstract removeListenerMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
-  /// Emitted when the tray icon is right clicked.
-  [<Emit "$0.on('right-click',$1)">] abstract onRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
-  [<Emit "$0.once('right-click',$1)">] abstract onceRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
-  [<Emit "$0.addListener('right-click',$1)">] abstract addListenerRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
-  [<Emit "$0.removeListener('right-click',$1)">] abstract removeListenerRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
   /// Destroys the tray icon immediately.
   abstract destroy: unit -> unit
-  /// Displays a tray balloon.
-  abstract displayBalloon: options: DisplayBalloonOptions -> unit
-  /// The bounds of this tray icon as Object.
-  abstract getBounds: unit -> Rectangle
+  /// Sets the image associated with this tray icon.
+  abstract setImage: image: U2<NativeImage, string> -> unit
+  /// [macOS] Sets the image associated with this tray icon when pressed on
+  /// macOS.
+  abstract setPressedImage: image: U2<NativeImage, string> -> unit
+  /// Sets the hover text for this tray icon.
+  abstract setToolTip: toolTip: string -> unit
+  /// [macOS] Sets the title displayed aside of the tray icon in the status bar
+  /// (Support ANSI colors).
+  abstract setTitle: title: string -> unit
+  /// [macOS] Sets when the tray's icon background becomes highlighted (in
+  /// blue). Default is HighlightMode.Selection.
+  ///
+  /// Note: You can use highlightMode with a BrowserWindow by toggling between
+  /// HighlightMode.Never and HighlightMode.Always modes when the window
+  /// visibility changes.
+  abstract setHighlightMode: mode: HighlightMode -> unit
+  /// [macOS] Sets the option to ignore double click events. Ignoring these
+  /// events allows you to detect every individual click of the tray icon. This
+  /// value is set to false by default.
+  abstract setIgnoreDoubleClickEvents: ignore: bool -> unit
+  /// [macOS] Returns a value indicating whether double click events will be
+  /// ignored.
   abstract getIgnoreDoubleClickEvents: unit -> bool
-  abstract isDestroyed: unit -> bool
-  /// Pops up the context menu of the tray icon. When menu is passed, the menu
-  /// will be shown instead of the tray icon's context menu. The position is
-  /// only available on Windows, and it is (0, 0) by default.
+  /// [Windows] Displays a tray balloon.
+  abstract displayBalloon: options: DisplayBalloonOptions -> unit
+  /// [macOS, Windows] Pops up the context menu of the tray icon. When `menu` is
+  /// passed, the menu will be shown instead of the tray icon's context menu.
+  ///
+  /// The `position` is only available on Windows, and it is (0, 0) by default.
   abstract popUpContextMenu: ?menu: Menu * ?position: Point -> unit
   /// Sets the context menu for this icon.
   abstract setContextMenu: menu: Menu option -> unit
-  /// Sets when the tray's icon background becomes highlighted (in blue). Note:
-  /// You can use highlightMode with a BrowserWindow by toggling between 'never'
-  /// and 'always' modes when the window visibility changes.
-  abstract setHighlightMode: mode: HighlightMode -> unit
-  /// Sets the option to ignore double click events. Ignoring these events
-  /// allows you to detect every individual click of the tray icon. This value
-  /// is set to false by default.
-  abstract setIgnoreDoubleClickEvents: ignore: bool -> unit
-  /// Sets the image associated with this tray icon.
-  abstract setImage: image: U2<NativeImage, string> -> unit
-  /// Sets the image associated with this tray icon when pressed on macOS.
-  abstract setPressedImage: image: U2<NativeImage, string> -> unit
-  /// Sets the title displayed aside of the tray icon in the status bar (Support
-  /// ANSI colors).
-  abstract setTitle: title: string -> unit
-  /// Sets the hover text for this tray icon.
-  abstract setToolTip: toolTip: string -> unit
+  /// [macOS, Windows] Returns the bounds of this tray icon.
+  abstract getBounds: unit -> Rectangle
+  /// Returns a value indicating whether the tray icon is destroyed.
+  abstract isDestroyed: unit -> bool
 
 type TrayStatic =
+  /// Creates a new tray icon associated with the image.
   [<EmitConstructor>] abstract Create: image: U2<NativeImage, string> -> Tray
 
 type UploadBlob =
-  /// UUID of blob data to upload.
-  abstract blobUUID: string with get, set
   /// blob.
   abstract ``type``: string with get, set
+  /// UUID of blob data to upload.
+  abstract blobUUID: string with get, set
 
 type UploadData =
-  /// UUID of blob data. Use method to retrieve the data.
-  abstract blobUUID: string with get, set
   /// Content being sent.
   abstract bytes: Buffer with get, set
   /// Path of file being uploaded.
   abstract file: string with get, set
+  /// UUID of blob data. Use session.getBlobData method to retrieve the data.
+  abstract blobUUID: string with get, set
 
 type UploadFile =
+  /// file.
+  abstract ``type``: string with get, set
   /// Path of file to be uploaded.
   abstract filePath: string with get, set
+  /// Defaults to 0.
+  abstract offset: int with get, set
   /// Number of bytes to read from offset. Defaults to 0.
   abstract length: int with get, set
   /// Last Modification time in number of seconds since the UNIX epoch.
   abstract modificationTime: float with get, set
-  /// Defaults to 0.
-  abstract offset: int with get, set
-  /// file.
-  abstract ``type``: string with get, set
 
 type UploadRawData =
-  /// Data to be uploaded.
-  abstract bytes: Buffer with get, set
   /// rawData.
   abstract ``type``: string with get, set
+  /// Data to be uploaded.
+  abstract bytes: Buffer with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type WindowDisposition =
@@ -4777,301 +5064,613 @@ type WebContentType =
 
 [<StringEnum; RequireQualifiedAccess>]
 type WebContentSaveType =
+  /// Save only the HTML of the page.
   | [<CompiledName("HTMLOnly")>] HtmlOnly
+  /// Save complete-html page.
   | [<CompiledName("HTMLComplete")>] HtmlComplete
+  /// Save complete-html page as MHTML.
   | [<CompiledName("MHTML")>] Mhtml
 
 [<StringEnum; RequireQualifiedAccess>]
 type WebRtcIpHandlingPolicy =
+  /// Exposes user's public and local IPs. This is the default behavior. When
+  /// this policy is used, WebRTC has the right to enumerate all interfaces and
+  /// bind them to discover public interfaces.
   | Default
+  /// Exposes user's public IP, but does not expose user's local IP. When this
+  /// policy is used, WebRTC should only use the default route used by http.
+  /// This doesn't expose any local addresses.
   | [<CompiledName("default_public_interface_only")>] DefaultPublicInterfaceOnly
+  /// Exposes user's public and local IPs. When this policy is used, WebRTC
+  /// should only use the default route used by http. This also exposes the
+  /// associated default private address. Default route is the route chosen by
+  /// the OS on a multi-homed endpoint.
   | [<CompiledName("default_public_and_private_interfaces")>] DefaultPublicAndPrivateInterfaces
+  /// Does not expose public or local IPs. When this policy is used, WebRTC
+  /// should only use TCP to contact peers or servers unless the proxy server
+  /// supports UDP.
   | [<CompiledName("disable_non_proxied_udp")>] DisableNonProxiedUdp
 
 [<StringEnum; RequireQualifiedAccess>]
 type StopFindInPageAction =
+  /// Clear the selection.
   | ClearSelection
+  /// Translate the selection into a normal selection.
   | KeepSelection
+  /// Focus and click the selection node.
   | ActivateSelection
+
+[<StringEnum; RequireQualifiedAccess>]
+type CursorType =
+  | Default
+  | Crosshair
+  | Pointer
+  | Text
+  | Wait
+  | Help
+  | [<CompiledName("e-resize")>] EResize
+  | [<CompiledName("n-resize")>] NResize
+  | [<CompiledName("ne-resize")>] NEResize
+  | [<CompiledName("nw-resize")>] NWResize
+  | [<CompiledName("s-resize")>] SResize
+  | [<CompiledName("se-resize")>] SEResize
+  | [<CompiledName("sw-resize")>] SWResize
+  | [<CompiledName("w-resize")>] WResize
+  | [<CompiledName("ns-resize")>] NSResize
+  | [<CompiledName("ew-resize")>] EWResize
+  | [<CompiledName("nesw-resize")>] NESWResize
+  | [<CompiledName("nwse-resize")>] NWSEResize
+  | [<CompiledName("col-resize")>] ColResize
+  | [<CompiledName("row-resize")>] RowResize
+  | [<CompiledName("m-panning")>] MPanning
+  | [<CompiledName("e-panning")>] EPanning
+  | [<CompiledName("n-panning")>] NPanning
+  | [<CompiledName("ne-panning")>] NEPanning
+  | [<CompiledName("nw-panning")>] NWPanning
+  | [<CompiledName("s-panning")>] SPanning
+  | [<CompiledName("se-panning")>] SEPanning
+  | [<CompiledName("sw-panning")>] SWPanning
+  | [<CompiledName("w-panning")>] WPanning
+  | Move
+  | [<CompiledName("vertical-text")>] VerticalText
+  | Cell
+  | [<CompiledName("context-menu")>] ContextMenu
+  | Alias
+  | Progress
+  | [<CompiledName("nodrop")>] NoDrop
+  | Copy
+  | None
+  | [<CompiledName("not-allowed")>] NotAllowed
+  | [<CompiledName("zoom-in")>] ZoomIn
+  | [<CompiledName("zoom-out")>] ZoomOut
+  | Grab
+  | Grabbing
+  | Custom
+
+[<StringEnum; RequireQualifiedAccess>]
+type InputEventType =
+  | MouseDown
+  | MouseUp
+  | MouseEnter
+  | MouseLeave
+  | ContextMenu
+  | MouseWheel
+  | MouseMove
+  | KeyDown
+  | KeyUp
+  | Char
+
+[<StringEnum; RequireQualifiedAccess>]
+type InputEventModifier =
+  | Shift
+  | Control
+  | Alt
+  | Meta
+  | IsKeypad
+  | IsAutoRepeat
+  | LeftButtonDown
+  | MiddleButtonDown
+  | RightButtonDown
+  | CapsLock
+  | NumLock
+  | Left
+  | Right
+
+type SendInputEvent =
+  /// The type of the event.
+  abstract ``type``: InputEventType with get, set
+  /// An array of modifiers of the event.
+  abstract modifiers: InputEventModifier [] with get, set
+
+type SendKeyboardEvent =
+  inherit SendInputEvent
+  /// The character that will be sent as the keyboard event.
+  abstract keyCode: Helpers.Key with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type SendMouseEventButton =
+  | Left
+  | Middle
+  | Right
+
+type SendMouseEvent =
+  inherit SendInputEvent
+  abstract x: int with get, set
+  abstract y: int with get, set
+  abstract button: SendMouseEventButton with get, set
+  abstract globalX: int with get, set
+  abstract globalY: int with get, set
+  abstract movementX: int with get, set
+  abstract movementY: int with get, set
+  abstract clickCount: int with get, set
+
+type SendMouseWheelEvent =
+  inherit SendInputEvent
+  abstract deltaX: int with get, set
+  abstract deltaY: int with get, set
+  abstract wheelTicksX: int with get, set
+  abstract wheelTicksY: int with get, set
+  abstract accelerationRatioX: int with get, set
+  abstract accelerationRatioY: int with get, set
+  abstract hasPreciseScrollingDeltas: bool with get, set
+  abstract canScroll: bool with get, set
+
+
 
 type WebContents =
   inherit EventEmitter<WebContents>
-  /// Emitted before dispatching the keydown and keyup events in the page.
-  /// Calling event.preventDefault will prevent the page keydown/keyup events
-  /// and the menu shortcuts. To only prevent the menu shortcuts, use
-  /// setIgnoreMenuShortcuts:
-  [<Emit "$0.on('before-input-event',$1)">] abstract onBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
-  [<Emit "$0.once('before-input-event',$1)">] abstract onceBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
-  [<Emit "$0.addListener('before-input-event',$1)">] abstract addListenerBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
-  [<Emit "$0.removeListener('before-input-event',$1)">] abstract removeListenerBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
-  /// Emitted when failed to verify the certificate for url. The usage is the
-  /// same with the certificate-error event of app.
-  [<Emit "$0.on('certificate-error',$1)">] abstract onCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
-  [<Emit "$0.once('certificate-error',$1)">] abstract onceCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
-  [<Emit "$0.addListener('certificate-error',$1)">] abstract addListenerCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
-  [<Emit "$0.removeListener('certificate-error',$1)">] abstract removeListenerCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
-  /// Emitted when the associated window logs a console message. Will not be
-  /// emitted for windows with offscreen rendering enabled.
-  [<Emit "$0.on('console-message',$1)">] abstract onConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
-  [<Emit "$0.once('console-message',$1)">] abstract onceConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('console-message',$1)">] abstract addListenerConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('console-message',$1)">] abstract removeListenerConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
-  /// Emitted when there is a new context menu that needs to be handled.
-  [<Emit "$0.on('context-menu',$1)">] abstract onContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
-  [<Emit "$0.once('context-menu',$1)">] abstract onceContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
-  [<Emit "$0.addListener('context-menu',$1)">] abstract addListenerContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
-  [<Emit "$0.removeListener('context-menu',$1)">] abstract removeListenerContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
-  /// Emitted when the renderer process crashes or is killed.
-  [<Emit "$0.on('crashed',$1)">] abstract onCrashed: listener: (Event -> bool -> unit) -> WebContents
-  [<Emit "$0.once('crashed',$1)">] abstract onceCrashed: listener: (Event -> bool -> unit) -> WebContents
-  [<Emit "$0.addListener('crashed',$1)">] abstract addListenerCrashed: listener: (Event -> bool -> unit) -> WebContents
-  [<Emit "$0.removeListener('crashed',$1)">] abstract removeListenerCrashed: listener: (Event -> bool -> unit) -> WebContents
-  /// Emitted when the cursor's type changes. The type parameter can be default,
-  /// crosshair, pointer, text, wait, help, e-resize, n-resize, ne-resize,
-  /// nw-resize, s-resize, se-resize, sw-resize, w-resize, ns-resize, ew-resize,
-  /// nesw-resize, nwse-resize, col-resize, row-resize, m-panning, e-panning,
-  /// n-panning, ne-panning, nw-panning, s-panning, se-panning, sw-panning,
-  /// w-panning, move, vertical-text, cell, context-menu, alias, progress,
-  /// nodrop, copy, none, not-allowed, zoom-in, zoom-out, grab, grabbing or
-  /// custom. If the type parameter is custom, the image parameter will hold the
-  /// custom cursor image in a NativeImage, and scale, size and hotspot will
-  /// hold additional information about the custom cursor.
-  [<Emit "$0.on('cursor-changed',$1)">] abstract onCursorChanged: listener: (Event -> string -> NativeImage -> float -> Size -> Point -> unit) -> WebContents
-  [<Emit "$0.once('cursor-changed',$1)">] abstract onceCursorChanged: listener: (Event -> string -> NativeImage -> float -> Size -> Point -> unit) -> WebContents
-  [<Emit "$0.addListener('cursor-changed',$1)">] abstract addListenerCursorChanged: listener: (Event -> string -> NativeImage -> float -> Size -> Point -> unit) -> WebContents
-  [<Emit "$0.removeListener('cursor-changed',$1)">] abstract removeListenerCursorChanged: listener: (Event -> string -> NativeImage -> float -> Size -> Point -> unit) -> WebContents
-  /// Emitted when desktopCapturer.getSources() is called in the renderer
-  /// process. Calling event.preventDefault() will make it return empty sources.
-  [<Emit "$0.on('desktop-capturer-get-sources',$1)">] abstract onDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('desktop-capturer-get-sources',$1)">] abstract onceDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('desktop-capturer-get-sources',$1)">] abstract addListenerDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('desktop-capturer-get-sources',$1)">] abstract removeListenerDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
-  /// Emitted when webContents is destroyed.
-  [<Emit "$0.on('destroyed',$1)">] abstract onDestroyed: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('destroyed',$1)">] abstract onceDestroyed: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('destroyed',$1)">] abstract addListenerDestroyed: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('destroyed',$1)">] abstract removeListenerDestroyed: listener: (Event -> unit) -> WebContents
-  /// Emitted when DevTools is closed.
-  [<Emit "$0.on('devtools-closed',$1)">] abstract onDevtoolsClosed: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('devtools-closed',$1)">] abstract onceDevtoolsClosed: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('devtools-closed',$1)">] abstract addListenerDevtoolsClosed: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('devtools-closed',$1)">] abstract removeListenerDevtoolsClosed: listener: (Event -> unit) -> WebContents
-  /// Emitted when DevTools is focused / opened.
-  [<Emit "$0.on('devtools-focused',$1)">] abstract onDevtoolsFocused: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('devtools-focused',$1)">] abstract onceDevtoolsFocused: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('devtools-focused',$1)">] abstract addListenerDevtoolsFocused: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('devtools-focused',$1)">] abstract removeListenerDevtoolsFocused: listener: (Event -> unit) -> WebContents
-  /// Emitted when DevTools is opened.
-  [<Emit "$0.on('devtools-opened',$1)">] abstract onDevtoolsOpened: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('devtools-opened',$1)">] abstract onceDevtoolsOpened: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('devtools-opened',$1)">] abstract addListenerDevtoolsOpened: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('devtools-opened',$1)">] abstract removeListenerDevtoolsOpened: listener: (Event -> unit) -> WebContents
-  /// Emitted when the devtools window instructs the webContents to reload
-  [<Emit "$0.on('devtools-reload-page',$1)">] abstract onDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('devtools-reload-page',$1)">] abstract onceDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('devtools-reload-page',$1)">] abstract addListenerDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('devtools-reload-page',$1)">] abstract removeListenerDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
-  /// Emitted when a <webview> has been attached to this web contents.
-  [<Emit "$0.on('did-attach-webview',$1)">] abstract onDidAttachWebview: listener: (Event -> WebContents -> unit) -> WebContents
-  [<Emit "$0.once('did-attach-webview',$1)">] abstract onceDidAttachWebview: listener: (Event -> WebContents -> unit) -> WebContents
-  [<Emit "$0.addListener('did-attach-webview',$1)">] abstract addListenerDidAttachWebview: listener: (Event -> WebContents -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-attach-webview',$1)">] abstract removeListenerDidAttachWebview: listener: (Event -> WebContents -> unit) -> WebContents
-  /// Emitted when a page's theme color changes. This is usually due to
-  /// encountering a meta tag:
-  [<Emit "$0.on('did-change-theme-color',$1)">] abstract onDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
-  [<Emit "$0.once('did-change-theme-color',$1)">] abstract onceDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
-  [<Emit "$0.addListener('did-change-theme-color',$1)">] abstract addListenerDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-change-theme-color',$1)">] abstract removeListenerDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
+  /// Emitted when the navigation is done, i.e. the spinner of the tab has
+  /// stopped spinning, and the `onload` event was dispatched.
+  [<Emit "$0.on('did-finish-load',$1)">] abstract onDidFinishLoad: listener: (Event -> unit) -> WebContents
+  /// See onDidFinishLoad.
+  [<Emit "$0.once('did-finish-load',$1)">] abstract onceDidFinishLoad: listener: (Event -> unit) -> WebContents
+  /// See onDidFinishLoad.
+  [<Emit "$0.addListener('did-finish-load',$1)">] abstract addListenerDidFinishLoad: listener: (Event -> unit) -> WebContents
+  /// See onDidFinishLoad.
+  [<Emit "$0.removeListener('did-finish-load',$1)">] abstract removeListenerDidFinishLoad: listener: (Event -> unit) -> WebContents
   /// This event is like did-finish-load but emitted when the load failed or was
   /// cancelled, e.g. window.stop() is invoked. The full list of error codes and
-  /// their meaning is available here.
+  /// their meaning is available here:
+  /// https://cs.chromium.org/chromium/src/net/base/net_error_list.h
+  ///
+  /// Additional parameters:
+  ///   - errorCode
+  ///   - errorDescription
+  ///   - validatedURL
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
   [<Emit "$0.on('did-fail-load',$1)">] abstract onDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFailLoad.
   [<Emit "$0.once('did-fail-load',$1)">] abstract onceDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFailLoad.
   [<Emit "$0.addListener('did-fail-load',$1)">] abstract addListenerDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFailLoad.
   [<Emit "$0.removeListener('did-fail-load',$1)">] abstract removeListenerDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
-  /// Emitted when the navigation is done, i.e. the spinner of the tab has
-  /// stopped spinning, and the onload event was dispatched.
-  [<Emit "$0.on('did-finish-load',$1)">] abstract onDidFinishLoad: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('did-finish-load',$1)">] abstract onceDidFinishLoad: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('did-finish-load',$1)">] abstract addListenerDidFinishLoad: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-finish-load',$1)">] abstract removeListenerDidFinishLoad: listener: (Event -> unit) -> WebContents
   /// Emitted when a frame has done navigation.
+  ///
+  /// Additional parameters:
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
   [<Emit "$0.on('did-frame-finish-load',$1)">] abstract onDidFrameFinishLoad: listener: (Event -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFrameFinishLoad.
   [<Emit "$0.once('did-frame-finish-load',$1)">] abstract onceDidFrameFinishLoad: listener: (Event -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFrameFinishLoad.
   [<Emit "$0.addListener('did-frame-finish-load',$1)">] abstract addListenerDidFrameFinishLoad: listener: (Event -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFrameFinishLoad.
   [<Emit "$0.removeListener('did-frame-finish-load',$1)">] abstract removeListenerDidFrameFinishLoad: listener: (Event -> bool -> int -> int -> unit) -> WebContents
-  /// Emitted when any frame navigation is done. This event is not emitted for
-  /// in-page navigations, such as clicking anchor links or updating the
-  /// window.location.hash. Use did-navigate-in-page event for this purpose.
-  [<Emit "$0.on('did-frame-navigate',$1)">] abstract onDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.once('did-frame-navigate',$1)">] abstract onceDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.addListener('did-frame-navigate',$1)">] abstract addListenerDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-frame-navigate',$1)">] abstract removeListenerDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
-  /// Emitted when a main frame navigation is done. This event is not emitted
-  /// for in-page navigations, such as clicking anchor links or updating the
-  /// window.location.hash. Use did-navigate-in-page event for this purpose.
-  [<Emit "$0.on('did-navigate',$1)">] abstract onDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
-  [<Emit "$0.once('did-navigate',$1)">] abstract onceDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('did-navigate',$1)">] abstract addListenerDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-navigate',$1)">] abstract removeListenerDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
-  /// Emitted when an in-page navigation happened in any frame. When in-page
-  /// navigation happens, the page URL changes but does not cause navigation
-  /// outside of the page. Examples of this occurring are when anchor links are
-  /// clicked or when the DOM hashchange event is triggered.
-  [<Emit "$0.on('did-navigate-in-page',$1)">] abstract onDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.once('did-navigate-in-page',$1)">] abstract onceDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.addListener('did-navigate-in-page',$1)">] abstract addListenerDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-navigate-in-page',$1)">] abstract removeListenerDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
-  /// Emitted after a server side redirect occurs during navigation.  For
-  /// example a 302 redirect. This event can not be prevented, if you want to
-  /// prevent redirects you should checkout out the will-redirect event above.
-  [<Emit "$0.on('did-redirect-navigation',$1)">] abstract onDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.once('did-redirect-navigation',$1)">] abstract onceDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.addListener('did-redirect-navigation',$1)">] abstract addListenerDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-redirect-navigation',$1)">] abstract removeListenerDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
   /// Corresponds to the points in time when the spinner of the tab started
   /// spinning.
   [<Emit "$0.on('did-start-loading',$1)">] abstract onDidStartLoading: listener: (Event -> unit) -> WebContents
+  /// See onDidStartLoading.
   [<Emit "$0.once('did-start-loading',$1)">] abstract onceDidStartLoading: listener: (Event -> unit) -> WebContents
+  /// See onDidStartLoading.
   [<Emit "$0.addListener('did-start-loading',$1)">] abstract addListenerDidStartLoading: listener: (Event -> unit) -> WebContents
+  /// See onDidStartLoading.
   [<Emit "$0.removeListener('did-start-loading',$1)">] abstract removeListenerDidStartLoading: listener: (Event -> unit) -> WebContents
-  /// Emitted when any frame (including main) starts navigating. isInplace will
-  /// be true for in-page navigations.
-  [<Emit "$0.on('did-start-navigation',$1)">] abstract onDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.once('did-start-navigation',$1)">] abstract onceDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.addListener('did-start-navigation',$1)">] abstract addListenerDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.removeListener('did-start-navigation',$1)">] abstract removeListenerDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
   /// Corresponds to the points in time when the spinner of the tab stopped
   /// spinning.
   [<Emit "$0.on('did-stop-loading',$1)">] abstract onDidStopLoading: listener: (Event -> unit) -> WebContents
+  /// See onDidStopLoading.
   [<Emit "$0.once('did-stop-loading',$1)">] abstract onceDidStopLoading: listener: (Event -> unit) -> WebContents
+  /// See onDidStopLoading.
   [<Emit "$0.addListener('did-stop-loading',$1)">] abstract addListenerDidStopLoading: listener: (Event -> unit) -> WebContents
+  /// See onDidStopLoading.
   [<Emit "$0.removeListener('did-stop-loading',$1)">] abstract removeListenerDidStopLoading: listener: (Event -> unit) -> WebContents
   /// Emitted when the document in the given frame is loaded.
   [<Emit "$0.on('dom-ready',$1)">] abstract onDomReady: listener: (Event -> unit) -> WebContents
+  /// See onDomReady.
   [<Emit "$0.once('dom-ready',$1)">] abstract onceDomReady: listener: (Event -> unit) -> WebContents
+  /// See onDomReady.
   [<Emit "$0.addListener('dom-ready',$1)">] abstract addListenerDomReady: listener: (Event -> unit) -> WebContents
+  /// See onDomReady.
   [<Emit "$0.removeListener('dom-ready',$1)">] abstract removeListenerDomReady: listener: (Event -> unit) -> WebContents
-  /// Emitted when a result is available for [webContents.findInPage] request.
-  [<Emit "$0.on('found-in-page',$1)">] abstract onFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
-  [<Emit "$0.once('found-in-page',$1)">] abstract onceFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
-  [<Emit "$0.addListener('found-in-page',$1)">] abstract addListenerFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
-  [<Emit "$0.removeListener('found-in-page',$1)">] abstract removeListenerFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
-  /// Emitted when the renderer process sends an asynchronous message via
-  /// ipcRenderer.send().
-  [<Emit "$0.on('ipc-message',$1)">] abstract onIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  [<Emit "$0.once('ipc-message',$1)">] abstract onceIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  [<Emit "$0.addListener('ipc-message',$1)">] abstract addListenerIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  [<Emit "$0.removeListener('ipc-message',$1)">] abstract removeListenerIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  /// Emitted when the renderer process sends a synchronous message via
-  /// ipcRenderer.sendSync().
-  [<Emit "$0.on('ipc-message-sync',$1)">] abstract onIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  [<Emit "$0.once('ipc-message-sync',$1)">] abstract onceIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  [<Emit "$0.addListener('ipc-message-sync',$1)">] abstract addListenerIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  [<Emit "$0.removeListener('ipc-message-sync',$1)">] abstract removeListenerIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
-  /// Emitted when webContents wants to do basic auth. The usage is the same
-  /// with the login event of app.
-  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
-  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
-  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
-  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
-  /// Emitted when media is paused or done playing.
-  [<Emit "$0.on('media-paused',$1)">] abstract onMediaPaused: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('media-paused',$1)">] abstract onceMediaPaused: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('media-paused',$1)">] abstract addListenerMediaPaused: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('media-paused',$1)">] abstract removeListenerMediaPaused: listener: (Event -> unit) -> WebContents
-  /// Emitted when media starts playing.
-  [<Emit "$0.on('media-started-playing',$1)">] abstract onMediaStartedPlaying: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('media-started-playing',$1)">] abstract onceMediaStartedPlaying: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('media-started-playing',$1)">] abstract addListenerMediaStartedPlaying: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('media-started-playing',$1)">] abstract removeListenerMediaStartedPlaying: listener: (Event -> unit) -> WebContents
-  /// Emitted when the page requests to open a new window for a url. It could be
-  /// requested by window.open or an external link like <a target='_blank'>. By
-  /// default a new BrowserWindow will be created for the url. Calling
-  /// event.preventDefault() will prevent Electron from automatically creating a
-  /// new BrowserWindow. If you call event.preventDefault() and manually create
-  /// a new BrowserWindow then you must set event.newGuest to reference the new
-  /// BrowserWindow instance, failing to do so may result in unexpected
-  /// behavior. For example:
-  [<Emit "$0.on('new-window',$1)">] abstract onNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
-  [<Emit "$0.once('new-window',$1)">] abstract onceNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
-  [<Emit "$0.addListener('new-window',$1)">] abstract addListenerNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
-  [<Emit "$0.removeListener('new-window',$1)">] abstract removeListenerNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
-  /// Emitted when page receives favicon urls.
-  [<Emit "$0.on('page-favicon-updated',$1)">] abstract onPageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
-  [<Emit "$0.once('page-favicon-updated',$1)">] abstract oncePageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
-  [<Emit "$0.addListener('page-favicon-updated',$1)">] abstract addListenerPageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
-  [<Emit "$0.removeListener('page-favicon-updated',$1)">] abstract removeListenerPageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
   /// Fired when page title is set during navigation. explicitSet is false when
   /// title is synthesized from file url.
+  ///
+  /// Additional parameters:
+  ///   - title
+  ///   - explicitSet
   [<Emit "$0.on('page-title-updated',$1)">] abstract onPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> WebContents
+  /// See onPageTitleUpdated.
   [<Emit "$0.once('page-title-updated',$1)">] abstract oncePageTitleUpdated: listener: (Event -> string -> bool -> unit) -> WebContents
+  /// See onPageTitleUpdated.
   [<Emit "$0.addListener('page-title-updated',$1)">] abstract addListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> WebContents
+  /// See onPageTitleUpdated.
   [<Emit "$0.removeListener('page-title-updated',$1)">] abstract removeListenerPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> WebContents
-  /// Emitted when a new frame is generated. Only the dirty area is passed in
-  /// the buffer.
-  [<Emit "$0.on('paint',$1)">] abstract onPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
-  [<Emit "$0.once('paint',$1)">] abstract oncePaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
-  [<Emit "$0.addListener('paint',$1)">] abstract addListenerPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
-  [<Emit "$0.removeListener('paint',$1)">] abstract removeListenerPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
-  /// Emitted when a plugin process has crashed.
-  [<Emit "$0.on('plugin-crashed',$1)">] abstract onPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
-  [<Emit "$0.once('plugin-crashed',$1)">] abstract oncePluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('plugin-crashed',$1)">] abstract addListenerPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('plugin-crashed',$1)">] abstract removeListenerPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
-  /// Emitted when the preload script preloadPath throws an unhandled exception
-  /// error.
-  [<Emit "$0.on('preload-error',$1)">] abstract onPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
-  [<Emit "$0.once('preload-error',$1)">] abstract oncePreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
-  [<Emit "$0.addListener('preload-error',$1)">] abstract addListenerPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
-  [<Emit "$0.removeListener('preload-error',$1)">] abstract removeListenerPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
-  /// Emitted when remote.getBuiltin() is called in the renderer process.
-  /// Calling event.preventDefault() will prevent the module from being
-  /// returned. Custom value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-builtin',$1)">] abstract onRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.once('remote-get-builtin',$1)">] abstract onceRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('remote-get-builtin',$1)">] abstract addListenerRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('remote-get-builtin',$1)">] abstract removeListenerRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  /// Emitted when remote.getCurrentWebContents() is called in the renderer
-  /// process. Calling event.preventDefault() will prevent the object from being
-  /// returned. Custom value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-current-web-contents',$1)">] abstract onRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
-  [<Emit "$0.once('remote-get-current-web-contents',$1)">] abstract onceRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
-  [<Emit "$0.addListener('remote-get-current-web-contents',$1)">] abstract addListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
-  [<Emit "$0.removeListener('remote-get-current-web-contents',$1)">] abstract removeListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
-  /// Emitted when remote.getCurrentWindow() is called in the renderer process.
-  /// Calling event.preventDefault() will prevent the object from being
-  /// returned. Custom value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-current-window',$1)">] abstract onRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
-  [<Emit "$0.once('remote-get-current-window',$1)">] abstract onceRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
-  [<Emit "$0.addListener('remote-get-current-window',$1)">] abstract addListenerRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
-  [<Emit "$0.removeListener('remote-get-current-window',$1)">] abstract removeListenerRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
-  /// Emitted when remote.getGlobal() is called in the renderer process. Calling
-  /// event.preventDefault() will prevent the global from being returned. Custom
-  /// value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-global',$1)">] abstract onRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.once('remote-get-global',$1)">] abstract onceRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('remote-get-global',$1)">] abstract addListenerRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('remote-get-global',$1)">] abstract removeListenerRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  /// Emitted when <webview>.getWebContents() is called in the renderer process.
-  /// Calling event.preventDefault() will prevent the object from being
-  /// returned. Custom value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-guest-web-contents',$1)">] abstract onRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> WebContents
-  [<Emit "$0.once('remote-get-guest-web-contents',$1)">] abstract onceRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> WebContents
-  [<Emit "$0.addListener('remote-get-guest-web-contents',$1)">] abstract addListenerRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> WebContents
-  [<Emit "$0.removeListener('remote-get-guest-web-contents',$1)">] abstract removeListenerRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> WebContents
-  /// Emitted when remote.require() is called in the renderer process. Calling
-  /// event.preventDefault() will prevent the module from being returned. Custom
-  /// value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-require',$1)">] abstract onRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.once('remote-require',$1)">] abstract onceRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('remote-require',$1)">] abstract addListenerRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('remote-require',$1)">] abstract removeListenerRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// Emitted when page receives favicon urls. Called with the URLs.
+  [<Emit "$0.on('page-favicon-updated',$1)">] abstract onPageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
+  /// See onPageFaviconUpdated.
+  [<Emit "$0.once('page-favicon-updated',$1)">] abstract oncePageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
+  /// See onPageFaviconUpdated.
+  [<Emit "$0.addListener('page-favicon-updated',$1)">] abstract addListenerPageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
+  /// See onPageFaviconUpdated.
+  [<Emit "$0.removeListener('page-favicon-updated',$1)">] abstract removeListenerPageFaviconUpdated: listener: (Event -> string [] -> unit) -> WebContents
+  /// Emitted when the page requests to open a new window for a url. It could be
+  /// requested by window.open or an external link like <a target='_blank'>.
+  ///
+  /// By default a new BrowserWindow will be created for the url.
+  ///
+  /// Calling event.preventDefault() will prevent Electron from automatically
+  /// creating a new BrowserWindow. If you call event.preventDefault() and
+  /// manually create a new BrowserWindow then you must set event.newGuest to
+  /// reference the new BrowserWindow instance, failing to do so may result in
+  /// unexpected behavior.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - frameName
+  ///   - disposition
+  ///   - options: The options which will be used for creating the new BrowserWindow
+  ///   - additionalFeatures: The non-standard features (features not handled by Chromium or Electron) given to window.open()
+  ///   - referrer: The referrer that will be passed to the new window. May or may not result in the Referer header being sent, depending on the referrer policy.
+  [<Emit "$0.on('new-window',$1)">] abstract onNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  /// See onNewWindow.
+  [<Emit "$0.once('new-window',$1)">] abstract onceNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  /// See onNewWindow.
+  [<Emit "$0.addListener('new-window',$1)">] abstract addListenerNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  /// See onNewWindow.
+  [<Emit "$0.removeListener('new-window',$1)">] abstract removeListenerNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  /// Emitted when a user or the page wants to start navigation. It can happen
+  /// when the window.location object is changed or a user clicks a link in the
+  /// page. The listener receives the URL.
+  ///
+  /// This event will not emit when the navigation is started programmatically
+  /// with APIs like webContents.loadURL and webContents.back.
+  ///
+  /// It is also not emitted for in-page navigations, such as clicking anchor
+  /// links or updating the window.location.hash. Use did-navigate-in-page event
+  /// for this purpose.
+  ///
+  /// Calling event.preventDefault() will prevent the navigation.
+  [<Emit "$0.on('will-navigate',$1)">] abstract onWillNavigate: listener: (Event -> string -> unit) -> WebContents
+  /// See onWillNavigate.
+  [<Emit "$0.once('will-navigate',$1)">] abstract onceWillNavigate: listener: (Event -> string -> unit) -> WebContents
+  /// See onWillNavigate.
+  [<Emit "$0.addListener('will-navigate',$1)">] abstract addListenerWillNavigate: listener: (Event -> string -> unit) -> WebContents
+  /// See onWillNavigate.
+  [<Emit "$0.removeListener('will-navigate',$1)">] abstract removeListenerWillNavigate: listener: (Event -> string -> unit) -> WebContents
+  /// Emitted when any frame (including main) starts navigating. isInplace will
+  /// be true for in-page navigations.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - isInPlace
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
+  [<Emit "$0.on('did-start-navigation',$1)">] abstract onDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidStartNavigation.
+  [<Emit "$0.once('did-start-navigation',$1)">] abstract onceDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidStartNavigation.
+  [<Emit "$0.addListener('did-start-navigation',$1)">] abstract addListenerDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidStartNavigation.
+  [<Emit "$0.removeListener('did-start-navigation',$1)">] abstract removeListenerDidStartNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// Emitted as a server side redirect occurs during navigation. For example a
+  /// 302 redirect.
+  ///
+  /// This event will be emitted after did-start-navigation and always before
+  /// the did-redirect-navigation event for the same navigation.
+  ///
+  /// Calling event.preventDefault() will prevent the navigation (not just the
+  /// redirect).
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - isInPlace
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
+  [<Emit "$0.on('will-redirect',$1)">] abstract onWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onWillRedirect.
+  [<Emit "$0.once('will-redirect',$1)">] abstract onceWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onWillRedirect.
+  [<Emit "$0.addListener('will-redirect',$1)">] abstract addListenerWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onWillRedirect.
+  [<Emit "$0.removeListener('will-redirect',$1)">] abstract removeListenerWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// Emitted after a server side redirect occurs during navigation. For example
+  /// a 302 redirect.
+  ///
+  /// This event can not be prevented, if you want to prevent redirects you
+  /// should checkout out the `will-redirect` event.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - isInPlace
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
+  [<Emit "$0.on('did-redirect-navigation',$1)">] abstract onDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidRedirectNavigation.
+  [<Emit "$0.once('did-redirect-navigation',$1)">] abstract onceDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidRedirectNavigation.
+  [<Emit "$0.addListener('did-redirect-navigation',$1)">] abstract addListenerDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidRedirectNavigation.
+  [<Emit "$0.removeListener('did-redirect-navigation',$1)">] abstract removeListenerDidRedirectNavigation: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
+  /// Emitted when a main frame navigation is done.
+  ///
+  /// This event is not emitted for in-page navigations, such as clicking anchor
+  /// links or updating the window.location.hash. Use `did-navigate-in-page`
+  /// event for this purpose.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - httpResponseCode: -1 for non HTTP navigations
+  ///   - httpStatusText: empty for non HTTP navigations
+  [<Emit "$0.on('did-navigate',$1)">] abstract onDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
+  /// See onDidNavigate.
+  [<Emit "$0.once('did-navigate',$1)">] abstract onceDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
+  /// See onDidNavigate.
+  [<Emit "$0.addListener('did-navigate',$1)">] abstract addListenerDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
+  /// See onDidNavigate.
+  [<Emit "$0.removeListener('did-navigate',$1)">] abstract removeListenerDidNavigate: listener: (Event -> string -> int -> string -> unit) -> WebContents
+  /// Emitted when any frame navigation is done.
+  ///
+  /// This event is not emitted for in-page navigations, such as clicking anchor
+  /// links or updating the window.location.hash. Use `did-navigate-in-page`
+  /// event for this purpose.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - httpResponseCode: -1 for non HTTP navigations
+  ///   - httpStatusText: empty for non HTTP navigations
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
+  [<Emit "$0.on('did-frame-navigate',$1)">] abstract onDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFrameNavigate.
+  [<Emit "$0.once('did-frame-navigate',$1)">] abstract onceDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFrameNavigate.
+  [<Emit "$0.addListener('did-frame-navigate',$1)">] abstract addListenerDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFrameNavigate.
+  [<Emit "$0.removeListener('did-frame-navigate',$1)">] abstract removeListenerDidFrameNavigate: listener: (Event -> string -> int -> string -> bool -> int -> int -> unit) -> WebContents
+  /// Emitted when an in-page navigation happened in any frame.
+  ///
+  /// When in-page navigation happens, the page URL changes but does not cause
+  /// navigation outside of the page. Examples of this occurring are when anchor
+  /// links are clicked or when the DOM `hashchange` event is triggered.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
+  [<Emit "$0.on('did-navigate-in-page',$1)">] abstract onDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidNavigateInPage.
+  [<Emit "$0.once('did-navigate-in-page',$1)">] abstract onceDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidNavigateInPage.
+  [<Emit "$0.addListener('did-navigate-in-page',$1)">] abstract addListenerDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidNavigateInPage.
+  [<Emit "$0.removeListener('did-navigate-in-page',$1)">] abstract removeListenerDidNavigateInPage: listener: (Event -> string -> bool -> int -> int -> unit) -> WebContents
+  /// Emitted when a beforeunload event handler is attempting to cancel a page
+  /// unload.
+  ///
+  /// Calling event.preventDefault() will ignore the beforeunload event handler
+  /// and allow the page to be unloaded.
+  [<Emit "$0.on('will-prevent-unload',$1)">] abstract onWillPreventUnload: listener: (Event -> unit) -> WebContents
+  /// See onWillPreventUnload.
+  [<Emit "$0.once('will-prevent-unload',$1)">] abstract onceWillPreventUnload: listener: (Event -> unit) -> WebContents
+  /// See onWillPreventUnload.
+  [<Emit "$0.addListener('will-prevent-unload',$1)">] abstract addListenerWillPreventUnload: listener: (Event -> unit) -> WebContents
+  /// See onWillPreventUnload.
+  [<Emit "$0.removeListener('will-prevent-unload',$1)">] abstract removeListenerWillPreventUnload: listener: (Event -> unit) -> WebContents
+  /// Emitted when the renderer process crashes or is killed. Called with true
+  /// if killed, false if crashed.
+  [<Emit "$0.on('crashed',$1)">] abstract onCrashed: listener: (Event -> bool -> unit) -> WebContents
+  /// See onCrashed.
+  [<Emit "$0.once('crashed',$1)">] abstract onceCrashed: listener: (Event -> bool -> unit) -> WebContents
+  /// See onCrashed.
+  [<Emit "$0.addListener('crashed',$1)">] abstract addListenerCrashed: listener: (Event -> bool -> unit) -> WebContents
+  /// See onCrashed.
+  [<Emit "$0.removeListener('crashed',$1)">] abstract removeListenerCrashed: listener: (Event -> bool -> unit) -> WebContents
+  /// Emitted when the web page becomes unresponsive.
+  [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (Event -> unit) -> WebContents
+  /// See onUnresponsive.
+  [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (Event -> unit) -> WebContents
+  /// See onUnresponsive.
+  [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (Event -> unit) -> WebContents
+  /// See onUnresponsive.
+  [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (Event -> unit) -> WebContents
   /// Emitted when the unresponsive web page becomes responsive again.
   [<Emit "$0.on('responsive',$1)">] abstract onResponsive: listener: (Event -> unit) -> WebContents
+  /// See onResponsive.
   [<Emit "$0.once('responsive',$1)">] abstract onceResponsive: listener: (Event -> unit) -> WebContents
+  /// See onResponsive.
   [<Emit "$0.addListener('responsive',$1)">] abstract addListenerResponsive: listener: (Event -> unit) -> WebContents
+  /// See onResponsive.
   [<Emit "$0.removeListener('responsive',$1)">] abstract removeListenerResponsive: listener: (Event -> unit) -> WebContents
+  /// Emitted when a plugin process has crashed. Called with the name and version.
+  [<Emit "$0.on('plugin-crashed',$1)">] abstract onPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
+  /// See onPluginCrashed.
+  [<Emit "$0.once('plugin-crashed',$1)">] abstract oncePluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
+  /// See onPluginCrashed.
+  [<Emit "$0.addListener('plugin-crashed',$1)">] abstract addListenerPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
+  /// See onPluginCrashed.
+  [<Emit "$0.removeListener('plugin-crashed',$1)">] abstract removeListenerPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
+  /// Emitted when webContents is destroyed.
+  [<Emit "$0.on('destroyed',$1)">] abstract onDestroyed: listener: (Event -> unit) -> WebContents
+  /// See onDestroyed.
+  [<Emit "$0.once('destroyed',$1)">] abstract onceDestroyed: listener: (Event -> unit) -> WebContents
+  /// See onDestroyed.
+  [<Emit "$0.addListener('destroyed',$1)">] abstract addListenerDestroyed: listener: (Event -> unit) -> WebContents
+  /// See onDestroyed.
+  [<Emit "$0.removeListener('destroyed',$1)">] abstract removeListenerDestroyed: listener: (Event -> unit) -> WebContents
+  /// Emitted before dispatching the keydown and keyup events in the page.
+  /// Calling event.preventDefault will prevent the page keydown/keyup events
+  /// and the menu shortcuts.
+  ///
+  /// To only prevent the menu shortcuts, use setIgnoreMenuShortcuts.
+  [<Emit "$0.on('before-input-event',$1)">] abstract onBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
+  /// See onBeforeInputEvent.
+  [<Emit "$0.once('before-input-event',$1)">] abstract onceBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
+  /// See onBeforeInputEvent.
+  [<Emit "$0.addListener('before-input-event',$1)">] abstract addListenerBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
+  /// See onBeforeInputEvent.
+  [<Emit "$0.removeListener('before-input-event',$1)">] abstract removeListenerBeforeInputEvent: listener: (Event -> BeforeInputEventData -> unit) -> WebContents
+  /// Emitted when DevTools is opened.
+  [<Emit "$0.on('devtools-opened',$1)">] abstract onDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsOpened.
+  [<Emit "$0.once('devtools-opened',$1)">] abstract onceDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsOpened.
+  [<Emit "$0.addListener('devtools-opened',$1)">] abstract addListenerDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsOpened.
+  [<Emit "$0.removeListener('devtools-opened',$1)">] abstract removeListenerDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  /// Emitted when DevTools is closed.
+  [<Emit "$0.on('devtools-closed',$1)">] abstract onDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsClosed.
+  [<Emit "$0.once('devtools-closed',$1)">] abstract onceDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsClosed.
+  [<Emit "$0.addListener('devtools-closed',$1)">] abstract addListenerDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsClosed.
+  [<Emit "$0.removeListener('devtools-closed',$1)">] abstract removeListenerDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  /// Emitted when DevTools is focused / opened.
+  [<Emit "$0.on('devtools-focused',$1)">] abstract onDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsFocused.
+  [<Emit "$0.once('devtools-focused',$1)">] abstract onceDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsFocused.
+  [<Emit "$0.addListener('devtools-focused',$1)">] abstract addListenerDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsFocused.
+  [<Emit "$0.removeListener('devtools-focused',$1)">] abstract removeListenerDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  /// Emitted when failed to verify the certificate for `url`.
+  ///
+  /// The usage is the same with the `certificate-error` event of `app`.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - error
+  ///   - certificate
+  ///   - callback: call with true if the certificate can be trusted.
+  [<Emit "$0.on('certificate-error',$1)">] abstract onCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
+  /// See onCertificateError.
+  [<Emit "$0.once('certificate-error',$1)">] abstract onceCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
+  /// See onCertificateError.
+  [<Emit "$0.addListener('certificate-error',$1)">] abstract addListenerCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
+  /// See onCertificateError.
+  [<Emit "$0.removeListener('certificate-error',$1)">] abstract removeListenerCertificateError: listener: (Event -> string -> string -> Certificate -> (bool -> unit) -> unit) -> WebContents
+  /// Emitted when a client certificate is requested.
+  ///
+  /// The usage is the same with the `select-client-certificate` event of `app`.
+  ///
+  /// Additional parameters:
+  ///   - url
+  ///   - certificateList
+  ///   - callback: call with a certificate from the given list to select it
+  [<Emit "$0.on('select-client-certificate',$1)">] abstract onSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
+  /// See onSelectClientCertificate.
+  [<Emit "$0.once('select-client-certificate',$1)">] abstract onceSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
+  /// See onSelectClientCertificate.
+  [<Emit "$0.addListener('select-client-certificate',$1)">] abstract addListenerSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
+  /// See onSelectClientCertificate.
+  [<Emit "$0.removeListener('select-client-certificate',$1)">] abstract removeListenerSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
+  /// Emitted when webContents wants to do basic auth.
+  ///
+  /// The usage is the same with the `login` event of `app`.
+  ///
+  /// Additional parameters:
+  ///
+  ///   - request
+  ///   - authInfo
+  ///   - callback(username, password)
+  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  /// See onLogin.
+  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  /// See onLogin.
+  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  /// See onLogin.
+  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  /// Emitted when a result is available for [webContents.findInPage] request.
+  [<Emit "$0.on('found-in-page',$1)">] abstract onFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
+  /// See onFoundInPage.
+  [<Emit "$0.once('found-in-page',$1)">] abstract onceFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
+  /// See onFoundInPage.
+  [<Emit "$0.addListener('found-in-page',$1)">] abstract addListenerFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
+  /// See onFoundInPage.
+  [<Emit "$0.removeListener('found-in-page',$1)">] abstract removeListenerFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
+  /// Emitted when media starts playing.
+  [<Emit "$0.on('media-started-playing',$1)">] abstract onMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  /// See onMediaStartedPlaying.
+  [<Emit "$0.once('media-started-playing',$1)">] abstract onceMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  /// See onMediaStartedPlaying.
+  [<Emit "$0.addListener('media-started-playing',$1)">] abstract addListenerMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  /// See onMediaStartedPlaying.
+  [<Emit "$0.removeListener('media-started-playing',$1)">] abstract removeListenerMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  /// Emitted when media is paused or done playing.
+  [<Emit "$0.on('media-paused',$1)">] abstract onMediaPaused: listener: (Event -> unit) -> WebContents
+  /// See onMediaPaused.
+  [<Emit "$0.once('media-paused',$1)">] abstract onceMediaPaused: listener: (Event -> unit) -> WebContents
+  /// See onMediaPaused.
+  [<Emit "$0.addListener('media-paused',$1)">] abstract addListenerMediaPaused: listener: (Event -> unit) -> WebContents
+  /// See onMediaPaused.
+  [<Emit "$0.removeListener('media-paused',$1)">] abstract removeListenerMediaPaused: listener: (Event -> unit) -> WebContents
+  /// Emitted when a page's theme color changes. This is usually due to
+  /// encountering a meta tag.
+  ///
+  /// The listener gets the theme color in format "#rrggbb". It is None when no
+  /// theme color is set.
+  [<Emit "$0.on('did-change-theme-color',$1)">] abstract onDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
+  /// See onDidChangeThemeColor.
+  [<Emit "$0.once('did-change-theme-color',$1)">] abstract onceDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
+  /// See onDidChangeThemeColor.
+  [<Emit "$0.addListener('did-change-theme-color',$1)">] abstract addListenerDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
+  /// See onDidChangeThemeColor.
+  [<Emit "$0.removeListener('did-change-theme-color',$1)">] abstract removeListenerDidChangeThemeColor: listener: (Event -> string option -> unit) -> WebContents
+  /// Emitted when mouse moves over a link or the keyboard moves the focus to a
+  /// link. The listener receives the url.
+  [<Emit "$0.on('update-target-url',$1)">] abstract onUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
+  /// See onUpdateTargetUrl.
+  [<Emit "$0.once('update-target-url',$1)">] abstract onceUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
+  /// See onUpdateTargetUrl.
+  [<Emit "$0.addListener('update-target-url',$1)">] abstract addListenerUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
+  /// See onUpdateTargetUrl.
+  [<Emit "$0.removeListener('update-target-url',$1)">] abstract removeListenerUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
+  /// Emitted when the cursor's type changes. If the type is CursorType.Custom,
+  /// the `image` parameter will hold the custom cursor image, and `scale`,
+  /// `size` and `hotspot` will hold additional information about the custom
+  /// cursor.
+  ///
+  /// Additional parameters:
+  ///
+  ///   - type
+  ///   - image
+  ///   - scale: scaling factor for the custom cursor
+  ///   - size: the size of the image
+  ///   - hotspot: coordinates of the custom cursor's hotspot
+  [<Emit "$0.on('cursor-changed',$1)">] abstract onCursorChanged: listener: (Event -> CursorType -> NativeImage option -> float option -> Size option -> Point option -> unit) -> WebContents
+  /// See onCursorChanged.
+  [<Emit "$0.once('cursor-changed',$1)">] abstract onceCursorChanged: listener: (Event -> CursorType -> NativeImage option -> float option -> Size option -> Point option -> unit) -> WebContents
+  /// See onCursorChanged.
+  [<Emit "$0.addListener('cursor-changed',$1)">] abstract addListenerCursorChanged: listener: (Event -> CursorType -> NativeImage option option -> float option -> Size option -> Point -> unit) -> WebContents
+  /// See onCursorChanged.
+  [<Emit "$0.removeListener('cursor-changed',$1)">] abstract removeListenerCursorChanged: listener: (Event -> CursorType -> NativeImage option -> float option -> Size option -> Point option -> unit) -> WebContents
+  /// Emitted when there is a new context menu that needs to be handled.
+  [<Emit "$0.on('context-menu',$1)">] abstract onContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
+  /// See onContextMenu.
+  [<Emit "$0.once('context-menu',$1)">] abstract onceContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
+  /// See onContextMenu.
+  [<Emit "$0.addListener('context-menu',$1)">] abstract addListenerContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
+  /// See onContextMenu.
+  [<Emit "$0.removeListener('context-menu',$1)">] abstract removeListenerContextMenu: listener: (Event -> ContextMenuParams -> unit) -> WebContents
   /// Emitted when bluetooth device needs to be selected on call to
   /// navigator.bluetooth.requestDevice. To use navigator.bluetooth api
   /// webBluetooth should be enabled. If event.preventDefault is not called,
@@ -5079,147 +5678,200 @@ type WebContents =
   /// deviceId to be selected, passing empty string to callback will cancel the
   /// request.
   [<Emit "$0.on('select-bluetooth-device',$1)">] abstract onSelectBluetoothDevice: listener: (Event -> BluetoothDevice [] -> (string -> unit) -> unit) -> WebContents
+  /// See onSelectBluetoothDevice.
   [<Emit "$0.once('select-bluetooth-device',$1)">] abstract onceSelectBluetoothDevice: listener: (Event -> BluetoothDevice [] -> (string -> unit) -> unit) -> WebContents
+  /// See onSelectBluetoothDevice.
   [<Emit "$0.addListener('select-bluetooth-device',$1)">] abstract addListenerSelectBluetoothDevice: listener: (Event -> BluetoothDevice [] -> (string -> unit) -> unit) -> WebContents
+  /// See onSelectBluetoothDevice.
   [<Emit "$0.removeListener('select-bluetooth-device',$1)">] abstract removeListenerSelectBluetoothDevice: listener: (Event -> BluetoothDevice [] -> (string -> unit) -> unit) -> WebContents
-  /// Emitted when a client certificate is requested. The usage is the same with
-  /// the select-client-certificate event of app.
-  [<Emit "$0.on('select-client-certificate',$1)">] abstract onSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
-  [<Emit "$0.once('select-client-certificate',$1)">] abstract onceSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
-  [<Emit "$0.addListener('select-client-certificate',$1)">] abstract addListenerSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
-  [<Emit "$0.removeListener('select-client-certificate',$1)">] abstract removeListenerSelectClientCertificate: listener: (Event -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> WebContents
-  /// Emitted when the web page becomes unresponsive.
-  [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (Event -> unit) -> WebContents
-  /// Emitted when mouse moves over a link or the keyboard moves the focus to a
-  /// link.
-  [<Emit "$0.on('update-target-url',$1)">] abstract onUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
-  [<Emit "$0.once('update-target-url',$1)">] abstract onceUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('update-target-url',$1)">] abstract addListenerUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('update-target-url',$1)">] abstract removeListenerUpdateTargetUrl: listener: (Event -> string -> unit) -> WebContents
-  /// Emitted when a <webview>'s web contents is being attached to this web
-  /// contents. Calling event.preventDefault() will destroy the guest page. This
-  /// event can be used to configure webPreferences for the webContents of a
-  /// <webview> before it's loaded, and provides the ability to set settings
-  /// that can't be set via <webview>
-  /// attributes. Note: The specified preload script option will be appear as
-  /// preloadURL (not preload) in the webPreferences object emitted with this
-  /// event.
-  [<Emit "$0.on('will-attach-webview',$1)">] abstract onWillAttachWebview: listener: (Event -> WebPreferences -> obj -> unit) -> WebContents
-  [<Emit "$0.once('will-attach-webview',$1)">] abstract onceWillAttachWebview: listener: (Event -> WebPreferences -> obj -> unit) -> WebContents
-  [<Emit "$0.addListener('will-attach-webview',$1)">] abstract addListenerWillAttachWebview: listener: (Event -> WebPreferences -> obj -> unit) -> WebContents
-  [<Emit "$0.removeListener('will-attach-webview',$1)">] abstract removeListenerWillAttachWebview: listener: (Event -> WebPreferences -> obj -> unit) -> WebContents
-  /// Emitted when a user or the page wants to start navigation. It can happen
-  /// when the window.location object is changed or a user clicks a link in the
-  /// page. This event will not emit when the navigation is started
-  /// programmatically with APIs like webContents.loadURL and webContents.back.
-  /// It is also not emitted for in-page navigations, such as clicking anchor
-  /// links or updating the window.location.hash. Use did-navigate-in-page event
-  /// for this purpose. Calling event.preventDefault() will prevent the
-  /// navigation.
-  [<Emit "$0.on('will-navigate',$1)">] abstract onWillNavigate: listener: (Event -> string -> unit) -> WebContents
-  [<Emit "$0.once('will-navigate',$1)">] abstract onceWillNavigate: listener: (Event -> string -> unit) -> WebContents
-  [<Emit "$0.addListener('will-navigate',$1)">] abstract addListenerWillNavigate: listener: (Event -> string -> unit) -> WebContents
-  [<Emit "$0.removeListener('will-navigate',$1)">] abstract removeListenerWillNavigate: listener: (Event -> string -> unit) -> WebContents
-  /// Emitted when a beforeunload event handler is attempting to cancel a page
-  /// unload. Calling event.preventDefault() will ignore the beforeunload event
-  /// handler and allow the page to be unloaded.
-  [<Emit "$0.on('will-prevent-unload',$1)">] abstract onWillPreventUnload: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.once('will-prevent-unload',$1)">] abstract onceWillPreventUnload: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.addListener('will-prevent-unload',$1)">] abstract addListenerWillPreventUnload: listener: (Event -> unit) -> WebContents
-  [<Emit "$0.removeListener('will-prevent-unload',$1)">] abstract removeListenerWillPreventUnload: listener: (Event -> unit) -> WebContents
-  /// Emitted as a server side redirect occurs during navigation.  For example a
-  /// 302 redirect. This event will be emitted after did-start-navigation and
-  /// always before the did-redirect-navigation event for the same navigation.
-  /// Calling event.preventDefault() will prevent the navigation (not just the
-  /// redirect).
-  [<Emit "$0.on('will-redirect',$1)">] abstract onWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.once('will-redirect',$1)">] abstract onceWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.addListener('will-redirect',$1)">] abstract addListenerWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  [<Emit "$0.removeListener('will-redirect',$1)">] abstract removeListenerWillRedirect: listener: (Event -> string -> bool -> bool -> int -> int -> unit) -> WebContents
-  /// Adds the specified path to DevTools workspace. Must be used after DevTools
-  /// creation:
-  abstract addWorkSpace: path: string -> unit
-  /// Begin subscribing for presentation events and captured frames, the
-  /// callback will be called with callback(image, dirtyRect) when there is a
-  /// presentation event. The image is an instance of NativeImage that stores
-  /// the captured frame. The dirtyRect is an object with x, y, width, height
-  /// properties that describes which part of the page was repainted. If
-  /// onlyDirty is set to true, image will only contain the repainted area.
-  /// onlyDirty defaults to false.
-  abstract beginFrameSubscription: callback: (NativeImage -> Rectangle -> unit) -> unit
-  /// Begin subscribing for presentation events and captured frames, the
-  /// callback will be called with callback(image, dirtyRect) when there is a
-  /// presentation event. The image is an instance of NativeImage that stores
-  /// the captured frame. The dirtyRect is an object with x, y, width, height
-  /// properties that describes which part of the page was repainted. If
-  /// onlyDirty is set to true, image will only contain the repainted area.
-  /// onlyDirty defaults to false.
-  abstract beginFrameSubscription: onlyDirty: bool * callback: (NativeImage -> Rectangle -> unit) -> unit
-  abstract canGoBack: unit -> bool
-  abstract canGoForward: unit -> bool
-  abstract canGoToOffset: offset: int -> bool
-  /// Captures a snapshot of the page within rect. Omitting rect will capture
-  /// the whole visible page.
-  abstract capturePage: ?rect: Rectangle -> unit
-  /// Captures a snapshot of the page within rect. Upon completion callback will
-  /// be called with callback(image). The image is an instance of NativeImage
-  /// that stores data of the snapshot. Omitting rect will capture the whole
-  /// visible page. Deprecated Soon
-  abstract capturePage: rect: Rectangle * callback: (NativeImage -> unit) -> unit
-  /// Captures a snapshot of the page within rect. Upon completion callback will
-  /// be called with callback(image). The image is an instance of NativeImage
-  /// that stores data of the snapshot. Omitting rect will capture the whole
-  /// visible page. Deprecated Soon
-  abstract capturePage: callback: (NativeImage -> unit) -> unit
-  /// Clears the navigation history.
-  abstract clearHistory: unit -> unit
-  /// Closes the devtools.
-  abstract closeDevTools: unit -> unit
-  /// Executes the editing command copy in web page.
-  abstract copy: unit -> unit
-  /// Copy the image at the given position to the clipboard.
-  abstract copyImageAt: x: int * y: int -> unit
-  /// Executes the editing command cut in web page.
-  abstract cut: unit -> unit
-  /// Executes the editing command delete in web page.
-  abstract delete: unit -> unit
-  /// Disable device emulation enabled by webContents.enableDeviceEmulation.
-  abstract disableDeviceEmulation: unit -> unit
+  /// Emitted when a new frame is generated. Only the dirty area is passed in
+  /// the buffer.
+  ///
+  /// Additional parameters:
+  ///
+  ///   - dirtyRect
+  ///   - image
+  [<Emit "$0.on('paint',$1)">] abstract onPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
+  /// See onPaint.
+  [<Emit "$0.once('paint',$1)">] abstract oncePaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
+  /// See onPaint.
+  [<Emit "$0.addListener('paint',$1)">] abstract addListenerPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
+  /// See onPaint.
+  [<Emit "$0.removeListener('paint',$1)">] abstract removeListenerPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
+  /// Emitted when the devtools window instructs the webContents to reload
+  [<Emit "$0.on('devtools-reload-page',$1)">] abstract onDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsReloadPage.
+  [<Emit "$0.once('devtools-reload-page',$1)">] abstract onceDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsReloadPage.
+  [<Emit "$0.addListener('devtools-reload-page',$1)">] abstract addListenerDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  /// See onDevtoolsReloadPage.
+  [<Emit "$0.removeListener('devtools-reload-page',$1)">] abstract removeListenerDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  /// Emitted when the associated window logs a console message. Will not be
+  /// emitted for windows with offscreen rendering enabled.
+  ///
+  /// Additional parameters:
+  ///
+  ///   - level
+  ///   - message
+  ///   - line
+  ///   - sourceId
+  [<Emit "$0.on('console-message',$1)">] abstract onConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
+  /// See onConsoleMessage.
+  [<Emit "$0.once('console-message',$1)">] abstract onceConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
+  /// See onConsoleMessage.
+  [<Emit "$0.addListener('console-message',$1)">] abstract addListenerConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
+  /// See onConsoleMessage.
+  [<Emit "$0.removeListener('console-message',$1)">] abstract removeListenerConsoleMessage: listener: (Event -> int -> string -> int -> string -> unit) -> WebContents
+  /// Emitted when the preload script preloadPath throws an unhandled exception
+  /// error.
+  ///
+  /// Additional parameters:
+  ///
+  ///   - preloadPath
+  ///   - error
+  [<Emit "$0.on('preload-error',$1)">] abstract onPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
+  /// See onPreloadError.
+  [<Emit "$0.once('preload-error',$1)">] abstract oncePreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
+  /// See onPreloadError.
+  [<Emit "$0.addListener('preload-error',$1)">] abstract addListenerPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
+  /// See onPreloadError.
+  [<Emit "$0.removeListener('preload-error',$1)">] abstract removeListenerPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
+  /// Emitted when the renderer process sends an asynchronous message via
+  /// ipcRenderer.send().
+  ///
+  /// Additional parameters:
+  ///
+  ///   - channel
+  ///   - args
+  [<Emit "$0.on('ipc-message',$1)">] abstract onIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// See onIpcMessage.
+  [<Emit "$0.once('ipc-message',$1)">] abstract onceIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// See onIpcMessage.
+  [<Emit "$0.addListener('ipc-message',$1)">] abstract addListenerIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// See onIpcMessage.
+  [<Emit "$0.removeListener('ipc-message',$1)">] abstract removeListenerIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// Emitted when the renderer process sends a synchronous message via
+  /// ipcRenderer.sendSync().
+  ///
+  /// Additional parameters:
+  ///
+  ///   - channel
+  ///   - args
+  [<Emit "$0.on('ipc-message-sync',$1)">] abstract onIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// See onIpcMessageSync.
+  [<Emit "$0.once('ipc-message-sync',$1)">] abstract onceIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// See onIpcMessageSync.
+  [<Emit "$0.addListener('ipc-message-sync',$1)">] abstract addListenerIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// See onIpcMessageSync.
+  [<Emit "$0.removeListener('ipc-message-sync',$1)">] abstract removeListenerIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
+  /// Emitted when desktopCapturer.getSources() is called in the renderer
+  /// process. Calling event.preventDefault() will make it return empty sources.
+  [<Emit "$0.on('desktop-capturer-get-sources',$1)">] abstract onDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
+  /// See onDesktopCapturerGetSources.
+  [<Emit "$0.once('desktop-capturer-get-sources',$1)">] abstract onceDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
+  /// See onDesktopCapturerGetSources.
+  [<Emit "$0.addListener('desktop-capturer-get-sources',$1)">] abstract addListenerDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
+  /// See onDesktopCapturerGetSources.
+  [<Emit "$0.removeListener('desktop-capturer-get-sources',$1)">] abstract removeListenerDesktopCapturerGetSources: listener: (Event -> unit) -> WebContents
+  /// Emitted when remote.require() is called in the renderer process. The
+  /// listener is passed the module name. Calling event.preventDefault() will
+  /// prevent the module from being returned. Custom value can be returned by
+  /// setting event.returnValue.
+  [<Emit "$0.on('remote-require',$1)">] abstract onRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteRequire.
+  [<Emit "$0.once('remote-require',$1)">] abstract onceRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteRequire.
+  [<Emit "$0.addListener('remote-require',$1)">] abstract addListenerRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteRequire.
+  [<Emit "$0.removeListener('remote-require',$1)">] abstract removeListenerRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// Emitted when remote.getGlobal() is called in the renderer process. The
+  /// listener is passed the global name. Calling event.preventDefault() will
+  /// prevent the global from being returned. Custom value can be returned by
+  /// setting event.returnValue.
+  [<Emit "$0.on('remote-get-global',$1)">] abstract onRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteGetGlobal.
+  [<Emit "$0.once('remote-get-global',$1)">] abstract onceRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteGetGlobal.
+  [<Emit "$0.addListener('remote-get-global',$1)">] abstract addListenerRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteGetGlobal.
+  [<Emit "$0.removeListener('remote-get-global',$1)">] abstract removeListenerRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// Emitted when remote.getBuiltin() is called in the renderer process. The
+  /// listener is passed the module name. Calling event.preventDefault() will
+  /// prevent the module from being returned. Custom value can be returned by
+  /// setting event.returnValue.
+  [<Emit "$0.on('remote-get-builtin',$1)">] abstract onRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteGetBuiltin.
+  [<Emit "$0.once('remote-get-builtin',$1)">] abstract onceRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteGetBuiltin.
+  [<Emit "$0.addListener('remote-get-builtin',$1)">] abstract addListenerRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// See onRemoteGetBuiltin.
+  [<Emit "$0.removeListener('remote-get-builtin',$1)">] abstract removeListenerRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  /// Emitted when remote.getCurrentWindow() is called in the renderer process.
+  /// Calling event.preventDefault() will prevent the object from being
+  /// returned. Custom value can be returned by setting event.returnValue.
+  [<Emit "$0.on('remote-get-current-window',$1)">] abstract onRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// See onRemoteGetCurrentWindow.
+  [<Emit "$0.once('remote-get-current-window',$1)">] abstract onceRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// See onRemoteGetCurrentWindow.
+  [<Emit "$0.addListener('remote-get-current-window',$1)">] abstract addListenerRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// See onRemoteGetCurrentWindow.
+  [<Emit "$0.removeListener('remote-get-current-window',$1)">] abstract removeListenerRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// Emitted when remote.getCurrentWebContents() is called in the renderer
+  /// process. Calling event.preventDefault() will prevent the object from being
+  /// returned. Custom value can be returned by setting event.returnValue.
+  [<Emit "$0.on('remote-get-current-web-contents',$1)">] abstract onRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// See onRemoteGetCurrentWebContents.
+  [<Emit "$0.once('remote-get-current-web-contents',$1)">] abstract onceRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// See onRemoteGetCurrentWebContents.
+  [<Emit "$0.addListener('remote-get-current-web-contents',$1)">] abstract addListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// See onRemoteGetCurrentWebContents.
+  [<Emit "$0.removeListener('remote-get-current-web-contents',$1)">] abstract removeListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  /// Loads the url in the window. The url must contain the protocol prefix,
+  /// e.g. the http:// or file://. If the load should bypass http cache then use
+  /// the pragma header to achieve it.
+  ///
+  /// The promise will resolve when the page has finished loading (see
+  /// did-finish-load), and rejects if the page fails to load (see
+  /// did-fail-load).
+  abstract loadURL: url: string * ?options: LoadURLOptions -> Promise<unit>
+  /// Loads the given file in the window, filePath should be a path to an HTML
+  /// file relative to the root of your application.
+  abstract loadFile: filePath: string * ?options: LoadFileOptions -> Promise<unit>
   /// Initiates a download of the resource at url without navigating. The
-  /// will-download event of session will be triggered.
+  /// will-download event of `session` will be triggered.
   abstract downloadURL: url: string -> unit
-  /// Enable device emulation with the given parameters.
-  abstract enableDeviceEmulation: parameters: DeviceEmulationParameters -> unit
-  /// End subscribing for frame presentation events.
-  abstract endFrameSubscription: unit -> unit
-  /// Evaluates code in page. In the browser window some HTML APIs like
-  /// requestFullScreen can only be invoked by a gesture from the user. Setting
-  /// userGesture to true will remove this limitation. If the result of the
-  /// executed code is a promise the callback result will be the resolved value
-  /// of the promise. We recommend that you use the returned Promise to handle
-  /// code that results in a Promise.
-  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> unit) -> Promise<obj option>
-  /// Starts a request to find all matches for the text in the web page. The
-  /// result of the request can be obtained by subscribing to found-in-page
-  /// event.
-  abstract findInPage: text: string * ?options: FindInPageOptions -> int
+  /// Returns the URL of the current web page.
+  abstract getURL: unit -> string
+  /// Returns the title of the current web page.
+  abstract getTitle: unit -> string
+  /// Indicates whether the web page is destroyed.
+  abstract isDestroyed: unit -> bool
   /// Focuses the web page.
   abstract focus: unit -> unit
-  abstract getFrameRate: unit -> int
-  abstract getOSProcessId: unit -> int
-  /// Get the system printer list.
-  abstract getPrinters: unit -> PrinterInfo []
-  abstract getProcessId: unit -> int
-  abstract getTitle: unit -> string
-  abstract getType: unit -> WebContentType
-  abstract getURL: unit -> string
-  abstract getUserAgent: unit -> string
-  abstract getWebRTCIPHandlingPolicy: unit -> string
-  abstract getZoomFactor: unit -> float
-  abstract getZoomLevel: unit -> float
+  /// Indicates whether the web page is focused.
+  abstract isFocused: unit -> bool
+  /// Indicates whether web page is still loading resources.
+  abstract isLoading: unit -> bool
+  /// Indicates whether the main frame (and not just iframes or frames within
+  /// it) is still loading.
+  abstract isLoadingMainFrame: unit -> bool
+  /// Indicates whether the web page is waiting for a first-response from the
+  /// main resource of the page.
+  abstract isWaitingForResponse: unit -> bool
+  /// Stops any pending navigation.
+  abstract stop: unit -> unit
+  /// Reloads the current web page.
+  abstract reload: unit -> unit
+  /// Reloads current page and ignores cache.
+  abstract reloadIgnoringCache: unit -> unit
+  /// Indicates whether the browser can go back to previous web page.
+  abstract canGoBack: unit -> bool
+  /// Indicates hether the browser can go forward to next web page.
+  abstract canGoForward: unit -> bool
+  /// Indicates whether the web page can go to `offset`.
+  abstract canGoToOffset: offset: int -> bool
+  /// Clears the navigation history.
+  abstract clearHistory: unit -> unit
   /// Makes the browser go back a web page.
   abstract goBack: unit -> unit
   /// Makes the browser go forward a web page.
@@ -5228,212 +5880,289 @@ type WebContents =
   abstract goToIndex: index: int -> unit
   /// Navigates to the specified offset from the "current entry".
   abstract goToOffset: offset: int -> unit
-  /// Checks if any ServiceWorker is registered and returns a boolean as
-  /// response to callback.
-  abstract hasServiceWorker: callback: (bool -> unit) -> unit
-  /// Injects CSS into the current web page.
-  abstract insertCSS: css: string -> unit
-  /// Inserts text to the focused element.
-  abstract insertText: text: string -> unit
-  /// Starts inspecting element at position (x, y).
-  abstract inspectElement: x: int * y: int -> unit
-  /// Opens the developer tools for the service worker context.
-  abstract inspectServiceWorker: unit -> unit
-  /// Schedules a full repaint of the window this web contents is in. If
-  /// offscreen rendering is enabled invalidates the frame and generates a new
-  /// one through the 'paint' event.
-  abstract invalidate: unit -> unit
-  abstract isAudioMuted: unit -> bool
+  /// Indicates whether the renderer process has crashed.
   abstract isCrashed: unit -> bool
-  abstract isCurrentlyAudible: unit -> bool
-  abstract isDestroyed: unit -> bool
-  abstract isDevToolsFocused: unit -> bool
-  abstract isDevToolsOpened: unit -> bool
-  abstract isFocused: unit -> bool
-  abstract isLoading: unit -> bool
-  abstract isLoadingMainFrame: unit -> bool
-  abstract isOffscreen: unit -> bool
-  abstract isPainting: unit -> bool
-  abstract isWaitingForResponse: unit -> bool
-  /// Loads the given file in the window, filePath should be a path to an HTML
-  /// file relative to the root of your application.  For instance an app
-  /// structure like this: Would require code like this
-  abstract loadFile: filePath: string * ?options: LoadFileOptions -> Promise<unit>
-  /// Loads the url in the window. The url must contain the protocol prefix,
-  /// e.g. the http:// or file://. If the load should bypass http cache then use
-  /// the pragma header to achieve it.
-  abstract loadURL: url: string * ?options: LoadURLOptions -> Promise<unit>
-  /// Opens the devtools. When contents is a <webview> tag, the mode would be
-  /// detach by default, explicitly passing an empty mode can force using last
-  /// used dock state.
-  abstract openDevTools: ?options: OpenDevToolsOptions -> unit
-  /// Executes the editing command paste in web page.
-  abstract paste: unit -> unit
-  /// Executes the editing command pasteAndMatchStyle in web page.
-  abstract pasteAndMatchStyle: unit -> unit
-  /// Prints window's web page. When silent is set to true, Electron will pick
-  /// the system's default printer if deviceName is empty and the default
-  /// settings for printing. Calling window.print() in web page is equivalent to
-  /// calling webContents.print({ silent: false, printBackground: false,
-  /// deviceName: '' }). Use page-break-before: always; CSS style to force to
-  /// print to a new page.
-  abstract print: ?options: PrintOptions * ?callback: (bool -> unit) -> unit
-  /// Prints window's web page as PDF with Chromium's preview printing custom
-  /// settings. The callback will be called with callback(error, data) on
-  /// completion. The data is a Buffer that contains the generated PDF data. The
-  /// landscape will be ignored if @page CSS at-rule is used in the web page. By
-  /// default, an empty options will be regarded as: Use page-break-before:
-  /// always; CSS style to force to print to a new page. An example of
-  /// webContents.printToPDF:
-  abstract printToPDF: options: PrintToPDFOptions * callback: (Error -> Buffer -> unit) -> unit
-  /// Executes the editing command redo in web page.
-  abstract redo: unit -> unit
-  /// Reloads the current web page.
-  abstract reload: unit -> unit
-  /// Reloads current page and ignores cache.
-  abstract reloadIgnoringCache: unit -> unit
-  /// Removes the specified path from DevTools workspace.
-  abstract removeWorkSpace: path: string -> unit
-  /// Executes the editing command replace in web page.
-  abstract replace: text: string -> unit
-  /// Executes the editing command replaceMisspelling in web page.
-  abstract replaceMisspelling: text: string -> unit
-  abstract savePage: fullPath: string * saveType: WebContentSaveType * callback: (Error -> unit) -> bool
-  /// Executes the editing command selectAll in web page.
-  abstract selectAll: unit -> unit
-  /// Send an asynchronous message to renderer process via channel, you can also
-  /// send arbitrary arguments. Arguments will be serialized in JSON internally
-  /// and hence no functions or prototype chain will be included. The renderer
-  /// process can handle the message by listening to channel with the
-  /// ipcRenderer module. An example of sending messages from the main process
-  /// to the renderer process:
-  abstract send: channel: string * [<ParamArray>] args: obj [] -> unit
-  /// Sends an input event to the page. Note: The BrowserWindow containing the
-  /// contents needs to be focused for sendInputEvent() to work. For keyboard
-  /// events, the event object also have following properties: For mouse events,
-  /// the event object also have following properties: For the mouseWheel event,
-  /// the event object also have following properties:
-  abstract sendInputEvent: event: Event -> unit
-  /// Send an asynchronous message to a specific frame in a renderer process via
-  /// channel. Arguments will be serialized as JSON internally and as such no
-  /// functions or prototype chains will be included. The renderer process can
-  /// handle the message by listening to channel with the ipcRenderer module. If
-  /// you want to get the frameId of a given renderer context you should use the
-  /// webFrame.routingId value.  E.g. You can also read frameId from all
-  /// incoming IPC messages in the main process.
-  abstract sendToFrame: frameId: int * channel: string * [<ParamArray>] args: obj [] -> unit
-  /// Mute the audio on the current web page.
-  abstract setAudioMuted: muted: bool -> unit
-  /// Controls whether or not this WebContents will throttle animations and
-  /// timers when the page becomes backgrounded. This also affects the Page
-  /// Visibility API.
-  abstract setBackgroundThrottling: allowed: bool -> unit
-  /// Uses the devToolsWebContents as the target WebContents to show devtools.
-  /// The devToolsWebContents must not have done any navigation, and it should
-  /// not be used for other purposes after the call. By default Electron manages
-  /// the devtools by creating an internal WebContents with native view, which
-  /// developers have very limited control of. With the setDevToolsWebContents
-  /// method, developers can use any WebContents to show the devtools in it,
-  /// including BrowserWindow, BrowserView and <webview> tag. Note that closing
-  /// the devtools does not destroy the devToolsWebContents, it is caller's
-  /// responsibility to destroy devToolsWebContents. An example of showing
-  /// devtools in a <webview> tag: An example of showing devtools in a
-  /// BrowserWindow:
-  abstract setDevToolsWebContents: devToolsWebContents: WebContents -> unit
-  /// If offscreen rendering is enabled sets the frame rate to the specified
-  /// number. Only values between 1 and 60 are accepted.
-  abstract setFrameRate: fps: int -> unit
-  /// Ignore application menu shortcuts while this web contents is focused.
-  abstract setIgnoreMenuShortcuts: ignore: bool -> unit
-  /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-  abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
   /// Overrides the user agent for this web page.
   abstract setUserAgent: userAgent: string -> unit
-  /// Sets the maximum and minimum pinch-to-zoom level.
-  abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
-  /// Setting the WebRTC IP handling policy allows you to control which IPs are
-  /// exposed via WebRTC. See BrowserLeaks for more details.
-  abstract setWebRTCIPHandlingPolicy: policy: WebRtcIpHandlingPolicy -> unit
+  /// Returns the user agent for this web page.
+  abstract getUserAgent: unit -> string
+  /// Injects CSS into the current web page.
+  abstract insertCSS: css: string -> unit
+  /// Evaluates `code` in page.
+  ///
+  /// In the browser window some HTML APIs like `requestFullScreen` can only be
+  /// invoked by a gesture from the user. Setting `userGesture` to `true` will
+  /// remove this limitation.
+  ///
+  /// If the result of the executed code is a promise the callback result will
+  /// be the resolved value of the promise. We recommend that you use the
+  /// returned Promise to handle code that results in a Promise.
+  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> unit) -> Promise<obj option>
+  /// Ignore application menu shortcuts while this web contents is focused.
+  abstract setIgnoreMenuShortcuts: ignore: bool -> unit
+  /// Mute the audio on the current web page.
+  abstract setAudioMuted: muted: bool -> unit
+  /// Indicates whether this page has been muted.
+  abstract isAudioMuted: unit -> bool
+  /// Indicates whether audio is currently playing.
+  abstract isCurrentlyAudible: unit -> bool
   /// Changes the zoom factor to the specified factor. Zoom factor is zoom
   /// percent divided by 100, so 300% = 3.0.
   abstract setZoomFactor: factor: float -> unit
+  /// Returns the current zoom factor.
+  abstract getZoomFactor: unit -> float
   /// Changes the zoom level to the specified level. The original size is 0 and
   /// each increment above or below represents zooming 20% larger or smaller to
   /// default limits of 300% and 50% of original size, respectively. The formula
   /// for this is scale := 1.2 ^ level.
   abstract setZoomLevel: level: float -> unit
-  /// Shows pop-up dictionary that searches the selected word on the page.
-  abstract showDefinitionForSelection: unit -> unit
-  /// Sets the item as dragging item for current drag-drop operation, file is
-  /// the absolute path of the file to be dragged, and icon is the image showing
-  /// under the cursor when dragging.
-  abstract startDrag: item: DraggedItem -> unit
-  /// If offscreen rendering is enabled and not painting, start painting.
-  abstract startPainting: unit -> unit
-  /// Stops any pending navigation.
-  abstract stop: unit -> unit
-  /// Stops any findInPage request for the webContents with the provided action.
-  abstract stopFindInPage: action: StopFindInPageAction -> unit
-  /// If offscreen rendering is enabled and painting, stop painting.
-  abstract stopPainting: unit -> unit
-  /// Takes a V8 heap snapshot and saves it to filePath.
-  abstract takeHeapSnapshot: filePath: string -> Promise<unit>
-  /// Toggles the developer tools.
-  abstract toggleDevTools: unit -> unit
+  /// Returns the current zoom level.
+  abstract getZoomLevel: unit -> float
+  /// Sets the maximum and minimum pinch-to-zoom level.
+  ///
+  /// Note: Visual zoom is disabled by default in Electron. To re-enable it,
+  /// call contents.setVisualZoomLevelLimits(1, 3)
+  abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
+  /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
+  abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
   /// Executes the editing command undo in web page.
   abstract undo: unit -> unit
+  /// Executes the editing command redo in web page.
+  abstract redo: unit -> unit
+  /// Executes the editing command cut in web page.
+  abstract cut: unit -> unit
+  /// Executes the editing command copy in web page.
+  abstract copy: unit -> unit
+  /// Copy the image at the given position to the clipboard.
+  abstract copyImageAt: x: int * y: int -> unit
+  /// Executes the editing command paste in web page.
+  abstract paste: unit -> unit
+  /// Executes the editing command pasteAndMatchStyle in web page.
+  abstract pasteAndMatchStyle: unit -> unit
+  /// Executes the editing command delete in web page.
+  abstract delete: unit -> unit
+  /// Executes the editing command selectAll in web page.
+  abstract selectAll: unit -> unit
+  /// Executes the editing command unselect in web page.
+  abstract unselect: unit -> unit
+  /// Executes the editing command replace in web page.
+  abstract replace: text: string -> unit
+  /// Executes the editing command replaceMisspelling in web page.
+  abstract replaceMisspelling: text: string -> unit
+  /// Inserts text to the focused element.
+  abstract insertText: text: string -> unit
+  /// Starts a request to find all matches for the text in the web page. The
+  /// result of the request can be obtained by subscribing to `found-in-page`
+  /// event. Returns the request id used for the request.
+  abstract findInPage: text: string * ?options: FindInPageOptions -> int
+  /// Stops any findInPage request for the webContents with the provided action.
+  abstract stopFindInPage: action: StopFindInPageAction -> unit
+  /// Captures a snapshot of the page within rect. Omitting rect will capture
+  /// the whole visible page.
+  abstract capturePage: ?rect: Rectangle -> Promise<NativeImage>
+  /// Checks if any ServiceWorker is registered and returns a boolean as
+  /// response to callback.
+  abstract hasServiceWorker: callback: (bool -> unit) -> unit
   /// Unregisters any ServiceWorker if present and returns a boolean as response
   /// to callback when the JS promise is fulfilled or false when the JS promise
   /// is rejected.
   abstract unregisterServiceWorker: callback: (bool -> unit) -> unit
-  /// Executes the editing command unselect in web page.
-  abstract unselect: unit -> unit
-  abstract debugger: Debugger with get, set
-  abstract devToolsWebContents: WebContents with get, set
-  abstract hostWebContents: WebContents with get, set
+  /// Get the system printer list.
+  abstract getPrinters: unit -> PrinterInfo []
+  /// Prints window's web page. The callback indicates whether the print call
+  /// was successful.
+  ///
+  /// When `silent` is set to true, Electron will pick the system's default
+  /// printer if `deviceName` is empty and the default settings for printing.
+  ///
+  /// Calling window.print() in web page is equivalent to calling
+  /// webContents.print({ silent: false, printBackground: false, deviceName:
+  /// ''}).
+  ///
+  /// Use `page-break-before: always;` CSS style to force to print to a new
+  /// page.
+  abstract print: ?options: PrintOptions * ?callback: (bool -> unit) -> unit
+  /// Prints window's web page as PDF with Chromium's preview printing custom
+  /// settings.
+  ///
+  /// The callback will be called with callback(error, data) on completion. The
+  /// data is a Buffer that contains the generated PDF data.
+  ///
+  /// The landscape will be ignored if `@page` CSS at-rule is used in the web
+  /// page.
+  ///
+  /// Use `page-break-before: always;` CSS style to force to print to a new
+  /// page.
+  abstract printToPDF: options: PrintToPDFOptions * callback: (Error option -> Buffer option -> unit) -> unit
+  /// Adds the specified path to DevTools workspace. Must be used after DevTools
+  /// creation.
+  abstract addWorkSpace: path: string -> unit
+  /// Removes the specified path from DevTools workspace.
+  abstract removeWorkSpace: path: string -> unit
+  /// Uses the devToolsWebContents as the target WebContents to show devtools.
+  ///
+  /// The devToolsWebContents must not have done any navigation, and it should
+  /// not be used for other purposes after the call.
+  ///
+  /// By default Electron manages the devtools by creating an internal
+  /// WebContents with native view, which developers have very limited control
+  /// of. With the setDevToolsWebContents method, developers can use any
+  /// WebContents to show the devtools in it, including BrowserWindow and
+  /// BrowserView.
+  ///
+  /// Note that closing the devtools does not destroy the devToolsWebContents,
+  /// it is caller's responsibility to destroy devToolsWebContents.
+  abstract setDevToolsWebContents: devToolsWebContents: WebContents -> unit
+  /// Opens the devtools.
+  abstract openDevTools: ?options: OpenDevToolsOptions -> unit
+  /// Closes the devtools.
+  abstract closeDevTools: unit -> unit
+  /// Indicates whether the devtools is opened.
+  abstract isDevToolsOpened: unit -> bool
+  /// Indicates whether the devtools view is focused.
+  abstract isDevToolsFocused: unit -> bool
+  /// Toggles the developer tools.
+  abstract toggleDevTools: unit -> unit
+  /// Starts inspecting element at position (x, y).
+  abstract inspectElement: x: int * y: int -> unit
+  /// Opens the developer tools for the service worker context.
+  abstract inspectServiceWorker: unit -> unit
+  /// Send an asynchronous message to renderer process via `channel`, you can
+  /// also send arbitrary arguments. Arguments will be serialized in JSON
+  /// internally and hence no functions or prototype chain will be included.
+  ///
+  /// The renderer process can handle the message by listening to channel with
+  /// the ipcRenderer module.
+  abstract send: channel: string * [<ParamArray>] args: obj [] -> unit
+  /// Send an asynchronous message to a specific frame in a renderer process via
+  /// `channel`. Arguments will be serialized as JSON internally and as such no
+  /// functions or prototype chains will be included.
+  ///
+  /// The renderer process can handle the message by listening to channel with
+  /// the ipcRenderer module.
+  ///
+  /// If you want to get the frameId of a given renderer context you should use
+  /// the webFrame.routingId value.
+  abstract sendToFrame: frameId: int * channel: string * [<ParamArray>] args: obj [] -> unit
+  /// Enable device emulation with the given parameters.
+  abstract enableDeviceEmulation: parameters: DeviceEmulationParameters -> unit
+  /// Disable device emulation enabled by webContents.enableDeviceEmulation.
+  abstract disableDeviceEmulation: unit -> unit
+  /// Sends an input event to the page. `event` may be a instance of
+  /// SendKeyboardEvent, SendMouseEvent, or SendMouseWheelEvent.
+  ///
+  /// Note: The BrowserWindow containing the
+  /// contents needs to be focused for sendInputEvent() to work.
+  abstract sendInputEvent: event: SendInputEvent -> unit
+  /// Begin subscribing for presentation events and captured frames, the
+  /// callback will be called with callback(image, dirtyRect) when there is a
+  /// presentation event.
+  ///
+  /// The `image` is an instance of NativeImage that stores the captured frame.
+  ///
+  /// The `dirtyRect` describes which part of the page was repainted.
+  abstract beginFrameSubscription: callback: (NativeImage -> Rectangle -> unit) -> unit
+  /// Begin subscribing for presentation events and captured frames, the
+  /// callback will be called with callback(image, dirtyRect) when there is a
+  /// presentation event.
+  ///
+  /// The `image` is an instance of NativeImage that stores the captured frame.
+  ///
+  /// The `dirtyRect` describes which part of the page was repainted. If
+  /// onlyDirty is set to true, image will only contain the repainted area.
+  abstract beginFrameSubscription: onlyDirty: bool * callback: (NativeImage -> Rectangle -> unit) -> unit
+  /// End subscribing for frame presentation events.
+  abstract endFrameSubscription: unit -> unit
+  /// Sets the item as dragging item for current drag-drop operation.
+  abstract startDrag: item: DraggedItem -> unit
+  /// Returns true if the process of saving page has been initiated
+  /// successfully.
+  abstract savePage: fullPath: string * saveType: WebContentSaveType * callback: (Error -> unit) -> bool
+  /// [macOS] Shows pop-up dictionary that searches the selected word on the
+  /// page.
+  abstract showDefinitionForSelection: unit -> unit
+  /// Indicates whether offscreen rendering is enabled.
+  abstract isOffscreen: unit -> bool
+  /// If offscreen rendering is enabled and not painting, start painting.
+  abstract startPainting: unit -> unit
+  /// If offscreen rendering is enabled and painting, stop painting.
+  abstract stopPainting: unit -> unit
+  /// If offscreen rendering is enabled returns whether it is currently
+  /// painting.
+  abstract isPainting: unit -> bool
+  /// If offscreen rendering is enabled sets the frame rate to the specified
+  /// number. Only values between 1 and 60 are accepted.
+  abstract setFrameRate: fps: int -> unit
+  /// If offscreen rendering is enabled returns the current frame rate.
+  abstract getFrameRate: unit -> int
+  /// Schedules a full repaint of the window this web contents is in.
+  ///
+  /// If offscreen rendering is enabled invalidates the frame and generates a
+  /// new one through the 'paint' event.
+  abstract invalidate: unit -> unit
+  /// Returns the WebRTC IP Handling Policy.
+  abstract getWebRTCIPHandlingPolicy: unit -> string
+  /// Setting the WebRTC IP handling policy allows you to control which IPs are
+  /// exposed via WebRTC. See BrowserLeaks for more details:
+  /// https://browserleaks.com/webrtc
+  abstract setWebRTCIPHandlingPolicy: policy: WebRtcIpHandlingPolicy -> unit
+  /// Returns the operating system pid of the associated renderer process.
+  abstract getOSProcessId: unit -> int
+  /// Returns the Chromium internal pid of the associated renderer. Can be
+  /// compared to the frameProcessId passed by frame specific navigation events
+  /// (e.g. did-frame-navigate)
+  abstract getProcessId: unit -> int
+  /// Takes a V8 heap snapshot and saves it to filePath.
+  abstract takeHeapSnapshot: filePath: string -> Promise<unit>
+  /// Controls whether or not this WebContents will throttle animations and
+  /// timers when the page becomes backgrounded. This also affects the Page
+  /// Visibility API.
+  abstract setBackgroundThrottling: allowed: bool -> unit
+  /// The type of the webContent
+  abstract getType: unit -> WebContentType
+  /// The unique ID of this WebContents.
   abstract id: int with get, set
+  /// A Session used by this webContents.
   abstract session: Session with get, set
+  /// A WebContents instance that might own this WebContents.
+  abstract hostWebContents: WebContents option with get, set
+  /// A WebContents of DevTools for this WebContents.
+  ///
+  /// Note: Users should never store this object because it may become null when
+  /// the DevTools has been closed.
+  abstract devToolsWebContents: WebContents option with get, set
+  /// A Debugger instance for this webContents.
+  abstract debugger: Debugger with get, set
 
 type WebContentsStatic =
-  abstract fromId: id: int -> WebContents
+  /// Returns all WebContents instances. This will contain web contents for all
+  /// windows, webviews, opened devtools, and devtools extension background
+  /// pages.
   abstract getAllWebContents: unit -> WebContents []
-  abstract getFocusedWebContents: unit -> WebContents
+  /// Returns the web contents that is focused in this application, otherwise
+  /// returns None.
+  abstract getFocusedWebContents: unit -> WebContents option
+  /// Returns a WebContents instance with the given ID.
+  abstract fromId: id: int -> WebContents option
 
 type WebFrame =
   inherit EventEmitter<WebFrame>
-  /// Attempts to free memory that is no longer being used (like images from a
-  /// previous navigation). Note that blindly calling this method probably makes
-  /// Electron slower since it will have to refill these emptied caches, you
-  /// should only call it if an event in your app has occurred that makes you
-  /// think your page is actually using less memory (i.e. you have navigated
-  /// from a super heavy page to a mostly empty one, and intend to stay there).
-  abstract clearCache: unit -> unit
-  /// Evaluates code in page. In the browser window some HTML APIs like
-  /// requestFullScreen can only be invoked by a gesture from the user. Setting
-  /// userGesture to true will remove this limitation.
-  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> unit) -> Promise<obj option>
-  /// Work like executeJavaScript but evaluates scripts in an isolated context.
-  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool * ?callback: (obj option -> unit) -> unit
-  abstract findFrameByName: name: string -> WebFrame
-  abstract findFrameByRoutingId: routingId: int -> WebFrame
-  abstract getFrameForSelector: selector: string -> WebFrame
-  /// Returns an object describing usage information of Blink's internal memory
-  /// caches. This will generate:
-  abstract getResourceUsage: unit -> ResourceUsage
+  /// Changes the zoom factor to the specified factor. Zoom factor is zoom
+  /// percent divided by 100, so 300% = 3.0.
+  abstract setZoomFactor: factor: float -> unit
+  /// Returns the current zoom factor.
   abstract getZoomFactor: unit -> float
+  /// Changes the zoom level to the specified level. The original size is 0 and
+  /// each increment above or below represents zooming 20% larger or smaller to
+  /// default limits of 300% and 50% of original size, respectively.
+  abstract setZoomLevel: level: float -> unit
+  /// Returns the current zoom level.
   abstract getZoomLevel: unit -> float
-  /// Inserts text to the focused element.
-  abstract insertText: text: string -> unit
-  /// Set the content security policy of the isolated world.
-  abstract setIsolatedWorldContentSecurityPolicy: worldId: int * csp: string -> unit
-  /// Set the name of the isolated world. Useful in devtools.
-  abstract setIsolatedWorldHumanReadableName: worldId: int * name: string -> unit
-  /// Set the security origin, content security policy and name of the isolated
-  /// world. Note: If the csp is specified, then the securityOrigin also has to
-  /// be specified.
-  abstract setIsolatedWorldInfo: worldId: int * info: IsolatedWorldInfo -> unit
-  /// Set the security origin of the isolated world.
-  abstract setIsolatedWorldSecurityOrigin: worldId: int * securityOrigin: string -> unit
+  /// Sets the maximum and minimum pinch-to-zoom level.
+  ///
+  /// Note: Visual zoom is disabled by default in Electron. To re-enable it,
+  /// call: webFrame.setVisualZoomLevelLimits(1, 3)
+  abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
   /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
   abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
   /// Sets a provider for spell checking in input fields and text areas. The
@@ -5442,83 +6171,176 @@ type WebFrame =
   /// asynchronously and calls the callback function with an array of misspelt
   /// words when complete. An example of using node-spellchecker as provider:
   abstract setSpellCheckProvider: language: string * provider: SpellCheckProvider -> unit
-  /// Sets the maximum and minimum pinch-to-zoom level.
-  abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
-  /// Changes the zoom factor to the specified factor. Zoom factor is zoom
-  /// percent divided by 100, so 300% = 3.0.
-  abstract setZoomFactor: factor: float -> unit
-  /// Changes the zoom level to the specified level. The original size is 0 and
-  /// each increment above or below represents zooming 20% larger or smaller to
-  /// default limits of 300% and 50% of original size, respectively.
-  abstract setZoomLevel: level: float -> unit
-  /// A WebFrame representing the first child frame of webFrame, the property
-  /// would be null if webFrame has no children or if first child is not in the
-  /// current renderer process.
-  abstract firstChild: WebFrame option with get, set
-  /// A WebFrame representing next sibling frame, the property would be null if
-  /// webFrame is the last frame in its parent or if the next sibling is not in
-  /// the current renderer process.
-  abstract nextSibling: WebFrame option with get, set
+  /// Inserts text to the focused element.
+  abstract insertText: text: string -> unit
+  /// Evaluates `code` in page.
+  ///
+  /// In the browser window some HTML APIs like requestFullScreen can only be
+  /// invoked by a gesture from the user. Setting userGesture to true will
+  /// remove this limitation.
+  ///
+  /// The callback is called after the script has been executed.
+  ///
+  /// The promise resolves with the result of the executed code or is rejected
+  /// if the result of the code is a rejected promise.
+  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> unit) -> Promise<obj option>
+  /// <summary>
+  ///   Work like executeJavaScript but evaluates scripts in an isolated
+  ///   context.
+  /// </summary>
+  /// <param name="worldId">
+  ///   The ID of the world to run the javascript in, 0 is the default world,
+  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   provide any integer here.
+  /// </param>
+  /// <param name="scripts"></param>
+  /// <param name="userGesture">Default is false</param>
+  /// <param name="callback">Called after script has been executed</param>
+  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool * ?callback: (obj option -> unit) -> unit
+  /// <summary>
+  ///   Set the content security policy of the isolated world.
+  /// </summary>
+  /// <param name="worldId">
+  ///   The ID of the world to run the javascript in, 0 is the default world,
+  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   provide any integer here.
+  /// </param>
+  /// <param name="csp"></param>
+  abstract setIsolatedWorldContentSecurityPolicy: worldId: int * csp: string -> unit
+  /// <summary>
+  ///   Set the name of the isolated world. Useful in devtools.
+  /// </summary>
+  /// <param name="worldId">
+  ///   The ID of the world to run the javascript in, 0 is the default world,
+  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   provide any integer here.
+  /// </param>
+  /// <param name="name"></param>
+  abstract setIsolatedWorldHumanReadableName: worldId: int * name: string -> unit
+  /// <summary>
+  ///   Set the security origin of the isolated world.
+  /// </summary>
+  /// <param name="worldId">
+  ///   The ID of the world to run the javascript in, 0 is the default world,
+  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   provide any integer here.
+  /// </param>
+  /// <param name="securityOrigin"></param>
+  abstract setIsolatedWorldSecurityOrigin: worldId: int * securityOrigin: string -> unit
+  /// <summary>
+  ///   Set the security origin, content security policy and name of the
+  ///   isolated world.
+  /// </summary>
+  /// <param name="worldId">
+  ///   The ID of the world to run the javascript in, 0 is the default world,
+  ///   999 is the world used by Electrons contextIsolation feature. You can
+  ///   provide any integer here.
+  /// </param>
+  /// <param name="info"></param>
+  abstract setIsolatedWorldInfo: worldId: int * info: IsolatedWorldInfo -> unit
+  /// Returns an object describing usage information of Blink's internal memory
+  /// caches.
+  abstract getResourceUsage: unit -> ResourceUsage
+  /// Attempts to free memory that is no longer being used (like images from a
+  /// previous navigation).
+  ///
+  /// Note that blindly calling this method probably makes Electron slower since
+  /// it will have to refill these emptied caches, you should only call it if an
+  /// event in your app has occurred that makes you think your page is actually
+  /// using less memory (i.e. you have navigated from a super heavy page to a
+  /// mostly empty one, and intend to stay there).
+  abstract clearCache: unit -> unit
+  /// <summary>
+  ///   Returns the frame element in webFrame's document selected by selector,
+  ///   None would be returned if selector does not select a frame or if the
+  ///   frame is not in the current renderer process.
+  /// </summary>
+  /// <param name="selector">CSS selector for a frame element</param>
+  abstract getFrameForSelector: selector: string -> WebFrame option
+  /// Returns a child of webFrame with the supplied name, None would be returned
+  /// if there's no such frame or if the frame is not in the current renderer
+  /// process.
+  abstract findFrameByName: name: string -> WebFrame option
+  /// <summary>
+  ///   Returns the WebFrame that has the supplied routingId, None if not found.
+  /// </summary>
+  /// <param name="selector">
+  ///   The unique frame id in the current renderer process. Routing IDs can be
+  ///   retrieved from WebFrame instances (webFrame.routingId) and are also
+  ///   passed by frame specific WebContents navigation events (e.g.
+  ///   did-frame-navigate)
+  /// </param>
+  abstract findFrameByRoutingId: routingId: int -> WebFrame option
+  /// A WebFrame representing top frame in frame hierarchy to which webFrame
+  /// belongs, the property would be None if top frame is not in the current
+  /// renderer process.
+  abstract top: WebFrame option with get, set
   /// A WebFrame representing the frame which opened webFrame, the property
-  /// would be null if there's no opener or opener is not in the current
+  /// would be None if there's no opener or opener is not in the current
   /// renderer process.
   abstract opener: WebFrame option with get, set
   /// A WebFrame representing parent frame of webFrame, the property would be
-  /// null if webFrame is top or parent is not in the current renderer process.
+  /// None if webFrame is top or parent is not in the current renderer process.
   abstract parent: WebFrame option with get, set
-  /// An Integer representing the unique frame id in the current renderer
-  /// process. Distinct WebFrame instances that refer to the same underlying
-  /// frame will have the same routingId.
+  /// A WebFrame representing the first child frame of webFrame, the property
+  /// would be None if webFrame has no children or if first child is not in the
+  /// current renderer process.
+  abstract firstChild: WebFrame option with get, set
+  /// A WebFrame representing next sibling frame, the property would be None if
+  /// webFrame is the last frame in its parent or if the next sibling is not in
+  /// the current renderer process.
+  abstract nextSibling: WebFrame option with get, set
+  /// The unique frame id in the current renderer process. Distinct WebFrame
+  /// instances that refer to the same underlying frame will have the same
+  /// routingId.
   abstract routingId: int with get, set
-  /// A WebFrame representing top frame in frame hierarchy to which webFrame
-  /// belongs, the property would be null if top frame is not in the current
-  /// renderer process.
-  abstract top: WebFrame option with get, set
 
 type WebRequest =
   inherit EventEmitter<WebRequest>
-  /// The listener will be called with listener(details) when a server initiated
-  /// redirect is about to occur.
-  abstract onBeforeRedirect: listener: (OnBeforeRedirectDetails -> unit) option -> unit
-  /// The listener will be called with listener(details) when a server initiated
-  /// redirect is about to occur.
-  abstract onBeforeRedirect: filter: OnBeforeRedirectFilter * listener: (OnBeforeRedirectDetails -> unit) option -> unit
   /// The listener will be called with listener(details, callback) when a
-  /// request is about to occur. The uploadData is an array of UploadData
-  /// objects. The callback has to be called with an response object.
+  /// request is about to occur.
+  ///
+  /// The callback has to be called with an OnBeforeRequestResponse object.
   abstract onBeforeRequest: listener: (OnBeforeRequestDetails -> (OnBeforeRequestResponse -> unit) -> unit) option -> unit
   /// The listener will be called with listener(details, callback) when a
-  /// request is about to occur. The uploadData is an array of UploadData
-  /// objects. The callback has to be called with an response object.
+  /// request is about to occur.
+  ///
+  /// The callback has to be called with an OnBeforeRequestResponse object.
   abstract onBeforeRequest: filter: OnBeforeRequestFilter * listener: (OnBeforeRequestDetails -> (OnBeforeRequestResponse -> unit) -> unit) option -> unit
   /// The listener will be called with listener(details, callback) before
   /// sending an HTTP request, once the request headers are available. This may
   /// occur after a TCP connection is made to the server, but before any http
-  /// data is sent. The callback has to be called with an response object.
-  abstract onBeforeSendHeaders: filter: OnBeforeSendHeadersFilter * listener: (OnBeforeSendHeadersDetails -> (OnBeforeSendHeadersResponse -> unit) -> unit) option -> unit
+  /// data is sent.
+  ///
+  /// The callback has to be called with an OnBeforeSendHeadersResponse object.
+  abstract onBeforeSendHeaders: listener: (OnBeforeSendHeadersDetails -> (OnBeforeSendHeadersResponse -> unit) -> unit) option -> unit
   /// The listener will be called with listener(details, callback) before
   /// sending an HTTP request, once the request headers are available. This may
   /// occur after a TCP connection is made to the server, but before any http
-  /// data is sent. The callback has to be called with an response object.
-  abstract onBeforeSendHeaders: listener: (OnBeforeSendHeadersDetails -> (OnBeforeSendHeadersResponse -> unit) -> unit) option -> unit
-  /// The listener will be called with listener(details) when a request is
-  /// completed.
-  abstract onCompleted: filter: OnCompletedFilter * listener: (OnCompletedDetails -> unit) option -> unit
-  /// The listener will be called with listener(details) when a request is
-  /// completed.
-  abstract onCompleted: listener: (OnCompletedDetails -> unit) option -> unit
-  /// The listener will be called with listener(details) when an error occurs.
-  abstract onErrorOccurred: listener: (OnErrorOccurredDetails -> unit) option -> unit
-  /// The listener will be called with listener(details) when an error occurs.
-  abstract onErrorOccurred: filter: OnErrorOccurredFilter * listener: (OnErrorOccurredDetails -> unit) option -> unit
+  /// data is sent.
+  ///
+  /// The callback has to be called with an OnBeforeSendHeadersResponse object.
+  abstract onBeforeSendHeaders: filter: OnBeforeSendHeadersFilter * listener: (OnBeforeSendHeadersDetails -> (OnBeforeSendHeadersResponse -> unit) -> unit) option -> unit
+  /// The listener will be called with listener(details) just before a request
+  /// is going to be sent to the server, modifications of previous
+  /// onBeforeSendHeaders response are visible by the time this listener is
+  /// fired.
+  abstract onSendHeaders: listener: (OnSendHeadersDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) just before a request
+  /// is going to be sent to the server, modifications of previous
+  /// onBeforeSendHeaders response are visible by the time this listener is
+  /// fired.
+  abstract onSendHeaders: filter: OnSendHeadersFilter * listener: (OnSendHeadersDetails -> unit) option -> unit
   /// The listener will be called with listener(details, callback) when HTTP
-  /// response headers of a request have been received. The callback has to be
-  /// called with an response object.
-  abstract onHeadersReceived: filter: OnHeadersReceivedFilter * listener: (OnHeadersReceivedDetails -> (OnHeadersReceivedResponse -> unit) -> unit) option -> unit
-  /// The listener will be called with listener(details, callback) when HTTP
-  /// response headers of a request have been received. The callback has to be
-  /// called with an response object.
+  /// response headers of a request have been received.
+  ///
+  /// The callback has to be called with an OnHeadersReceivedResponse object.
   abstract onHeadersReceived: listener: (OnHeadersReceivedDetails -> (OnHeadersReceivedResponse -> unit) -> unit) option -> unit
+  /// The listener will be called with listener(details, callback) when HTTP
+  /// response headers of a request have been received.
+  ///
+  /// The callback has to be called with an OnHeadersReceivedResponse object.
+  abstract onHeadersReceived: filter: OnHeadersReceivedFilter * listener: (OnHeadersReceivedDetails -> (OnHeadersReceivedResponse -> unit) -> unit) option -> unit
   /// The listener will be called with listener(details) when first byte of the
   /// response body is received. For HTTP requests, this means that the status
   /// line and response headers are available.
@@ -5527,22 +6349,28 @@ type WebRequest =
   /// response body is received. For HTTP requests, this means that the status
   /// line and response headers are available.
   abstract onResponseStarted: filter: OnResponseStartedFilter * listener: (OnResponseStartedDetails -> unit) option -> unit
-  /// The listener will be called with listener(details) just before a request
-  /// is going to be sent to the server, modifications of previous
-  /// onBeforeSendHeaders response are visible by the time this listener is
-  /// fired.
-  abstract onSendHeaders: filter: OnSendHeadersFilter * listener: (OnSendHeadersDetails -> unit) option -> unit
-  /// The listener will be called with listener(details) just before a request
-  /// is going to be sent to the server, modifications of previous
-  /// onBeforeSendHeaders response are visible by the time this listener is
-  /// fired.
-  abstract onSendHeaders: listener: (OnSendHeadersDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) when a server initiated
+  /// redirect is about to occur.
+  abstract onBeforeRedirect: listener: (OnBeforeRedirectDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) when a server initiated
+  /// redirect is about to occur.
+  abstract onBeforeRedirect: filter: OnBeforeRedirectFilter * listener: (OnBeforeRedirectDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) when a request is
+  /// completed.
+  abstract onCompleted: listener: (OnCompletedDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) when a request is
+  /// completed.
+  abstract onCompleted: filter: OnCompletedFilter * listener: (OnCompletedDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) when an error occurs.
+  abstract onErrorOccurred: listener: (OnErrorOccurredDetails -> unit) option -> unit
+  /// The listener will be called with listener(details) when an error occurs.
+  abstract onErrorOccurred: filter: OnErrorOccurredFilter * listener: (OnErrorOccurredDetails -> unit) option -> unit
 
 type WebSource =
   abstract code: string with get, set
+  abstract url: string with get, set
   /// Default is 1.
   abstract startLine: int with get, set
-  abstract url: string with get, set
 
 type AboutPanelOptions =
   /// The app's name.
@@ -5866,6 +6694,13 @@ type ContextMenuSourceType =
   | Touch
   | TouchMenu
 
+[<StringEnum; RequireQualifiedAccess>]
+type ContextMenuInputFieldType =
+  | None
+  | PlainText
+  | Password
+  | Other
+
 type ContextMenuParams =
   /// x coordinate.
   abstract x: int with get, set
@@ -5900,10 +6735,8 @@ type ContextMenuParams =
   /// The character encoding of the frame on which the menu was invoked.
   abstract frameCharset: string with get, set
   /// If the context menu was invoked on an input field, the type of that field.
-  /// Possible values are none, plainText, password, other.
-  abstract inputFieldType: string with get, set
-  /// Input source that invoked the context menu. Can be none, mouse, keyboard,
-  /// touch or touchMenu.
+  abstract inputFieldType: ContextMenuInputFieldType with get, set
+  /// Input source that invoked the context menu.
   abstract menuSourceType: ContextMenuSourceType with get, set
   /// The flags for the media element the context menu was invoked on.
   abstract mediaFlags: ContextMenuMediaFlags with get, set
@@ -6123,7 +6956,8 @@ type ImportCertificateOptions =
 type IsolatedWorldInfo =
   /// Security origin for the isolated world.
   abstract securityOrigin: string with get, set
-  /// Content Security Policy for the isolated world.
+  /// Content Security Policy for the isolated world. If this is specified, then
+  /// `securityOrigin` also has to be specified.
   abstract csp: string with get, set
   /// Name for isolated world. Useful in devtools.
   abstract name: string with get, set
@@ -6179,9 +7013,12 @@ type InterceptStringProtocolRequest =
   abstract uploadData: UploadData [] with get, set
 
 type DraggedItem =
-  /// or files Array The path(s) to the file(s) being dragged.
+  /// The absolute path to the file being dragged. Mutually exclusive with `files`.
   abstract file: string with get, set
-  /// The image must be non-empty on macOS.
+  /// The absolute paths to the files being dragged. Mutually exclusive with `file`.
+  abstract files: string [] with get, set
+  /// The image showing under the cursor when dragging. Must be non-empty on
+  /// macOS.
   abstract icon: NativeImage with get, set
 
 type JumpListSettings =
@@ -6603,17 +7440,17 @@ type OnSendHeadersFilter =
   abstract urls: string [] with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
-type DevToolsOpenMode =
+type DevToolsDockMode =
   | Right
   | Bottom
   | Undocked
   | Detach
 
 type OpenDevToolsOptions =
-  /// Opens the devtools with specified dock state, can be right, bottom,
-  /// undocked, detach. Defaults to last used dock state. In undocked mode it's
-  /// possible to dock back. In detach mode it's not.
-  abstract mode: DevToolsOpenMode with get, set
+  /// Opens the devtools with specified dock state. Defaults to last used dock
+  /// state. In DevToolsDockMode.Undocked mode it's possible to dock back. In
+  /// DevToolsDockMode.Detach mode it's not.
+  abstract mode: DevToolsDockMode with get, set
   /// Whether to bring the opened devtools window to the foreground. The default
   /// is true.
   abstract activate: bool with get, set
@@ -6662,10 +7499,10 @@ type OpenDialogOptions =
   abstract securityScopedBookmarks: bool with get, set
 
 type OpenExternalOptions =
-  /// true to bring the opened application to the foreground. The default is
-  /// true.
+  /// [macOS] true to bring the opened application to the foreground. The
+  /// default is true.
   abstract activate: bool with get, set
-  /// The working directory.
+  /// [Windows] The working directory.
   abstract workingDirectory: string with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -6674,12 +7511,14 @@ type DeviceEmulationScreenPosition =
   | Mobile
 
 type DeviceEmulationParameters =
-  /// Specify the screen type to emulate (default: desktop):
+  /// Specify the screen type to emulate (default:
+  /// DeviceEmulationScreenPosition.Desktop):
   abstract screenPosition: DeviceEmulationScreenPosition with get, set
-  /// Set the emulated screen size (screenPosition == mobile).
+  /// Set the emulated screen size (screenPosition ==
+  /// DeviceEmulationScreenPosition.Mobile).
   abstract screenSize: Size with get, set
-  /// Position the view on the screen (screenPosition == mobile) (default: { x:
-  /// 0, y: 0 }).
+  /// Position the view on the screen (screenPosition ==
+  /// DeviceEmulationScreenPosition.Mobile) (default: { x: 0, y: 0 }).
   abstract viewPosition: Point with get, set
   /// Set the device scale factor (if zero defaults to original device scale
   /// factor) (default: 0).
@@ -6738,21 +7577,30 @@ type PrintOptions =
   /// Also prints the background color and image of the web page. Default is
   /// false.
   abstract printBackground: bool with get, set
-  /// Set the printer device name to use. Default is ''.
+  /// Set the printer device name to use. Default is "".
   abstract deviceName: string with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type PrintToPDFSize =
+  | [<CompiledName("A3")>] A3
+  | [<CompiledName("A4")>] A4
+  | [<CompiledName("A5")>] A5
+  | [<CompiledName("Legal")>] Legal
+  | [<CompiledName("Letter")>] Letter
+  | [<CompiledName("Tabloid")>] Tabloid
 
 type PrintToPDFOptions =
   /// Specifies the type of margins to use. Uses 0 for default margin, 1 for no
-  /// margin, and 2 for minimum margin.
+  /// margin, and 2 for minimum margin. Default 0.
   abstract marginsType: int with get, set
   /// Specify page size of the generated PDF. Can be A3, A4, A5, Legal, Letter,
-  /// Tabloid or an Object containing height and width in microns.
-  abstract pageSize: U2<string, Size> with get, set
-  /// Whether to print CSS backgrounds.
+  /// Tabloid or an object containing height and width in microns.
+  abstract pageSize: U2<PrintToPDFSize, Size> with get, set
+  /// Whether to print CSS backgrounds. Default false.
   abstract printBackground: bool with get, set
-  /// Whether to print selection only.
+  /// Whether to print selection only. Default false.
   abstract printSelectionOnly: bool with get, set
-  /// true for landscape, false for portrait.
+  /// true for landscape, false for portrait. Default false.
   abstract landscape: bool with get, set
 
 type CustomSchemePrivileges =
@@ -6800,6 +7648,8 @@ type ProgressBarOptions =
   abstract mode: ProgressBarMode with get, set
 
 type SpellCheckProvider =
+  /// First argument is the words words to spellcheck. Second argument is a
+  /// callback that must be called with misspelt words.
   abstract spellCheck: (string [] -> (string [] -> unit) -> unit) with get, set
 
 type ClipboardBookmark =
@@ -6987,7 +7837,6 @@ type TouchBarButtonOptions =
   abstract backgroundColor: string with get, set
   /// Button icon.
   abstract icon: NativeImage with get, set
-  /// Can be left, right or overlay.
   abstract iconPosition: TouchBarButtonIconPosition with get, set
   /// Function to call when the button is clicked.
   abstract click: (unit -> unit) with get, set
@@ -6997,7 +7846,8 @@ type TouchBarColorPickerOptions =
   abstract availableColors: string [] with get, set
   /// The selected hex color in the picker, i.e #ABCDEF.
   abstract selectedColor: string with get, set
-  /// Function to call when a color is selected.
+  /// Function to call when a color is selected. Called with the color that the
+  /// user selected from the picker.
   abstract change: (string -> unit) with get, set
 
 type TouchBarOptions =
@@ -7029,49 +7879,71 @@ type TouchBarScrubberOptions =
   /// An array of items to place in this scrubber.
   abstract items: ScrubberItem [] with get, set
   /// Called when the user taps an item that was not the last tapped item.
+  /// Called with the index of the item the user selected.
   abstract select: (int -> unit) with get, set
-  /// Called when the user taps any item.
+  /// Called when the user taps any item. Called with the index of the item the
+  /// user touched
   abstract highlight: (int -> unit) with get, set
-  /// Selected item style. Defaults to null.
-  abstract selectedStyle: string with get, set
-  /// Selected overlay item style. Defaults to null.
-  abstract overlayStyle: string with get, set
+  /// Selected item style. Defaults to None.
+  abstract selectedStyle: TouchBarScrubberStyle option with get, set
+  /// Selected overlay item style. Defaults to None.
+  abstract overlayStyle: TouchBarScrubberStyle option with get, set
   /// Defaults to false.
   abstract showArrowButtons: bool with get, set
-  /// Defaults to free.
-  abstract mode: string with get, set
+  /// Defaults to TouchBarScrubberMode.Free.
+  abstract mode: TouchBarScrubberMode with get, set
   /// Defaults to true.
   abstract continuous: bool with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarSegmentedControlSegmentStyle =
+  /// The appearance of the segmented control is automatically determined based
+  /// on the type of window in which the control is displayed and the position
+  /// within the window.
   | Automatic
+  /// The control is displayed using the rounded style.
   | Rounded
+  /// The control is displayed using the textured rounded style.
   | [<CompiledName("textured-rounded")>] TexturedRounded
+  /// The control is displayed using the round rect style.
   | [<CompiledName("round-rect")>] RoundRect
+  /// The control is displayed using the textured square style.
   | [<CompiledName("textured-square")>] TexturedSquare
+  /// The control is displayed using the capsule style.
   | Capsule
+  /// The control is displayed using the small square style.
   | [<CompiledName("small-square")>] SmallSquare
+  /// The segments in the control are displayed very close to each other but not
+  /// touching.
   | Separated
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarSegmentedControlMode =
+  /// One item selected at a time, selecting one deselects the previously
+  /// selected item.
   | Single
+  /// Multiple items can be selected at a time.
   | Multiple
+  /// Make the segments act as buttons, each segment can be pressed and released
+  /// but never marked as active.
   | Buttons
 
 type TouchBarSegmentedControlOptions =
-  /// Style of the segments:
+  /// Style of the segments. Default is
+  /// TouchBarSegmentedControlSegmentStyle.Automatic.
   abstract segmentStyle: TouchBarSegmentedControlSegmentStyle with get, set
-  /// The selection mode of the control:
+  /// The selection mode of the control. Default is
+  /// TouchBarSegmentedControlMode.Single.
   abstract mode: TouchBarSegmentedControlMode with get, set
   /// An array of segments to place in this control.
   abstract segments: SegmentedControlSegment [] with get, set
   /// The index of the currently selected segment, will update automatically
-  /// with user interaction. When the mode is multiple it will be the last
-  /// selected item.
+  /// with user interaction. When the `mode` is
+  /// TouchBarSegmentedControlMode.Multiple it will be the last selected item.
   abstract selectedIndex: int option with get, set
-  /// Called when the user selects a new segment.
+  /// Called when the user selects a new segment. Called with the index of the
+  /// segment the user selected, and whether as a result of user selection the
+  /// segment is selected or not.
   abstract change: (int -> bool -> unit) with get, set
 
 type TouchBarSliderOptions =
@@ -7083,17 +7955,21 @@ type TouchBarSliderOptions =
   abstract minValue: int with get, set
   /// Maximum value.
   abstract maxValue: int with get, set
-  /// Function to call when the slider is changed.
+  /// Function to call when the slider is changed. Called with the value that
+  /// the user selected on the Slider.
   abstract change: (int -> unit) with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarSpacerSize =
+  /// Small space between items.
   | Small
+  /// Large space between items.
   | Large
+  /// Take up all available space.
   | Flexible
 
 type TouchBarSpacerOptions =
-  /// Size of spacer, possible values are:
+  /// Size of spacer.
   abstract size: TouchBarSpacerSize with get, set
 
 type UploadProgress =
