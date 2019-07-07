@@ -8,10 +8,7 @@ open Browser.Types
 open Node.Base
 open Node.Buffer
 
-// TODO: check if U2, U3 etc. can be replaced with overloads
-// TODO: ensure that all onceX, addListenerX, removeListenerX events refer to
-// the onX event
-// TODO: make all references to null and undefined refer to None instead
+
 // TODO: go through all usages of Event and check that it really is Event at runtime
 
 
@@ -981,7 +978,7 @@ type App =
   abstract getJumpListSettings: unit -> JumpListSettings
   /// Sets or removes a custom Jump List for the application.
   ///
-  /// If categories is `null` the previously set custom Jump List (if any) will
+  /// If categories is None the previously set custom Jump List (if any) will
   /// be replaced by the standard Jump List for the app (managed by Windows).
   ///
   /// Note: If a JumpListCategory object has neither the `type` nor the `name`
@@ -995,7 +992,7 @@ type App =
   /// re-add a removed item to a custom category earlier than that will result
   /// in the entire custom category being omitted from the Jump List. The list
   /// of removed items can be obtained using app.getJumpListSettings().
-  abstract setJumpList: categories: JumpListCategory [] -> SetJumpListResult
+  abstract setJumpList: categories: JumpListCategory [] option -> SetJumpListResult
   /// This method makes your application a Single Instance Application - instead
   /// of allowing multiple instances of your app to run, this will ensure that
   /// only a single instance of your app is running, and other instances signal
@@ -1902,7 +1899,7 @@ type BrowserWindow =
   abstract getNativeWindowHandle: unit -> Buffer
   /// [Windows] Hooks a windows message. The callback is called when the message
   /// is received in the WndProc.
-  abstract hookWindowMessage: message: int * callback: (unit -> unit) -> unit  // TODO: is unit -> unit correct?
+  abstract hookWindowMessage: message: int * callback: (unit -> unit) -> unit
   /// [Windows] Indicates whether the message is hooked.
   abstract isWindowMessageHooked: message: int -> bool
   /// [Windows] Unhook the window message.
@@ -1967,7 +1964,7 @@ type BrowserWindow =
   /// </summary>
   /// <param name="overlay">
   ///   The icon to display on the bottom right corner of the taskbar icon. If
-  ///   this parameter is null, the overlay is cleared
+  ///   this parameter is None, the overlay is cleared
   /// </param>
   /// <param name="description">
   ///    A description that will be provided to Accessibility screen readers
@@ -2099,7 +2096,7 @@ type BrowserWindow =
   /// Attach browserView to win. If there is some other browserViews was
   /// attached they will be removed from this window.
   abstract setBrowserView: browserView: BrowserView -> unit
-  /// Returns an BrowserView what is attached. Returns null if none is attached.
+  /// Returns an BrowserView what is attached. Returns None if none is attached.
   /// Throw error if multiple BrowserViews is attached.
   abstract getBrowserView: unit -> BrowserView option
   /// Replacement API for setBrowserView supporting work with multi browser
@@ -2425,7 +2422,8 @@ type ClientRequestOptions =
 
 
 type ClientRequestStatic =
-  [<EmitConstructor>] abstract Create: options: U2<string, ClientRequestOptions> -> ClientRequest
+  [<EmitConstructor>] abstract Create: options: string -> ClientRequest
+  [<EmitConstructor>] abstract Create: options: ClientRequestOptions -> ClientRequest
 
 [<StringEnum; RequireQualifiedAccess>]
 type ClipboardType =
@@ -2719,7 +2717,7 @@ type DesktopCapturerSource =
   /// XX portion of the `id` field and on others it will differ. It will be an
   /// empty string if not available.
   abstract display_id: string with get, set
-  /// An icon image of the application that owns the window or null if the
+  /// An icon image of the application that owns the window or None if the
   /// source has a type screen. The size of the icon is not known in advance and
   /// depends on what the application provides.
   abstract appIcon: NativeImage option with get, set
@@ -3472,7 +3470,12 @@ type Net =
   /// directly forwarded to the ClientRequest constructor. The net.request
   /// method would be used to issue both secure and insecure HTTP requests
   /// according to the specified protocol scheme in the options object.
-  abstract request: options: U2<ClientRequestOptions, string> -> ClientRequest
+  abstract request: options: ClientRequestOptions -> ClientRequest
+  /// Creates a ClientRequest instance using the provided options which are
+  /// directly forwarded to the ClientRequest constructor. The net.request
+  /// method would be used to issue both secure and insecure HTTP requests
+  /// according to the specified protocol scheme in the options object.
+  abstract request: options: string -> ClientRequest
 
 type NetLog =
   inherit EventEmitter<NetLog>
@@ -3705,8 +3708,11 @@ type Process =
   /// It can be used by the preload script to add removed Node global symbols
   /// back to the global scope when node integration is turned off:
   [<Emit "$0.on('loaded',$1)">] abstract onLoaded: listener: (Event -> unit) -> Process
+  /// See onLoaded.
   [<Emit "$0.once('loaded',$1)">] abstract onceLoaded: listener: (Event -> unit) -> Process
+  /// See onLoaded.
   [<Emit "$0.addListener('loaded',$1)">] abstract addListenerLoaded: listener: (Event -> unit) -> Process
+  /// See onLoaded.
   [<Emit "$0.removeListener('loaded',$1)">] abstract removeListenerLoaded: listener: (Event -> unit) -> Process
   /// When app is started by being passed as parameter to the default app, this
   /// property is Some true in the main process, otherwise it is None.
@@ -3770,7 +3776,7 @@ type Process =
   abstract getProcessMemoryInfo: unit -> Promise<ProcessMemoryInfo>
   /// Returns an object giving memory usage statistics about the entire  Note
   /// that all statistics are reported in Kilobytes.
-  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo  // TODO: does this return Promise, too?
+  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo  // TODO: does this return Promise, like getProcessMemoryInfo?
   /// Returns the version of the host operating system.
   ///
   /// Note: It returns the actual operating system version instead of kernel
@@ -3841,7 +3847,7 @@ type Protocol =
   /// Registers a protocol of scheme that will send the file as a response. The
   /// handler will be called with handler(request, callback) when a request is
   /// going to be created with scheme. completion will be called with
-  /// completion(null) when scheme is successfully registered or
+  /// completion(None) when scheme is successfully registered or
   /// completion(error) when failed.
   ///
   /// To handle the request, the handler's callback should be called with either
@@ -3889,7 +3895,7 @@ type Protocol =
   ///
   /// By default the HTTP request will reuse the current session. If you want
   /// the request to have a different session you should set `session` to
-  /// `null`.
+  /// `None`.
   ///
   /// For POST requests the uploadData object must be provided.
   abstract registerHttpProtocol: scheme: string * handler: (RegisterHttpProtocolRequest -> (RedirectRequest -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
@@ -4034,7 +4040,7 @@ type Screen =
   abstract screenToDipRect: window: BrowserWindow option * rect: Rectangle -> Rectangle
   /// [Windows] Converts a screen DIP rect to a screen physical rect. The DPI
   /// scale is performed relative to the display nearest to `window`. If
-  /// `window` is nullNone, scaling will be performed to the display nearest to
+  /// `window` is None, scaling will be performed to the display nearest to
   /// `rect`.
   abstract dipToScreenRect: window: BrowserWindow option * rect: Rectangle -> Rectangle
 
@@ -4131,7 +4137,7 @@ type Session =
   abstract setPermissionRequestHandler: handler: (WebContents -> PermissionRequestHandlerPermission -> (bool -> unit) -> PermissionRequestHandlerDetails -> unit) option -> unit
   /// Sets the handler which can be used to respond to permission checks for the
   /// session. Returning true will allow the permission and false will reject
-  /// it. To clear the handler, call setPermissionCheckHandler(null). The third
+  /// it. To clear the handler, call setPermissionCheckHandler(None). The third
   /// handler argument is `requestingOrigin`, the origin URL of the permission
   /// check.
   ///
@@ -5091,10 +5097,15 @@ type Tray =
   /// Destroys the tray icon immediately.
   abstract destroy: unit -> unit
   /// Sets the image associated with this tray icon.
-  abstract setImage: image: U2<NativeImage, string> -> unit
+  abstract setImage: image: NativeImage -> unit
+  /// Sets the image associated with this tray icon.
+  abstract setImage: image: string -> unit
   /// [macOS] Sets the image associated with this tray icon when pressed on
   /// macOS.
-  abstract setPressedImage: image: U2<NativeImage, string> -> unit
+  abstract setPressedImage: image: NativeImage -> unit
+  /// [macOS] Sets the image associated with this tray icon when pressed on
+  /// macOS.
+  abstract setPressedImage: image: string -> unit
   /// Sets the hover text for this tray icon.
   abstract setToolTip: toolTip: string -> unit
   /// [macOS] Sets the title displayed aside of the tray icon in the status bar
@@ -5133,7 +5144,9 @@ type Tray =
 
 type TrayStatic =
   /// Creates a new tray icon associated with the image.
-  [<EmitConstructor>] abstract Create: image: U2<NativeImage, string> -> Tray
+  [<EmitConstructor>] abstract Create: image: NativeImage -> Tray
+  /// Creates a new tray icon associated with the image.
+  [<EmitConstructor>] abstract Create: image: string -> Tray
 
 type UploadBlob =
   /// blob.
@@ -6700,7 +6713,7 @@ type BrowserWindowOptions =
   abstract show: bool with get, set
   /// Specify false to create a frameless window. Default is true.
   abstract frame: bool with get, set
-  /// Specify parent window. Default is null.
+  /// Specify parent window. Default is None.
   abstract parent: BrowserWindow option with get, set
   /// Whether this is a modal window. This only works when the window is a child
   /// window. Default is false.
@@ -7009,7 +7022,9 @@ type Dock =
   /// https://developer.apple.com/design/human-interface-guidelines/macos/menus/dock-menus/
   abstract setMenu: menu: Menu -> unit
   /// [macOS] Sets the image associated with this dock icon.
-  abstract setIcon: image: U2<NativeImage, string> -> unit
+  abstract setIcon: image: NativeImage -> unit
+  /// [macOS] Sets the image associated with this dock icon.
+  abstract setIcon: image: string -> unit
 
 type EnableNetworkEmulationOptions =
   /// Whether to emulate network outage. Defaults to false.
@@ -7962,8 +7977,8 @@ type GetDesktopCapturerSourcesOptions =
   /// each window and screen.
   abstract thumbnailSize: Size with get, set
   /// Set to true to enable fetching window icons. The default value is false.
-  /// When false the appIcon property of the sources return null. Same if a
-  /// source has the type screen.
+  /// When false the appIcon property of the sources return None. Same if a
+  /// source has the type DesktopCapturerSourceType.Screen.
   abstract fetchWindowIcons: bool with get, set
 
 type SystemMemoryInfo =
