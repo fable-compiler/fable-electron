@@ -1,0 +1,22 @@
+version: {build}
+
+image: Visual Studio 2017
+
+build:
+  verbosity: detailed
+
+cache:
+  - '%USERPROFILE%\.nuget\packages -> paket.lock'
+
+artifacts:
+  - path: '**\Release\*.nupkg'
+
+build_script:
+  - cmd: dotnet build -c Release
+
+deploy:
+  - provider: NuGet
+    api_key:
+      secure: TODO
+    on:
+      appveyor_repo_tag: true
