@@ -9,9 +9,6 @@ open Node.Base
 open Node.Buffer
 
 
-// TODO: go through all usages of Event and check that it really is Event at runtime
-
-
 /// All Electron APIs. Consider using `main` or `renderer` as your entry points;
 /// there is nothing here that is not accessible through them.
 [<ImportAll("electron")>]
@@ -333,11 +330,9 @@ type App =
   /// Emitted when Electron has finished initializing. You can call
   /// `app.isReady()` to check if this event has already fired.
   ///
-  /// Extra parameters:
-  ///
-  ///   - launchInfo: On macOS, this object holds the `userInfo` of the
-  ///     `NSUserNotification` that was used to open the application, if it was
-  ///     launched from Notification Center
+  /// The second parameter is macOS only and holds the `userInfo` of the
+  /// `NSUserNotification` that was used to open the application, if it was
+  /// launched from Notification Center.
   [<Emit "$0.on('ready',$1)">] abstract onReady: listener: (Event -> obj -> unit) -> App
   /// See onReady.
   [<Emit "$0.once('ready',$1)">] abstract onceReady: listener: (Event -> obj -> unit) -> App
@@ -391,14 +386,10 @@ type App =
   [<Emit "$0.addListener('will-quit',$1)">] abstract addListenerWillQuit: listener: (Event -> unit) -> App
   /// See onWillQuit.
   [<Emit "$0.removeListener('will-quit',$1)">] abstract removeListenerWillQuit: listener: (Event -> unit) -> App
-  /// Emitted when the application is quitting.
+  /// Emitted when the application is quitting. The listener is passed the exit code.
   ///
   /// Note: On Windows, this event will not be emitted if the app is closed due
   /// to a shutdown/restart of the system or a user logout.
-  ///
-  /// Extra parameters:
-  ///
-  ///   - exitCode
   [<Emit "$0.on('quit',$1)">] abstract onQuit: listener: (Event -> int -> unit) -> App
   /// See onQuit.
   [<Emit "$0.once('quit',$1)">] abstract onceQuit: listener: (Event -> int -> unit) -> App
@@ -407,6 +398,8 @@ type App =
   /// See onQuit.
   [<Emit "$0.removeListener('quit',$1)">] abstract removeListenerQuit: listener: (Event -> int -> unit) -> App
   /// [macOS] Emitted when the user wants to open a file with the application.
+  /// The listener is passed the path of the file.
+  ///
   /// The `open-file` event is usually emitted when the application is already
   /// open and the OS wants to reuse the application to open the file.
   /// `open-file` is also emitted when a file is dropped onto the dock and the
@@ -418,10 +411,6 @@ type App =
   ///
   /// On Windows, you have to parse `process.argv` (in the main process) to get
   /// the file path.
-  ///
-  /// Extra parameters:
-  ///
-  ///   - path
   [<Emit "$0.on('open-file',$1)">] abstract onOpenFile: listener: (Event -> string -> unit) -> App
   /// See onOpenFile.
   [<Emit "$0.once('open-file',$1)">] abstract onceOpenFile: listener: (Event -> string -> unit) -> App
@@ -430,14 +419,12 @@ type App =
   /// See onOpenFile.
   [<Emit "$0.removeListener('open-file',$1)">] abstract removeListenerOpenFile: listener: (Event -> string -> unit) -> App
   /// [macOS] Emitted when the user wants to open a URL with the application.
+  /// The listener is passed the url.
+  ///
   /// Your application's Info.plist file must define the url scheme within the
   /// CFBundleURLTypes key, and set NSPrincipalClass to AtomApplication.
   ///
   /// You should call `event.preventDefault()` if you want to handle this event.
-  ///
-  /// Extra parameters:
-  ///
-  ///   - url
   [<Emit "$0.on('open-url',$1)">] abstract onOpenUrl: listener: (Event -> string -> unit) -> App
   /// See onOpenUrl.
   [<Emit "$0.once('open-url',$1)">] abstract onceOpenUrl: listener: (Event -> string -> unit) -> App
@@ -445,14 +432,12 @@ type App =
   [<Emit "$0.addListener('open-url',$1)">] abstract addListenerOpenUrl: listener: (Event -> string -> unit) -> App
   /// See onOpenUrl.
   [<Emit "$0.removeListener('open-url',$1)">] abstract removeListenerOpenUrl: listener: (Event -> string -> unit) -> App
-  /// [macOS] Emitted when the application is activated. Various actions can
-  /// trigger this event, such as launching the application for the first time,
-  /// attempting to re-launch the application when it's already running, or
-  /// clicking on the application's dock or taskbar icon.
+  /// [macOS] Emitted when the application is activated. The boolean parameter
+  /// is true if the app has visible windows, false otherwise.
   ///
-  /// Extra parameters:
-  ///
-  ///   - hasVisibleWindows
+  /// Various actions can trigger this event, such as launching the application
+  /// for the first time, attempting to re-launch the application when it's
+  /// already running, or clicking on the application's dock or taskbar icon.
   [<Emit "$0.on('activate',$1)">] abstract onActivate: listener: (Event -> bool -> unit) -> App
   /// See onActivate.
   [<Emit "$0.once('activate',$1)">] abstract onceActivate: listener: (Event -> bool -> unit) -> App
@@ -469,8 +454,9 @@ type App =
   /// activity's type. Supported activity types are specified in the app's
   /// Info.plist under the NSUserActivityTypes key.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
   ///   - userInfo: Contains app-specific state stored by the activity on another device
   [<Emit "$0.on('continue-activity',$1)">] abstract onContinueActivity: listener: (Event -> string -> obj -> unit) -> App
@@ -484,8 +470,9 @@ type App =
   /// device wants to be resumed. You should call event.preventDefault() if you
   /// want to handle this event.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
   [<Emit "$0.on('will-continue-activity',$1)">] abstract onWillContinueActivity: listener: (Event -> string -> unit) -> App
   /// See onWillContinueActivity.
@@ -497,8 +484,9 @@ type App =
   /// [macOS] Emitted during macOS Handoff when an activity from a different
   /// device fails to be resumed.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
   ///   - error: A string with the error's localized description
   [<Emit "$0.on('continue-activity-error',$1)">] abstract onContinueActivityError: listener: (Event -> string -> string -> unit) -> App
@@ -511,8 +499,9 @@ type App =
   /// [macOS] Emitted during macOS Handoff after an activity from this device
   /// was successfully resumed on another one.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType.
   ///   - userInfo: Contains app-specific state stored by the activity
   [<Emit "$0.on('activity-was-continued',$1)">] abstract onActivityWasContinued: listener: (Event -> string -> obj -> unit) -> App
@@ -528,8 +517,9 @@ type App =
   /// and call app.updateCurrentActiviy() in a timely manner. Otherwise, the
   /// operation will fail and `continue-activity-error` will be called.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - type: A string identifying the activity. Maps to NSUserActivity.activityType. 
   ///   - userInfo: Contains app-specific state stored by the activity
   [<Emit "$0.on('update-activity-state',$1)">] abstract onUpdateActivityState: listener: (Event -> string -> obj option -> unit) -> App
@@ -566,27 +556,34 @@ type App =
   /// See onBrowserWindowFocus.
   [<Emit "$0.removeListener('browser-window-focus',$1)">] abstract removeListenerBrowserWindowFocus: listener: (Event -> BrowserWindow -> unit) -> App
   /// Emitted when a new browserWindow is created.
-  [<Emit "$0.on('browser-window-created',$1)">] abstract onBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
+  ///
+  /// Note: According to the Electron docs, the first parameter is an Event, but
+  /// Electron currently sends an empty object here.
+  [<Emit "$0.on('browser-window-created',$1)">] abstract onBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
   /// See onBrowserWindowCreated.
-  [<Emit "$0.once('browser-window-created',$1)">] abstract onceBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
+  [<Emit "$0.once('browser-window-created',$1)">] abstract onceBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
   /// See onBrowserWindowCreated.
-  [<Emit "$0.addListener('browser-window-created',$1)">] abstract addListenerBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
+  [<Emit "$0.addListener('browser-window-created',$1)">] abstract addListenerBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
   /// See onBrowserWindowCreated.
-  [<Emit "$0.removeListener('browser-window-created',$1)">] abstract removeListenerBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
+  [<Emit "$0.removeListener('browser-window-created',$1)">] abstract removeListenerBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
   /// Emitted when a new `webContents` is created.
-  [<Emit "$0.on('web-contents-created',$1)">] abstract onWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
+  ///
+  /// Note: According to the Electron docs, the first parameter is an Event, but
+  /// Electron currently sends an empty object here.
+  [<Emit "$0.on('web-contents-created',$1)">] abstract onWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
   /// See onWebContentsCreated.
-  [<Emit "$0.once('web-contents-created',$1)">] abstract onceWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
+  [<Emit "$0.once('web-contents-created',$1)">] abstract onceWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
   /// See onWebContentsCreated.
-  [<Emit "$0.addListener('web-contents-created',$1)">] abstract addListenerWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
+  [<Emit "$0.addListener('web-contents-created',$1)">] abstract addListenerWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
   /// See onWebContentsCreated.
-  [<Emit "$0.removeListener('web-contents-created',$1)">] abstract removeListenerWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
+  [<Emit "$0.removeListener('web-contents-created',$1)">] abstract removeListenerWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
   /// Emitted when failed to verify the `certificate` for `url`. To trust the
   /// certificate you should prevent the default behavior with
   /// event.preventDefault() and call `callback(true)`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - url
   ///   - error: The error code
@@ -606,13 +603,13 @@ type App =
   /// event.preventDefault() prevents the application from using the first
   /// certificate from the store.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - url
   ///   - certificateList
   ///   - callback
-  ///   - certificate
   [<Emit "$0.on('select-client-certificate',$1)">] abstract onSelectClientCertificate: listener: (Event -> WebContents -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> App
   /// See onSelectClientCertificate.
   [<Emit "$0.once('select-client-certificate',$1)">] abstract onceSelectClientCertificate: listener: (Event -> WebContents -> string -> Certificate [] -> (Certificate -> unit) -> unit) -> App
@@ -626,8 +623,9 @@ type App =
   /// you should prevent the default behavior with event.preventDefault() and
   /// call callback(username, password) with the credentials.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - request
   ///   - authInfo
@@ -641,8 +639,9 @@ type App =
   [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// Emitted when the GPU process crashes or is killed.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - killed
   [<Emit "$0.on('gpu-process-crashed',$1)">] abstract onGpuProcessCrashed: listener: (Event -> bool -> unit) -> App
   /// See onGpuProcessCrashed.
@@ -653,8 +652,9 @@ type App =
   [<Emit "$0.removeListener('gpu-process-crashed',$1)">] abstract removeListenerGpuProcessCrashed: listener: (Event -> bool -> unit) -> App
   /// Emitted when the renderer process of `webContents` crashes or is killed.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - killed
   [<Emit "$0.on('renderer-process-crashed',$1)">] abstract onRendererProcessCrashed: listener: (Event -> WebContents -> bool -> unit) -> App
@@ -670,8 +670,9 @@ type App =
   /// https://www.chromium.org/developers/design-documents/accessibility for
   /// more details.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - accessibilitySupportEnabled: true when Chrome's accessibility support is enabled, false otherwise.
   [<Emit "$0.on('accessibility-support-changed',$1)">] abstract onAccessibilitySupportChanged: listener: (Event -> bool -> unit) -> App
   /// See onAccessibilitySupportChanged.
@@ -681,10 +682,9 @@ type App =
   /// See onAccessibilitySupportChanged.
   [<Emit "$0.removeListener('accessibility-support-changed',$1)">] abstract removeListenerAccessibilitySupportChanged: listener: (Event -> bool -> unit) -> App
   /// Emitted when Electron has created a new session.
-  // TODO: verify that this has Event as first parameter, or only Session.
-  [<Emit "$0.on('session-created',$1)">] abstract onSessionCreated: listener: (Event -> Session -> unit) -> App
+  [<Emit "$0.on('session-created',$1)">] abstract onSessionCreated: listener: (Session -> unit) -> App
   /// See onSessionCreated.
-  [<Emit "$0.once('session-created',$1)">] abstract onceSessionCreated: listener: (Event -> Session -> unit) -> App
+  [<Emit "$0.once('session-created',$1)">] abstract onceSessionCreated: listener: (Session -> unit) -> App
   /// See onSessionCreated.
   [<Emit "$0.addListener('session-created',$1)">] abstract addListenerSessionCreated: listener: (Event -> Session -> unit) -> App
   /// See onSessionCreated.
@@ -698,8 +698,9 @@ type App =
   /// Note: Extra command line arguments might be added by Chromium, such as
   /// --original-process-start-time.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - argv: The second instance's command line arguments
   ///   - workingDirectory: The second instance's working directory
   [<Emit "$0.on('second-instance',$1)">] abstract onSecondInstance: listener: (Event -> string [] -> string -> unit) -> App
@@ -724,8 +725,9 @@ type App =
   /// being returned. Custom value can be returned by setting
   /// `event.returnValue`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - moduleName
   [<Emit "$0.on('remote-require',$1)">] abstract onRemoteRequire: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
@@ -740,8 +742,9 @@ type App =
   /// being returned. Custom value can be returned by setting
   /// `event.returnValue`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - globalName
   [<Emit "$0.on('remote-get-global',$1)">] abstract onRemoteGetGlobal: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
@@ -756,8 +759,9 @@ type App =
   /// being returned. Custom value can be returned by setting
   /// `event.returnValue`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - moduleName
   [<Emit "$0.on('remote-get-builtin',$1)">] abstract onRemoteGetBuiltin: listener: (ReturnValueEvent -> WebContents -> string -> unit) -> App
@@ -772,8 +776,9 @@ type App =
   /// from being returned. Custom value can be returned by setting
   /// `event.returnValue`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   [<Emit "$0.on('remote-get-current-window',$1)">] abstract onRemoteGetCurrentWindow: listener: (ReturnValueEvent -> WebContents -> unit) -> App
   /// See onRemoteGetCurrentWindow.
@@ -787,8 +792,9 @@ type App =
   /// object from being returned. Custom value can be returned by setting
   /// `event.returnValue`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   [<Emit "$0.on('remote-get-current-web-contents',$1)">] abstract onRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> App
   /// See onRemoteGetCurrentWebContents.
@@ -802,8 +808,9 @@ type App =
   /// from being returned. Custom value can be returned by setting
   /// `event.returnValue`.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - webContents
   ///   - guestWebContents
   [<Emit "$0.on('remote-get-guest-web-contents',$1)">] abstract onRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
@@ -1216,38 +1223,38 @@ type App =
 type AutoUpdater =
   inherit EventEmitter<AutoUpdater>
   /// Emitted when there is an error while updating.
-  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Error -> unit) -> AutoUpdater
   /// See onError.
-  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Error -> unit) -> AutoUpdater
   /// See onError.
-  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Error -> unit) -> AutoUpdater
   /// See onError.
-  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Event -> Error -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Error -> unit) -> AutoUpdater
   /// Emitted when checking if an update exists has started.
-  [<Emit "$0.on('checking-for-update',$1)">] abstract onCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.on('checking-for-update',$1)">] abstract onCheckingForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// See onCheckingForUpdate.
-  [<Emit "$0.once('checking-for-update',$1)">] abstract onceCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.once('checking-for-update',$1)">] abstract onceCheckingForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// See onCheckingForUpdate.
-  [<Emit "$0.addListener('checking-for-update',$1)">] abstract addListenerCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('checking-for-update',$1)">] abstract addListenerCheckingForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// See onCheckingForUpdate.
-  [<Emit "$0.removeListener('checking-for-update',$1)">] abstract removeListenerCheckingForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('checking-for-update',$1)">] abstract removeListenerCheckingForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// Emitted when there is an available update. The update is downloaded
   /// automatically.
-  [<Emit "$0.on('update-available',$1)">] abstract onUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.on('update-available',$1)">] abstract onUpdateAvailable: listener: (unit -> unit) -> AutoUpdater
   /// See onUpdateAvailable.
-  [<Emit "$0.once('update-available',$1)">] abstract onceUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.once('update-available',$1)">] abstract onceUpdateAvailable: listener: (unit -> unit) -> AutoUpdater
   /// See onUpdateAvailable.
-  [<Emit "$0.addListener('update-available',$1)">] abstract addListenerUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('update-available',$1)">] abstract addListenerUpdateAvailable: listener: (unit -> unit) -> AutoUpdater
   /// See onUpdateAvailable.
-  [<Emit "$0.removeListener('update-available',$1)">] abstract removeListenerUpdateAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('update-available',$1)">] abstract removeListenerUpdateAvailable: listener: (unit -> unit) -> AutoUpdater
   /// Emitted when there is no available update.
-  [<Emit "$0.on('update-not-available',$1)">] abstract onUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.on('update-not-available',$1)">] abstract onUpdateNotAvailable: listener: (unit -> unit) -> AutoUpdater
   /// See onUpdateNotAvailable.
-  [<Emit "$0.once('update-not-available',$1)">] abstract onceUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.once('update-not-available',$1)">] abstract onceUpdateNotAvailable: listener: (unit -> unit) -> AutoUpdater
   /// See onUpdateNotAvailable.
-  [<Emit "$0.addListener('update-not-available',$1)">] abstract addListenerUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('update-not-available',$1)">] abstract addListenerUpdateNotAvailable: listener: (unit -> unit) -> AutoUpdater
   /// See onUpdateNotAvailable.
-  [<Emit "$0.removeListener('update-not-available',$1)">] abstract removeListenerUpdateNotAvailable: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('update-not-available',$1)">] abstract removeListenerUpdateNotAvailable: listener: (unit -> unit) -> AutoUpdater
   /// Emitted when an update has been downloaded.
   ///
   /// On Windows only `releaseName` is available.
@@ -1256,8 +1263,9 @@ type AutoUpdater =
   /// downloaded update will still be applied the next time the application
   /// starts.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - releaseNotes
   ///   - releaseName
   ///   - releaseDate
@@ -1275,15 +1283,15 @@ type AutoUpdater =
   /// windows are closed. As a result you should listen to this event if you
   /// wish to perform actions before the windows are closed while a process is
   /// quitting, as well as listening to `before-quit`.
-  [<Emit "$0.on('before-quit-for-update',$1)">] abstract onBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.on('before-quit-for-update',$1)">] abstract onBeforeQuitForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// See onBeforeQuitForUpdate.
-  [<Emit "$0.once('before-quit-for-update',$1)">] abstract onceBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.once('before-quit-for-update',$1)">] abstract onceBeforeQuitForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// See onBeforeQuitForUpdate.
-  [<Emit "$0.addListener('before-quit-for-update',$1)">] abstract addListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.addListener('before-quit-for-update',$1)">] abstract addListenerBeforeQuitForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// See onBeforeQuitForUpdate.
-  [<Emit "$0.removeListener('before-quit-for-update',$1)">] abstract removeListenerBeforeQuitForUpdate: listener: (Event -> unit) -> AutoUpdater
+  [<Emit "$0.removeListener('before-quit-for-update',$1)">] abstract removeListenerBeforeQuitForUpdate: listener: (unit -> unit) -> AutoUpdater
   /// Sets the url and initialize the auto updater.
-  abstract setFeedURL: options: AutoOpdateFeedOptions -> unit
+  abstract setFeedURL: options: AutoUpdateFeedOptions -> unit
   /// Returns the current update feed URL.
   abstract getFeedURL: unit -> string
   /// Asks the server whether there is an update. You must call `setFeedURL`
@@ -1375,8 +1383,9 @@ type BrowserWindow =
   /// event.preventDefault() will prevent the native window's title from
   /// changing. `explicitSet` is false when title is synthesized from file url.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - title
   ///   - explicitSet
   [<Emit "$0.on('page-title-updated',$1)">] abstract onPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> BrowserWindow
@@ -1514,8 +1523,9 @@ type BrowserWindow =
   /// Note that this is only emitted when the window is being resized manually.
   /// Resizing the window with setBounds/setSize will not emit this event.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - newBounds: Size the window is being resized to.
   [<Emit "$0.on('will-resize',$1)">] abstract onWillResize: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   /// See onWillResize.
@@ -1537,8 +1547,9 @@ type BrowserWindow =
   /// this is only emitted when the window is being resized manually. Resizing
   /// the window with setBounds/setSize will not emit this event.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - newBounds: Location the window is being moved to.
   [<Emit "$0.on('will-move',$1)">] abstract onWillMove: listener: (Event -> Rectangle -> unit) -> BrowserWindow
   /// See onWillMove.
@@ -1600,8 +1611,9 @@ type BrowserWindow =
   /// [macOS] Emitted when the window is set or unset to show always on top of
   /// other windows.
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - isAlwaysOnTop
   [<Emit "$0.on('always-on-top-changed',$1)">] abstract onAlwaysOnTopChanged: listener: (Event -> bool -> unit) -> BrowserWindow
   /// See onAlwaysOnTopChanged.
@@ -1618,8 +1630,9 @@ type BrowserWindow =
   /// browser-backward. The following app commands are explicitly supported on
   /// Linux: browser-backward, browser-forward
   ///
-  /// Extra parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - command
   [<Emit "$0.on('app-command',$1)">] abstract onAppCommand: listener: (Event -> string -> unit) -> BrowserWindow
   /// See onAppCommand.
@@ -2228,7 +2241,7 @@ type ClientRequest =
   inherit Node.Stream.Writable<obj>
   inherit EventEmitter<ClientRequest>
   /// Provides the HTTP response message.
-  [<Emit "$0.on('response',$1)">] abstract onResponse: listener: (IncomingMessage -> unit) -> ClientRequest  // TODO: Should IncomingMessage be second argument, and first argument be Event?
+  [<Emit "$0.on('response',$1)">] abstract onResponse: listener: (IncomingMessage -> unit) -> ClientRequest
   /// See onResponse.
   [<Emit "$0.once('response',$1)">] abstract onceResponse: listener: (IncomingMessage -> unit) -> ClientRequest
   /// See onResponse.
@@ -2251,22 +2264,22 @@ type ClientRequest =
   [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (AuthInfo -> (string -> string -> unit) -> unit) -> ClientRequest
   /// Emitted just after the last chunk of the request's data has been written
   /// into the `request` object.
-  [<Emit "$0.on('finish',$1)">] abstract onFinish: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.on('finish',$1)">] abstract onFinish: listener: (unit -> unit) -> ClientRequest
   /// See onFinish.
-  [<Emit "$0.once('finish',$1)">] abstract onceFinish: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.once('finish',$1)">] abstract onceFinish: listener: (unit -> unit) -> ClientRequest
   /// See onFinish.
-  [<Emit "$0.addListener('finish',$1)">] abstract addListenerFinish: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.addListener('finish',$1)">] abstract addListenerFinish: listener: (unit -> unit) -> ClientRequest
   /// See onFinish.
-  [<Emit "$0.removeListener('finish',$1)">] abstract removeListenerFinish: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.removeListener('finish',$1)">] abstract removeListenerFinish: listener: (unit -> unit) -> ClientRequest
   /// Emitted when the request is aborted. Will not be fired if the request is
   /// already closed.
-  [<Emit "$0.on('abort',$1)">] abstract onAbort: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.on('abort',$1)">] abstract onAbort: listener: (unit -> unit) -> ClientRequest
   /// See onAbort.
-  [<Emit "$0.once('abort',$1)">] abstract onceAbort: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.once('abort',$1)">] abstract onceAbort: listener: (unit -> unit) -> ClientRequest
   /// See onAbort.
-  [<Emit "$0.addListener('abort',$1)">] abstract addListenerAbort: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.addListener('abort',$1)">] abstract addListenerAbort: listener: (unit -> unit) -> ClientRequest
   /// See onAbort.
-  [<Emit "$0.removeListener('abort',$1)">] abstract removeListenerAbort: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.removeListener('abort',$1)">] abstract removeListenerAbort: listener: (unit -> unit) -> ClientRequest
   /// Emitted when the `net` module fails to issue a network request. Typically
   /// when the request object emits an error event, a close event will
   /// subsequently follow and no response object will be provided.
@@ -2280,13 +2293,13 @@ type ClientRequest =
   /// Emitted as the last event in the HTTP request-response transaction. The
   /// close event indicates that no more events will be emitted on either the
   /// request or response objects.
-  [<Emit "$0.on('close',$1)">] abstract onClose: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.on('close',$1)">] abstract onClose: listener: (unit -> unit) -> ClientRequest
   /// See onClose.
-  [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.once('close',$1)">] abstract onceClose: listener: (unit -> unit) -> ClientRequest
   /// See onClose.
-  [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (unit -> unit) -> ClientRequest
   /// See onClose.
-  [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (Event -> unit) -> ClientRequest
+  [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (unit -> unit) -> ClientRequest
   /// Emitted when there is redirection and the mode is manual. Calling
   /// request.followRedirect will continue with the redirection.
   ///
@@ -2391,34 +2404,34 @@ type RedirectMode =
 
 type ClientRequestOptions =
   /// The HTTP request method. Defaults to the GET method.
-  abstract method: string
+  abstract method: string with get, set
   /// The request URL. Must be provided in the absolute form with the protocol
   /// scheme specified as http or https.
-  abstract url: string
+  abstract url: string with get, set
   /// The Session instance with which the request is associated.
-  abstract session: Session
+  abstract session: Session with get, set
   /// The name of the partition with which the request is associated. Defaults
   /// to the empty string. The session option prevails on partition. Thus if a
   /// session is explicitly specified, partition is ignored.
-  abstract partition: string
+  abstract partition: string with get, set
   /// The protocol scheme in the form 'scheme:'. Currently supported values are
   /// 'http:' or 'https:'. Defaults to 'http:'.
-  abstract protocol: string
+  abstract protocol: string with get, set
   /// The server host provided as a concatenation of the hostname and the port
   /// number 'hostname:port'.
-  abstract host: string
+  abstract host: string with get, set
   /// The server host name.
-  abstract hostname: string
+  abstract hostname: string with get, set
   /// The server's listening port number.
-  abstract port: int
+  abstract port: int with get, set
   /// The path part of the request URL.
-  abstract path: string
+  abstract path: string with get, set
   /// The redirect mode for this request. Defaults to RedirectMode.Follow. When
   /// mode is RedirectMode.Error, any redirection will be aborted. When mode is
   /// RedirectMode.Manual the redirection will be deferred until
   /// request.followRedirect is invoked. Listen for the `redirect` event in this
   /// mode to get more details about the redirect request.
-  abstract redirect: RedirectMode
+  abstract redirect: RedirectMode with get, set
 
 
 type ClientRequestStatic =
@@ -2571,7 +2584,9 @@ type Cookies =
   /// Emitted when a cookie is changed because it was added, edited, removed, or
   /// expired.
   ///
-  /// Extra parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - cookie: The cookie that was changed
   ///   - cause: The cause of the change
   ///   - removed: true if the cookie was removed, false otherwise
@@ -2658,6 +2673,11 @@ type Debugger =
   inherit EventEmitter<Debugger>
   /// Emitted when debugging session is terminated. This happens either when
   /// webContents is closed or devtools is invoked for the attached webContents.
+  ///
+  /// Parameters:
+  ///
+  ///   - event
+  ///   - reason: reason for detaching the debugger
   [<Emit "$0.on('detach',$1)">] abstract onDetach: listener: (Event -> string -> unit) -> Debugger
   /// See onDetach.
   [<Emit "$0.once('detach',$1)">] abstract onceDetach: listener: (Event -> string -> unit) -> Debugger
@@ -2666,6 +2686,12 @@ type Debugger =
   /// See onDetach.
   [<Emit "$0.removeListener('detach',$1)">] abstract removeListenerDetach: listener: (Event -> string -> unit) -> Debugger
   /// Emitted whenever debugging target issues instrumentation event.
+  ///
+  /// Parameters:
+  ///
+  ///   - event
+  ///   - method: Method name.
+  ///   - params: Event parameters defined by the 'parameters' attribute in the remote debugging protocol.
   [<Emit "$0.on('message',$1)">] abstract onMessage: listener: (Event -> string -> obj option -> unit) -> Debugger
   /// See onMessage.
   [<Emit "$0.once('message',$1)">] abstract onceMessage: listener: (Event -> string -> obj option -> unit) -> Debugger
@@ -2727,21 +2753,21 @@ type OpenDialogResult =
   abstract canceled: bool with get, set
   /// An array of file paths chosen by the user. If the dialog is cancelled this
   /// will be an empty array.
-  abstract filePaths: string [] with get, set  // TODO: check that this is an empty array and not undefined/null when cancelled, also update `bookmarks` accordingly
+  abstract filePaths: string [] with get, set
   /// [macOS Mac App Store only] An array matching the filePaths array of base64
   /// encoded strings which contains security scoped bookmark data.
   /// securityScopedBookmarks must be enabled for this to be populated.
-  abstract bookmarks: string [] with get, set
+  abstract bookmarks: string [] option with get, set
 
 type SaveDialogResult =
   /// Whether or not the dialog was canceled.
   abstract canceled: bool with get, set
-  /// If the dialog is canceled this will be None.
-  abstract filePath : string option with get, set
+  /// If the dialog is canceled this will be null or empty string.
+  abstract filePath : string with get, set
   /// [macOS Mac App Store only] Base64 encoded string which contains the
   /// security scoped bookmark data for the saved file. securityScopedBookmarks
   /// must be enabled for this to be present.
-  abstract bookmarks: string [] with get, set
+  abstract bookmarks: string option with get, set
 
 type MessageBoxResult =
   /// The index of the clicked button.
@@ -2754,12 +2780,12 @@ type Dialog =
   inherit EventEmitter<Dialog>
   /// Returns the file paths chosen by the user, or None if the dialog was
   /// canceled.
-  abstract showOpenDialogSync: options: OpenDialogOptions -> string [] option  // TODO: is the return type correct? Is it empty or undefined when cancelled?
+  abstract showOpenDialogSync: options: OpenDialogOptions -> string [] option
   /// Returns an array of file paths chosen by the user.
   ///
   /// The `browserWindow` argument allows the dialog to attach itself to a
   /// parent window, making it modal.
-  abstract showOpenDialogSync: browserWindow: BrowserWindow * options: OpenDialogOptions -> string [] option  // TODO: is the return type correct? Is it empty or undefined when cancelled?
+  abstract showOpenDialogSync: browserWindow: BrowserWindow * options: OpenDialogOptions -> string [] option
   /// Display an Open dialog and returns the file paths chosen by the user.
   abstract showOpenDialog: options: OpenDialogOptions -> Promise<OpenDialogResult>
   /// Display an Open dialog and returns the file paths chosen by the user.
@@ -3096,34 +3122,34 @@ type IncomingMessage =
   /// See onData.
   [<Emit "$0.removeListener('data',$1)">] abstract removeListenerData: listener: (Buffer -> unit) -> IncomingMessage
   /// Indicates that response body has ended.
-  [<Emit "$0.on('end',$1)">] abstract onEnd: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.on('end',$1)">] abstract onEnd: listener: (unit -> unit) -> IncomingMessage
   /// See onEnd.
-  [<Emit "$0.once('end',$1)">] abstract onceEnd: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.once('end',$1)">] abstract onceEnd: listener: (unit -> unit) -> IncomingMessage
   /// See onEnd.
-  [<Emit "$0.addListener('end',$1)">] abstract addListenerEnd: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.addListener('end',$1)">] abstract addListenerEnd: listener: (unit -> unit) -> IncomingMessage
   /// See onEnd.
-  [<Emit "$0.removeListener('end',$1)">] abstract removeListenerEnd: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.removeListener('end',$1)">] abstract removeListenerEnd: listener: (unit -> unit) -> IncomingMessage
   /// Emitted when a request has been canceled during an ongoing HTTP
   /// transaction.
-  [<Emit "$0.on('aborted',$1)">] abstract onAborted: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.on('aborted',$1)">] abstract onAborted: listener: (unit -> unit) -> IncomingMessage
   /// See onAborted.
-  [<Emit "$0.once('aborted',$1)">] abstract onceAborted: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.once('aborted',$1)">] abstract onceAborted: listener: (unit -> unit) -> IncomingMessage
   /// See onAborted.
-  [<Emit "$0.addListener('aborted',$1)">] abstract addListenerAborted: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.addListener('aborted',$1)">] abstract addListenerAborted: listener: (unit -> unit) -> IncomingMessage
   /// See onAborted.
-  [<Emit "$0.removeListener('aborted',$1)">] abstract removeListenerAborted: listener: (Event -> unit) -> IncomingMessage
+  [<Emit "$0.removeListener('aborted',$1)">] abstract removeListenerAborted: listener: (unit -> unit) -> IncomingMessage
   /// Emitted when an error was encountered while streaming response data
   /// events. For instance, if the server closes the underlying while the
   /// response is still streaming, an `error` event will be emitted on the
   /// response object and a `close` event will subsequently follow on the
   /// request object.
-  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Event -> Error -> unit) -> IncomingMessage  // TODO: is Event correct, or only Error?
+  [<Emit "$0.on('error',$1)">] abstract onError: listener: (Error -> unit) -> IncomingMessage
   /// See onError.
-  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Event -> Error -> unit) -> IncomingMessage
+  [<Emit "$0.once('error',$1)">] abstract onceError: listener: (Error -> unit) -> IncomingMessage
   /// See onError.
-  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Event -> Error -> unit) -> IncomingMessage
+  [<Emit "$0.addListener('error',$1)">] abstract addListenerError: listener: (Error -> unit) -> IncomingMessage
   /// See onError.
-  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Event -> Error -> unit) -> IncomingMessage
+  [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Error -> unit) -> IncomingMessage
   /// The HTTP response status code.
   abstract statusCode: int with get, set
   /// The HTTP status message.
@@ -3331,7 +3357,7 @@ type MenuItem =
   abstract label: string option with get, set
   /// Fired when the MenuItem receives a click event. It can be called with
   /// menuItem.click(event, focusedWindow, focusedWebContents).
-  abstract click: (MenuItem -> BrowserWindow -> Event -> unit) option with get, set
+  abstract click: (Event -> BrowserWindow -> WebContents -> unit) option with get, set
   /// The menu item's submenu, if present.
   abstract submenu: Menu option with get, set
   /// The type of the item.
@@ -3581,65 +3607,65 @@ type PowerIdleState =
 type PowerMonitor =
   inherit EventEmitter<PowerMonitor>
   /// Emitted when the system is suspending.
-  [<Emit "$0.on('suspend',$1)">] abstract onSuspend: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('suspend',$1)">] abstract onSuspend: listener: (unit -> unit) -> PowerMonitor
   /// See onSuspend.
-  [<Emit "$0.once('suspend',$1)">] abstract onceSuspend: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('suspend',$1)">] abstract onceSuspend: listener: (unit -> unit) -> PowerMonitor
   /// See onSuspend.
-  [<Emit "$0.addListener('suspend',$1)">] abstract addListenerSuspend: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('suspend',$1)">] abstract addListenerSuspend: listener: (unit -> unit) -> PowerMonitor
   /// See onSuspend.
-  [<Emit "$0.removeListener('suspend',$1)">] abstract removeListenerSuspend: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('suspend',$1)">] abstract removeListenerSuspend: listener: (unit -> unit) -> PowerMonitor
   /// Emitted when system is resuming.
-  [<Emit "$0.on('resume',$1)">] abstract onResume: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('resume',$1)">] abstract onResume: listener: (unit -> unit) -> PowerMonitor
   /// See onResume.
-  [<Emit "$0.once('resume',$1)">] abstract onceResume: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('resume',$1)">] abstract onceResume: listener: (unit -> unit) -> PowerMonitor
   /// See onResume.
-  [<Emit "$0.addListener('resume',$1)">] abstract addListenerResume: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('resume',$1)">] abstract addListenerResume: listener: (unit -> unit) -> PowerMonitor
   /// See onResume.
-  [<Emit "$0.removeListener('resume',$1)">] abstract removeListenerResume: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('resume',$1)">] abstract removeListenerResume: listener: (unit -> unit) -> PowerMonitor
   /// [Windows] Emitted when the system changes to AC power.
-  [<Emit "$0.on('on-ac',$1)">] abstract onOnAc: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('on-ac',$1)">] abstract onOnAc: listener: (unit -> unit) -> PowerMonitor
   /// See onOnAc.
-  [<Emit "$0.once('on-ac',$1)">] abstract onceOnAc: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('on-ac',$1)">] abstract onceOnAc: listener: (unit -> unit) -> PowerMonitor
   /// See onOnAc.
-  [<Emit "$0.addListener('on-ac',$1)">] abstract addListenerOnAc: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('on-ac',$1)">] abstract addListenerOnAc: listener: (unit -> unit) -> PowerMonitor
   /// See onOnAc.
-  [<Emit "$0.removeListener('on-ac',$1)">] abstract removeListenerOnAc: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('on-ac',$1)">] abstract removeListenerOnAc: listener: (unit -> unit) -> PowerMonitor
   /// [Windows] Emitted when system changes to battery power.
-  [<Emit "$0.on('on-battery',$1)">] abstract onOnBattery: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('on-battery',$1)">] abstract onOnBattery: listener: (unit -> unit) -> PowerMonitor
   /// See onOnBattery.
-  [<Emit "$0.once('on-battery',$1)">] abstract onceOnBattery: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('on-battery',$1)">] abstract onceOnBattery: listener: (unit -> unit) -> PowerMonitor
   /// See onOnBattery.
-  [<Emit "$0.addListener('on-battery',$1)">] abstract addListenerOnBattery: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('on-battery',$1)">] abstract addListenerOnBattery: listener: (unit -> unit) -> PowerMonitor
   /// See onOnBattery.
-  [<Emit "$0.removeListener('on-battery',$1)">] abstract removeListenerOnBattery: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('on-battery',$1)">] abstract removeListenerOnBattery: listener: (unit -> unit) -> PowerMonitor
   /// [Linux, macOS] Emitted when the system is about to reboot or shut down. If
   /// the event handler invokes e.preventDefault(), Electron will attempt to
   /// delay system shutdown in order for the app to exit cleanly. If
   /// e.preventDefault() is called, the app should exit as soon as possible by
   /// calling something like app.quit().
-  [<Emit "$0.on('shutdown',$1)">] abstract onShutdown: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('shutdown',$1)">] abstract onShutdown: listener: (unit -> unit) -> PowerMonitor
   /// See onShutdown.
-  [<Emit "$0.once('shutdown',$1)">] abstract onceShutdown: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('shutdown',$1)">] abstract onceShutdown: listener: (unit -> unit) -> PowerMonitor
   /// See onShutdown.
-  [<Emit "$0.addListener('shutdown',$1)">] abstract addListenerShutdown: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('shutdown',$1)">] abstract addListenerShutdown: listener: (unit -> unit) -> PowerMonitor
   /// See onShutdown.
-  [<Emit "$0.removeListener('shutdown',$1)">] abstract removeListenerShutdown: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('shutdown',$1)">] abstract removeListenerShutdown: listener: (unit -> unit) -> PowerMonitor
   /// [macOS, Windows] Emitted when the system is about to lock the screen.
-  [<Emit "$0.on('lock-screen',$1)">] abstract onLockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('lock-screen',$1)">] abstract onLockScreen: listener: (unit -> unit) -> PowerMonitor
   /// See onLockScreen.
-  [<Emit "$0.once('lock-screen',$1)">] abstract onceLockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('lock-screen',$1)">] abstract onceLockScreen: listener: (unit -> unit) -> PowerMonitor
   /// See onLockScreen.
-  [<Emit "$0.addListener('lock-screen',$1)">] abstract addListenerLockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('lock-screen',$1)">] abstract addListenerLockScreen: listener: (unit -> unit) -> PowerMonitor
   /// See onLockScreen.
-  [<Emit "$0.removeListener('lock-screen',$1)">] abstract removeListenerLockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('lock-screen',$1)">] abstract removeListenerLockScreen: listener: (unit -> unit) -> PowerMonitor
   /// [macOS, Windows] Emitted as soon as the systems screen is unlocked.
-  [<Emit "$0.on('unlock-screen',$1)">] abstract onUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.on('unlock-screen',$1)">] abstract onUnlockScreen: listener: (unit -> unit) -> PowerMonitor
   /// See onUnlockScreen.
-  [<Emit "$0.once('unlock-screen',$1)">] abstract onceUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.once('unlock-screen',$1)">] abstract onceUnlockScreen: listener: (unit -> unit) -> PowerMonitor
   /// See onUnlockScreen.
-  [<Emit "$0.addListener('unlock-screen',$1)">] abstract addListenerUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.addListener('unlock-screen',$1)">] abstract addListenerUnlockScreen: listener: (unit -> unit) -> PowerMonitor
   /// See onUnlockScreen.
-  [<Emit "$0.removeListener('unlock-screen',$1)">] abstract removeListenerUnlockScreen: listener: (Event -> unit) -> PowerMonitor
+  [<Emit "$0.removeListener('unlock-screen',$1)">] abstract removeListenerUnlockScreen: listener: (unit -> unit) -> PowerMonitor
   /// Calculate the system idle state. idleThreshold is the amount of time (in
   /// seconds) before considered idle.
   abstract getSystemIdleState: idleThreshold: int -> PowerIdleState
@@ -3707,13 +3733,13 @@ type Process =
   ///
   /// It can be used by the preload script to add removed Node global symbols
   /// back to the global scope when node integration is turned off:
-  [<Emit "$0.on('loaded',$1)">] abstract onLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.on('loaded',$1)">] abstract onLoaded: listener: (unit -> unit) -> Process
   /// See onLoaded.
-  [<Emit "$0.once('loaded',$1)">] abstract onceLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.once('loaded',$1)">] abstract onceLoaded: listener: (unit -> unit) -> Process
   /// See onLoaded.
-  [<Emit "$0.addListener('loaded',$1)">] abstract addListenerLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.addListener('loaded',$1)">] abstract addListenerLoaded: listener: (unit -> unit) -> Process
   /// See onLoaded.
-  [<Emit "$0.removeListener('loaded',$1)">] abstract removeListenerLoaded: listener: (Event -> unit) -> Process
+  [<Emit "$0.removeListener('loaded',$1)">] abstract removeListenerLoaded: listener: (unit -> unit) -> Process
   /// When app is started by being passed as parameter to the default app, this
   /// property is Some true in the main process, otherwise it is None.
   abstract defaultApp: bool option with get, set
@@ -3776,7 +3802,7 @@ type Process =
   abstract getProcessMemoryInfo: unit -> Promise<ProcessMemoryInfo>
   /// Returns an object giving memory usage statistics about the entire  Note
   /// that all statistics are reported in Kilobytes.
-  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo  // TODO: does this return Promise, like getProcessMemoryInfo?
+  abstract getSystemMemoryInfo: unit -> SystemMemoryInfo
   /// Returns the version of the host operating system.
   ///
   /// Note: It returns the actual operating system version instead of kernel
@@ -3790,11 +3816,23 @@ type Process =
   /// the OS hard limit, whichever is lower for the current process.
   abstract setFdLimit: maxDescriptors: int -> unit
 
+[<StringEnum; RequireQualifiedAccess>]
+type ProcessMetricType =
+  | [<CompiledName("Browser")>] Browser
+  | [<CompiledName("Tab")>] Tab
+  | [<CompiledName("Utility")>] Utility
+  | [<CompiledName("Zygote")>] Zygote
+  | [<CompiledName("Sandbox helper")>] SandboxHelper
+  | [<CompiledName("GPU")>] GPU
+  | [<CompiledName("Pepper Plugin")>] PepperPlugin
+  | [<CompiledName("Pepper Plugin Broker")>] PepperPluginBroker
+  | [<CompiledName("Unknown")>] Unknown
+
 type ProcessMetric =
   /// Process id of the process.
   abstract pid: int with get, set
-  /// Process type (Browser or Tab or GPU etc).
-  abstract ``type``: string with get, set
+  /// Process type.
+  abstract ``type``: ProcessMetricType with get, set
   /// CPU usage of the process.
   abstract cpu: CPUUsage with get, set
 
@@ -4517,17 +4555,6 @@ type SystemPreferences =
   [<Emit "$0.addListener('high-contrast-color-scheme-changed',$1)">] abstract addListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onHighContrastColorSchemeChanged.
   [<Emit "$0.removeListener('high-contrast-color-scheme-changed',$1)">] abstract removeListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
-  /// [macOS]
-  ///
-  /// Note: This event is only emitted after you have called
-  /// startAppLevelAppearanceTrackingOS
-  [<Emit "$0.on('appearance-changed',$1)">] abstract onAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
-  /// See onAppearanceChanged.
-  [<Emit "$0.once('appearance-changed',$1)">] abstract onceAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
-  /// See onAppearanceChanged.
-  [<Emit "$0.addListener('appearance-changed',$1)">] abstract addListenerAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
-  /// See onAppearanceChanged.
-  [<Emit "$0.removeListener('appearance-changed',$1)">] abstract removeListenerAppearanceChanged: listener: (SetAppearance -> unit) -> SystemPreferences
   /// [macOS] Whether the system is in Dark Mode.
   abstract isDarkMode: unit -> bool
   /// [macOS] Whether the Swipe between pages setting is on.
@@ -4992,38 +5019,38 @@ type Tray =
   /// See onDoubleClick.
   [<Emit "$0.removeListener('double-click',$1)">] abstract removeListenerDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
   /// [Windows] Emitted when the tray balloon shows.
-  [<Emit "$0.on('balloon-show',$1)">] abstract onBalloonShow: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('balloon-show',$1)">] abstract onBalloonShow: listener: (unit -> unit) -> Tray
   /// See onBalloonShow.
-  [<Emit "$0.once('balloon-show',$1)">] abstract onceBalloonShow: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('balloon-show',$1)">] abstract onceBalloonShow: listener: (unit -> unit) -> Tray
   /// See onBalloonShow.
-  [<Emit "$0.addListener('balloon-show',$1)">] abstract addListenerBalloonShow: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('balloon-show',$1)">] abstract addListenerBalloonShow: listener: (unit -> unit) -> Tray
   /// See onBalloonShow.
-  [<Emit "$0.removeListener('balloon-show',$1)">] abstract removeListenerBalloonShow: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('balloon-show',$1)">] abstract removeListenerBalloonShow: listener: (unit -> unit) -> Tray
   /// [Windows] Emitted when the tray balloon is clicked.
-  [<Emit "$0.on('balloon-click',$1)">] abstract onBalloonClick: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('balloon-click',$1)">] abstract onBalloonClick: listener: (unit -> unit) -> Tray
   /// See onBalloonClick.
-  [<Emit "$0.once('balloon-click',$1)">] abstract onceBalloonClick: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('balloon-click',$1)">] abstract onceBalloonClick: listener: (unit -> unit) -> Tray
   /// See onBalloonClick.
-  [<Emit "$0.addListener('balloon-click',$1)">] abstract addListenerBalloonClick: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('balloon-click',$1)">] abstract addListenerBalloonClick: listener: (unit -> unit) -> Tray
   /// See onBalloonClick.
-  [<Emit "$0.removeListener('balloon-click',$1)">] abstract removeListenerBalloonClick: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('balloon-click',$1)">] abstract removeListenerBalloonClick: listener: (unit -> unit) -> Tray
   /// [Windows] Emitted when the tray balloon is closed because of timeout or
   /// user manually closes it.
-  [<Emit "$0.on('balloon-closed',$1)">] abstract onBalloonClosed: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('balloon-closed',$1)">] abstract onBalloonClosed: listener: (unit -> unit) -> Tray
   /// See onBalloonClosed.
-  [<Emit "$0.once('balloon-closed',$1)">] abstract onceBalloonClosed: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('balloon-closed',$1)">] abstract onceBalloonClosed: listener: (unit -> unit) -> Tray
   /// See onBalloonClosed.
-  [<Emit "$0.addListener('balloon-closed',$1)">] abstract addListenerBalloonClosed: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('balloon-closed',$1)">] abstract addListenerBalloonClosed: listener: (unit -> unit) -> Tray
   /// See onBalloonClosed.
-  [<Emit "$0.removeListener('balloon-closed',$1)">] abstract removeListenerBalloonClosed: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('balloon-closed',$1)">] abstract removeListenerBalloonClosed: listener: (unit -> unit) -> Tray
   /// [macOS] Emitted when any dragged items are dropped on the tray icon.
-  [<Emit "$0.on('drop',$1)">] abstract onDrop: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('drop',$1)">] abstract onDrop: listener: (unit -> unit) -> Tray
   /// See onDrop.
-  [<Emit "$0.once('drop',$1)">] abstract onceDrop: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('drop',$1)">] abstract onceDrop: listener: (unit -> unit) -> Tray
   /// See onDrop.
-  [<Emit "$0.addListener('drop',$1)">] abstract addListenerDrop: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('drop',$1)">] abstract addListenerDrop: listener: (unit -> unit) -> Tray
   /// See onDrop.
-  [<Emit "$0.removeListener('drop',$1)">] abstract removeListenerDrop: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('drop',$1)">] abstract removeListenerDrop: listener: (unit -> unit) -> Tray
   /// [macOS] Emitted when dragged files are dropped in the tray icon. The
   /// listener receives the paths of the dropped files.
   [<Emit "$0.on('drop-files',$1)">] abstract onDropFiles: listener: (Event -> string [] -> unit) -> Tray
@@ -5043,30 +5070,30 @@ type Tray =
   /// See onDropText.
   [<Emit "$0.removeListener('drop-text',$1)">] abstract removeListenerDropText: listener: (Event -> string -> unit) -> Tray
   /// [macOS] Emitted when a drag operation enters the tray icon.
-  [<Emit "$0.on('drag-enter',$1)">] abstract onDragEnter: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('drag-enter',$1)">] abstract onDragEnter: listener: (unit -> unit) -> Tray
   /// See onDragEnter.
-  [<Emit "$0.once('drag-enter',$1)">] abstract onceDragEnter: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('drag-enter',$1)">] abstract onceDragEnter: listener: (unit -> unit) -> Tray
   /// See onDragEnter.
-  [<Emit "$0.addListener('drag-enter',$1)">] abstract addListenerDragEnter: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('drag-enter',$1)">] abstract addListenerDragEnter: listener: (unit -> unit) -> Tray
   /// See onDragEnter.
-  [<Emit "$0.removeListener('drag-enter',$1)">] abstract removeListenerDragEnter: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('drag-enter',$1)">] abstract removeListenerDragEnter: listener: (unit -> unit) -> Tray
   /// [macOS] Emitted when a drag operation exits the tray icon.
-  [<Emit "$0.on('drag-leave',$1)">] abstract onDragLeave: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('drag-leave',$1)">] abstract onDragLeave: listener: (unit -> unit) -> Tray
   /// See onDragLeave.
-  [<Emit "$0.once('drag-leave',$1)">] abstract onceDragLeave: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('drag-leave',$1)">] abstract onceDragLeave: listener: (unit -> unit) -> Tray
   /// See onDragLeave.
-  [<Emit "$0.addListener('drag-leave',$1)">] abstract addListenerDragLeave: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('drag-leave',$1)">] abstract addListenerDragLeave: listener: (unit -> unit) -> Tray
   /// See onDragLeave.
-  [<Emit "$0.removeListener('drag-leave',$1)">] abstract removeListenerDragLeave: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('drag-leave',$1)">] abstract removeListenerDragLeave: listener: (unit -> unit) -> Tray
   /// [macOS] Emitted when a drag operation ends on the tray or ends at another
   /// location.
-  [<Emit "$0.on('drag-end',$1)">] abstract onDragEnd: listener: (Event -> unit) -> Tray
+  [<Emit "$0.on('drag-end',$1)">] abstract onDragEnd: listener: (unit -> unit) -> Tray
   /// See onDragEnd.
-  [<Emit "$0.once('drag-end',$1)">] abstract onceDragEnd: listener: (Event -> unit) -> Tray
+  [<Emit "$0.once('drag-end',$1)">] abstract onceDragEnd: listener: (unit -> unit) -> Tray
   /// See onDragEnd.
-  [<Emit "$0.addListener('drag-end',$1)">] abstract addListenerDragEnd: listener: (Event -> unit) -> Tray
+  [<Emit "$0.addListener('drag-end',$1)">] abstract addListenerDragEnd: listener: (unit -> unit) -> Tray
   /// See onDragEnd.
-  [<Emit "$0.removeListener('drag-end',$1)">] abstract removeListenerDragEnd: listener: (Event -> unit) -> Tray
+  [<Emit "$0.removeListener('drag-end',$1)">] abstract removeListenerDragEnd: listener: (unit -> unit) -> Tray
   /// [macOS] Emitted when the mouse enters the tray icon. The listener receives
   /// the position of the event.
   [<Emit "$0.on('mouse-enter',$1)">] abstract onMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
@@ -5370,7 +5397,9 @@ type WebContents =
   /// their meaning is available here:
   /// https://cs.chromium.org/chromium/src/net/base/net_error_list.h
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - errorCode
   ///   - errorDescription
   ///   - validatedURL
@@ -5386,7 +5415,9 @@ type WebContents =
   [<Emit "$0.removeListener('did-fail-load',$1)">] abstract removeListenerDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
   /// Emitted when a frame has done navigation.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - isMainFrame
   ///   - frameProcessId
   ///   - frameRoutingId
@@ -5399,22 +5430,22 @@ type WebContents =
   [<Emit "$0.removeListener('did-frame-finish-load',$1)">] abstract removeListenerDidFrameFinishLoad: listener: (Event -> bool -> int -> int -> unit) -> WebContents
   /// Corresponds to the points in time when the spinner of the tab started
   /// spinning.
-  [<Emit "$0.on('did-start-loading',$1)">] abstract onDidStartLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('did-start-loading',$1)">] abstract onDidStartLoading: listener: (unit -> unit) -> WebContents
   /// See onDidStartLoading.
-  [<Emit "$0.once('did-start-loading',$1)">] abstract onceDidStartLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('did-start-loading',$1)">] abstract onceDidStartLoading: listener: (unit -> unit) -> WebContents
   /// See onDidStartLoading.
-  [<Emit "$0.addListener('did-start-loading',$1)">] abstract addListenerDidStartLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('did-start-loading',$1)">] abstract addListenerDidStartLoading: listener: (unit -> unit) -> WebContents
   /// See onDidStartLoading.
-  [<Emit "$0.removeListener('did-start-loading',$1)">] abstract removeListenerDidStartLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('did-start-loading',$1)">] abstract removeListenerDidStartLoading: listener: (unit -> unit) -> WebContents
   /// Corresponds to the points in time when the spinner of the tab stopped
   /// spinning.
-  [<Emit "$0.on('did-stop-loading',$1)">] abstract onDidStopLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('did-stop-loading',$1)">] abstract onDidStopLoading: listener: (unit -> unit) -> WebContents
   /// See onDidStopLoading.
-  [<Emit "$0.once('did-stop-loading',$1)">] abstract onceDidStopLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('did-stop-loading',$1)">] abstract onceDidStopLoading: listener: (unit -> unit) -> WebContents
   /// See onDidStopLoading.
-  [<Emit "$0.addListener('did-stop-loading',$1)">] abstract addListenerDidStopLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('did-stop-loading',$1)">] abstract addListenerDidStopLoading: listener: (unit -> unit) -> WebContents
   /// See onDidStopLoading.
-  [<Emit "$0.removeListener('did-stop-loading',$1)">] abstract removeListenerDidStopLoading: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('did-stop-loading',$1)">] abstract removeListenerDidStopLoading: listener: (unit -> unit) -> WebContents
   /// Emitted when the document in the given frame is loaded.
   [<Emit "$0.on('dom-ready',$1)">] abstract onDomReady: listener: (Event -> unit) -> WebContents
   /// See onDomReady.
@@ -5426,7 +5457,9 @@ type WebContents =
   /// Fired when page title is set during navigation. explicitSet is false when
   /// title is synthesized from file url.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - title
   ///   - explicitSet
   [<Emit "$0.on('page-title-updated',$1)">] abstract onPageTitleUpdated: listener: (Event -> string -> bool -> unit) -> WebContents
@@ -5455,7 +5488,9 @@ type WebContents =
   /// reference the new BrowserWindow instance, failing to do so may result in
   /// unexpected behavior.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - frameName
   ///   - disposition
@@ -5491,7 +5526,9 @@ type WebContents =
   /// Emitted when any frame (including main) starts navigating. isInplace will
   /// be true for in-page navigations.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - isInPlace
   ///   - isMainFrame
@@ -5513,7 +5550,9 @@ type WebContents =
   /// Calling event.preventDefault() will prevent the navigation (not just the
   /// redirect).
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - isInPlace
   ///   - isMainFrame
@@ -5532,7 +5571,9 @@ type WebContents =
   /// This event can not be prevented, if you want to prevent redirects you
   /// should checkout out the `will-redirect` event.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - isInPlace
   ///   - isMainFrame
@@ -5551,7 +5592,9 @@ type WebContents =
   /// links or updating the window.location.hash. Use `did-navigate-in-page`
   /// event for this purpose.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - httpResponseCode: -1 for non HTTP navigations
   ///   - httpStatusText: empty for non HTTP navigations
@@ -5568,7 +5611,9 @@ type WebContents =
   /// links or updating the window.location.hash. Use `did-navigate-in-page`
   /// event for this purpose.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - httpResponseCode: -1 for non HTTP navigations
   ///   - httpStatusText: empty for non HTTP navigations
@@ -5588,7 +5633,9 @@ type WebContents =
   /// navigation outside of the page. Examples of this occurring are when anchor
   /// links are clicked or when the DOM `hashchange` event is triggered.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - isMainFrame
   ///   - frameProcessId
@@ -5622,21 +5669,21 @@ type WebContents =
   /// See onCrashed.
   [<Emit "$0.removeListener('crashed',$1)">] abstract removeListenerCrashed: listener: (Event -> bool -> unit) -> WebContents
   /// Emitted when the web page becomes unresponsive.
-  [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('unresponsive',$1)">] abstract onUnresponsive: listener: (unit -> unit) -> WebContents
   /// See onUnresponsive.
-  [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('unresponsive',$1)">] abstract onceUnresponsive: listener: (unit -> unit) -> WebContents
   /// See onUnresponsive.
-  [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('unresponsive',$1)">] abstract addListenerUnresponsive: listener: (unit -> unit) -> WebContents
   /// See onUnresponsive.
-  [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('unresponsive',$1)">] abstract removeListenerUnresponsive: listener: (unit -> unit) -> WebContents
   /// Emitted when the unresponsive web page becomes responsive again.
-  [<Emit "$0.on('responsive',$1)">] abstract onResponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('responsive',$1)">] abstract onResponsive: listener: (unit -> unit) -> WebContents
   /// See onResponsive.
-  [<Emit "$0.once('responsive',$1)">] abstract onceResponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('responsive',$1)">] abstract onceResponsive: listener: (unit -> unit) -> WebContents
   /// See onResponsive.
-  [<Emit "$0.addListener('responsive',$1)">] abstract addListenerResponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('responsive',$1)">] abstract addListenerResponsive: listener: (unit -> unit) -> WebContents
   /// See onResponsive.
-  [<Emit "$0.removeListener('responsive',$1)">] abstract removeListenerResponsive: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('responsive',$1)">] abstract removeListenerResponsive: listener: (unit -> unit) -> WebContents
   /// Emitted when a plugin process has crashed. Called with the name and version.
   [<Emit "$0.on('plugin-crashed',$1)">] abstract onPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
   /// See onPluginCrashed.
@@ -5646,13 +5693,13 @@ type WebContents =
   /// See onPluginCrashed.
   [<Emit "$0.removeListener('plugin-crashed',$1)">] abstract removeListenerPluginCrashed: listener: (Event -> string -> string -> unit) -> WebContents
   /// Emitted when webContents is destroyed.
-  [<Emit "$0.on('destroyed',$1)">] abstract onDestroyed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('destroyed',$1)">] abstract onDestroyed: listener: (unit -> unit) -> WebContents
   /// See onDestroyed.
-  [<Emit "$0.once('destroyed',$1)">] abstract onceDestroyed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('destroyed',$1)">] abstract onceDestroyed: listener: (unit -> unit) -> WebContents
   /// See onDestroyed.
-  [<Emit "$0.addListener('destroyed',$1)">] abstract addListenerDestroyed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('destroyed',$1)">] abstract addListenerDestroyed: listener: (unit -> unit) -> WebContents
   /// See onDestroyed.
-  [<Emit "$0.removeListener('destroyed',$1)">] abstract removeListenerDestroyed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('destroyed',$1)">] abstract removeListenerDestroyed: listener: (unit -> unit) -> WebContents
   /// Emitted before dispatching the keydown and keyup events in the page.
   /// Calling event.preventDefault will prevent the page keydown/keyup events
   /// and the menu shortcuts.
@@ -5682,34 +5729,36 @@ type WebContents =
   /// See onLeaveHtmlFullScreen.
   [<Emit "$0.removeListener('leave-html-full-screen',$1)">] abstract removeLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
   /// Emitted when DevTools is opened.
-  [<Emit "$0.on('devtools-opened',$1)">] abstract onDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('devtools-opened',$1)">] abstract onDevtoolsOpened: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsOpened.
-  [<Emit "$0.once('devtools-opened',$1)">] abstract onceDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('devtools-opened',$1)">] abstract onceDevtoolsOpened: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsOpened.
-  [<Emit "$0.addListener('devtools-opened',$1)">] abstract addListenerDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('devtools-opened',$1)">] abstract addListenerDevtoolsOpened: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsOpened.
-  [<Emit "$0.removeListener('devtools-opened',$1)">] abstract removeListenerDevtoolsOpened: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('devtools-opened',$1)">] abstract removeListenerDevtoolsOpened: listener: (unit -> unit) -> WebContents
   /// Emitted when DevTools is closed.
-  [<Emit "$0.on('devtools-closed',$1)">] abstract onDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('devtools-closed',$1)">] abstract onDevtoolsClosed: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsClosed.
-  [<Emit "$0.once('devtools-closed',$1)">] abstract onceDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('devtools-closed',$1)">] abstract onceDevtoolsClosed: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsClosed.
-  [<Emit "$0.addListener('devtools-closed',$1)">] abstract addListenerDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('devtools-closed',$1)">] abstract addListenerDevtoolsClosed: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsClosed.
-  [<Emit "$0.removeListener('devtools-closed',$1)">] abstract removeListenerDevtoolsClosed: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('devtools-closed',$1)">] abstract removeListenerDevtoolsClosed: listener: (unit -> unit) -> WebContents
   /// Emitted when DevTools is focused / opened.
-  [<Emit "$0.on('devtools-focused',$1)">] abstract onDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('devtools-focused',$1)">] abstract onDevtoolsFocused: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsFocused.
-  [<Emit "$0.once('devtools-focused',$1)">] abstract onceDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('devtools-focused',$1)">] abstract onceDevtoolsFocused: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsFocused.
-  [<Emit "$0.addListener('devtools-focused',$1)">] abstract addListenerDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('devtools-focused',$1)">] abstract addListenerDevtoolsFocused: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsFocused.
-  [<Emit "$0.removeListener('devtools-focused',$1)">] abstract removeListenerDevtoolsFocused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('devtools-focused',$1)">] abstract removeListenerDevtoolsFocused: listener: (unit -> unit) -> WebContents
   /// Emitted when failed to verify the certificate for `url`.
   ///
   /// The usage is the same with the `certificate-error` event of `app`.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - error
   ///   - certificate
@@ -5725,7 +5774,9 @@ type WebContents =
   ///
   /// The usage is the same with the `select-client-certificate` event of `app`.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///   - url
   ///   - certificateList
   ///   - callback: call with a certificate from the given list to select it
@@ -5740,7 +5791,9 @@ type WebContents =
   ///
   /// The usage is the same with the `login` event of `app`.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///
   ///   - request
   ///   - authInfo
@@ -5761,21 +5814,21 @@ type WebContents =
   /// See onFoundInPage.
   [<Emit "$0.removeListener('found-in-page',$1)">] abstract removeListenerFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
   /// Emitted when media starts playing.
-  [<Emit "$0.on('media-started-playing',$1)">] abstract onMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('media-started-playing',$1)">] abstract onMediaStartedPlaying: listener: (unit -> unit) -> WebContents
   /// See onMediaStartedPlaying.
-  [<Emit "$0.once('media-started-playing',$1)">] abstract onceMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('media-started-playing',$1)">] abstract onceMediaStartedPlaying: listener: (unit -> unit) -> WebContents
   /// See onMediaStartedPlaying.
-  [<Emit "$0.addListener('media-started-playing',$1)">] abstract addListenerMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('media-started-playing',$1)">] abstract addListenerMediaStartedPlaying: listener: (unit -> unit) -> WebContents
   /// See onMediaStartedPlaying.
-  [<Emit "$0.removeListener('media-started-playing',$1)">] abstract removeListenerMediaStartedPlaying: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('media-started-playing',$1)">] abstract removeListenerMediaStartedPlaying: listener: (unit -> unit) -> WebContents
   /// Emitted when media is paused or done playing.
-  [<Emit "$0.on('media-paused',$1)">] abstract onMediaPaused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('media-paused',$1)">] abstract onMediaPaused: listener: (unit -> unit) -> WebContents
   /// See onMediaPaused.
-  [<Emit "$0.once('media-paused',$1)">] abstract onceMediaPaused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('media-paused',$1)">] abstract onceMediaPaused: listener: (unit -> unit) -> WebContents
   /// See onMediaPaused.
-  [<Emit "$0.addListener('media-paused',$1)">] abstract addListenerMediaPaused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('media-paused',$1)">] abstract addListenerMediaPaused: listener: (unit -> unit) -> WebContents
   /// See onMediaPaused.
-  [<Emit "$0.removeListener('media-paused',$1)">] abstract removeListenerMediaPaused: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('media-paused',$1)">] abstract removeListenerMediaPaused: listener: (unit -> unit) -> WebContents
   /// Emitted when a page's theme color changes. This is usually due to
   /// encountering a meta tag.
   ///
@@ -5802,7 +5855,9 @@ type WebContents =
   /// `size` and `hotspot` will hold additional information about the custom
   /// cursor.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///
   ///   - type
   ///   - image
@@ -5840,7 +5895,9 @@ type WebContents =
   /// Emitted when a new frame is generated. Only the dirty area is passed in
   /// the buffer.
   ///
-  /// Additional parameters:
+  /// Parameters:
+  ///
+  ///   - event
   ///
   ///   - dirtyRect
   ///   - image
@@ -5852,18 +5909,19 @@ type WebContents =
   /// See onPaint.
   [<Emit "$0.removeListener('paint',$1)">] abstract removeListenerPaint: listener: (Event -> Rectangle -> NativeImage -> unit) -> WebContents
   /// Emitted when the devtools window instructs the webContents to reload
-  [<Emit "$0.on('devtools-reload-page',$1)">] abstract onDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.on('devtools-reload-page',$1)">] abstract onDevtoolsReloadPage: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsReloadPage.
-  [<Emit "$0.once('devtools-reload-page',$1)">] abstract onceDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.once('devtools-reload-page',$1)">] abstract onceDevtoolsReloadPage: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsReloadPage.
-  [<Emit "$0.addListener('devtools-reload-page',$1)">] abstract addListenerDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.addListener('devtools-reload-page',$1)">] abstract addListenerDevtoolsReloadPage: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsReloadPage.
-  [<Emit "$0.removeListener('devtools-reload-page',$1)">] abstract removeListenerDevtoolsReloadPage: listener: (Event -> unit) -> WebContents
+  [<Emit "$0.removeListener('devtools-reload-page',$1)">] abstract removeListenerDevtoolsReloadPage: listener: (unit -> unit) -> WebContents
   /// Emitted when the associated window logs a console message. Will not be
   /// emitted for windows with offscreen rendering enabled.
   ///
-  /// Additional parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - level
   ///   - message
   ///   - line
@@ -5878,8 +5936,9 @@ type WebContents =
   /// Emitted when the preload script preloadPath throws an unhandled exception
   /// error.
   ///
-  /// Additional parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - preloadPath
   ///   - error
   [<Emit "$0.on('preload-error',$1)">] abstract onPreloadError: listener: (Event -> string -> Error -> unit) -> WebContents
@@ -5892,8 +5951,9 @@ type WebContents =
   /// Emitted when the renderer process sends an asynchronous message via
   /// ipcRenderer.send().
   ///
-  /// Additional parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - channel
   ///   - args
   [<Emit "$0.on('ipc-message',$1)">] abstract onIpcMessage: listener: (Event -> string -> obj [] -> unit) -> WebContents
@@ -5906,8 +5966,9 @@ type WebContents =
   /// Emitted when the renderer process sends a synchronous message via
   /// ipcRenderer.sendSync().
   ///
-  /// Additional parameters:
+  /// Parameters:
   ///
+  ///   - event
   ///   - channel
   ///   - args
   [<Emit "$0.on('ipc-message-sync',$1)">] abstract onIpcMessageSync: listener: (Event -> string -> obj [] -> unit) -> WebContents
@@ -7042,7 +7103,7 @@ type AutoUpdateFeedServerType =
   | Json
   | Default
 
-type AutoOpdateFeedOptions =
+type AutoUpdateFeedOptions =
   abstract url: string with get, set
   /// [macOS] HTTP request headers.
   abstract headers: obj with get, set
