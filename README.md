@@ -7,6 +7,8 @@ Contributions are welcome!
 
 Electron releases frequently, and I can make no promises to keep the bindings updated in a timely manner. Pull requests are more than welcome, whether it’s bindings for new APIs, new helpers, bugfixes, or just improving typos and formatting in the documentation. If you want to create a PR with non-trivial changes, consider opening an issue first so you don’t waste time and effort on something that might not be accepted or might already be underway.
 
+If you want to take over maintenance of Fable.Electron, let me know!
+
 How to use the bindings
 ----------
 
