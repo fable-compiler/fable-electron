@@ -18,12 +18,13 @@
   </PropertyGroup>
   <PropertyGroup>
     <NpmDependencies>
-      <NpmPackage Name="electron" Version=">= 6.0 lt 7" DevDependency="true" ResolutionStrategy="max" />
+      <NpmPackage Name="electron" Version="gte 6.0 lt 7" DevDependency="true" ResolutionStrategy="max" />
     </NpmDependencies>
   </PropertyGroup>
   <ItemGroup>
     <None Include="paket.references" />
-    <Compile Include="Electron.fs" />
+    <Compile Include="Bindings.fs" />
+    <Compile Include="Helpers.fs" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
     <Content Include="*.fsproj; *.fs" PackagePath="fable\" />
