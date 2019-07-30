@@ -17,6 +17,6 @@ build_script:
 deploy:
   - provider: NuGet
     api_key:
-      secure: TODO
+      secure: aTOF8Ct1vcSWfpJ2IzbM/k+qMLMJaGxnHTTcDS2cxditHNtm4BJeVSxYx3PB7J1M
     on:
       appveyor_repo_tag: true
