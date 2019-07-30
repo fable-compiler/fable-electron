@@ -63,10 +63,10 @@ type IpcMainEvent =
   /// Set this to the value to be returned in a synchronous message.
   abstract returnValue: obj option with get, set
   /// The ID of the renderer frame that sent this message.
-  abstract frameId: int with get, set
+  abstract frameId: int
   /// The webContents that sent the message. You can call sender.send to reply
   /// to the asynchronous message. See webContents.send for more information.
-  abstract sender: WebContents with get, set
+  abstract sender: WebContents
   /// A function that will send an IPC message to the renderer frame that sent
   /// the original message that you are currently handling. You should use this
   /// method to "reply" to the sent message in order to guarantee the reply will
@@ -84,12 +84,16 @@ type IpcRendererEvent =
 
 type TrayInputEvent =
   inherit Browser.Types.Event
-  abstract altKey: bool with get, set
-  abstract shiftKey: bool with get, set
-  abstract ctrlKey: bool with get, set
-  abstract metaKey: bool with get, set
+  /// Whether the Control key was used in an accelerator to trigger the Event
+  abstract ctrlKey: bool
+  /// Whether a meta key was used in an accelerator to trigger the Event
+  abstract metaKey: bool
+  /// Whether a Shift key was used in an accelerator to trigger the Event
+  abstract shiftKey: bool
+  /// Whether an Alt key was used in an accelerator to trigger the Event
+  abstract altKey: bool
   /// Whether an accelerator was used to trigger the event as opposed to another user gesture like mouse click
-  abstract triggeredByAccelerator: bool with get, set
+  abstract triggeredByAccelerator: bool
 
 type CommonInterface =
   /// Perform copy and paste operations on the system clipboard. On Linux, there
@@ -97,48 +101,48 @@ type CommonInterface =
   /// ClipboardType.Selection to relevant methods.
   ///
   /// https://electronjs.org/docs/api/clipboard
-  abstract clipboard: Clipboard with get, set
+  abstract clipboard: Clipboard
   /// Submit crash reports to a remote server.
   ///
   /// https://electronjs.org/docs/api/crash-reporter
-  abstract crashReporter: CrashReporter with get, set
+  abstract crashReporter: CrashReporter
   /// Create tray, dock, and application icons using PNG or JPG files. In
   /// Electron, for the APIs that take images, you can pass either file paths or
   /// NativeImage instances. An empty image will be used when null is passed.
   ///
   /// https://electronjs.org/docs/api/native-image
-  abstract NativeImage: NativeImageStatic with get, set
+  abstract NativeImage: NativeImageStatic
   /// Manage files and URLs using their default applications. Provides functions
   /// related to desktop integration.
   ///
   /// https://electronjs.org/docs/api/shell
-  abstract shell: Shell with get, set
+  abstract shell: Shell
 
 type MainInterface =
   inherit CommonInterface
   /// Control your application's event lifecycle.
   ///
   /// https://electronjs.org/docs/api/app
-  abstract app: App with get, set
+  abstract app: App
   /// Enable apps to automatically update themselves.
   ///
   /// https://electronjs.org/docs/api/auto-updater
-  abstract autoUpdater: AutoUpdater with get, set
+  abstract autoUpdater: AutoUpdater
   /// Create and control views. A BrowserView can be used to embed additional
   /// web content into a BrowserWindow. It is like a child window, except that
   /// it is positioned relative to its owning window.
   ///
   /// https://electronjs.org/docs/api/browser-view
-  abstract BrowserView: BrowserViewStatic with get, set
+  abstract BrowserView: BrowserViewStatic
   /// Create and control browser windows.
   ///
   /// https://electronjs.org/docs/api/browser-window
-  abstract BrowserWindow: BrowserWindowStatic with get, set
+  abstract BrowserWindow: BrowserWindowStatic
   /// Make HTTP/HTTPS requests. Also see the `net` module to create
   /// ClientRequest instances.
   ///
   /// https://electronjs.org/docs/api/client-request
-  abstract ClientRequest: ClientRequestStatic with get, set
+  abstract ClientRequest: ClientRequestStatic
   /// Collect tracing data from Chromium's content module to find performance
   /// bottlenecks and slow operations. This module does not include a web
   /// interface, so you need to open chrome://tracing/ in a Chrome browser and
@@ -146,11 +150,11 @@ type MainInterface =
   /// module until the `ready` event of the `app` module is emitted.
   ///
   /// https://electronjs.org/docs/api/content-tracing
-  abstract contentTracing: ContentTracing with get, set
+  abstract contentTracing: ContentTracing
   /// Display native system dialogs for opening and saving files, alerting, etc.
   ///
   /// https://electronjs.org/docs/api/dialog
-  abstract dialog: Dialog with get, set
+  abstract dialog: Dialog
   /// Detect keyboard events when the application does not have keyboard focus.
   /// The `globalShortcut` module can register/unregister a global keyboard
   /// shortcut with the operating system so that you can customize the
@@ -159,76 +163,76 @@ type MainInterface =
   /// this module until the ready event of the app module is emitted.
   ///
   /// https://electronjs.org/docs/api/global-shortcut
-  abstract globalShortcut: GlobalShortcut with get, set
+  abstract globalShortcut: GlobalShortcut
   /// In-app purchases on Mac App Store.
   ///
   /// https://electronjs.org/docs/api/in-app-purchase
-  abstract inAppPurchase: InAppPurchase with get, set
+  abstract inAppPurchase: InAppPurchase
   /// Communicate asynchronously from the main process to renderer processes.
   /// This module it handles asynchronous and synchronous messages sent from a
   /// renderer process (web page). Messages sent from a renderer will be emitted
   /// to this module.
   ///
   /// https://electronjs.org/docs/api/ipc-main
-  abstract ipcMain: IpcMain with get, set
+  abstract ipcMain: IpcMain
   /// Create native application menus and context menus.
   ///
   /// https://electronjs.org/docs/api/menu
-  abstract Menu: MenuStatic with get, set
+  abstract Menu: MenuStatic
   /// Add items to native application menus and context menus.
   ///
   /// https://electronjs.org/docs/api/menu-item
-  abstract MenuItem: MenuItemStatic with get, set
+  abstract MenuItem: MenuItemStatic
   /// Issue HTTP/HTTPS requests using Chromium's native networking library.
   ///
   /// https://electronjs.org/docs/api/net
-  abstract net: Net with get, set
+  abstract net: Net
   /// Logging network events for a session.
   ///
   /// https://electronjs.org/docs/api/net-log
-  abstract netLog: NetLog with get, set
+  abstract netLog: NetLog
   /// Create OS desktop notifications.
   ///
   /// https://electronjs.org/docs/api/notification
-  abstract Notification: NotificationStatic with get, set
+  abstract Notification: NotificationStatic
   /// Monitor power state changes.
   ///
   /// https://electronjs.org/docs/api/power-monitor
-  abstract powerMonitor: PowerMonitor with get, set
+  abstract powerMonitor: PowerMonitor
   /// Block the system from entering low-power (sleep) mode.
   ///
   /// https://electronjs.org/docs/api/power-save-blocker
-  abstract powerSaveBlocker: PowerSaveBlocker with get, set
+  abstract powerSaveBlocker: PowerSaveBlocker
   /// Register a custom protocol and intercept existing protocol requests.
   ///
   /// https://electronjs.org/docs/api/protocol
-  abstract protocol: Protocol with get, set
+  abstract protocol: Protocol
   /// Retrieve information about screen size, displays, cursor position, etc.
   /// You cannot require or use this module until the `ready` event of the `app`
   /// module is emitted.
   ///
   /// https://electronjs.org/docs/api/screen
-  abstract screen: Screen with get, set
+  abstract screen: Screen
   /// Manage browser sessions, cookies, cache, proxy settings, etc.
   ///
   /// https://electronjs.org/docs/api/session
-  abstract Session: SessionStatic with get, set
+  abstract Session: SessionStatic
   /// Get system preferences.
   ///
   /// https://electronjs.org/docs/api/system-preferences
-  abstract systemPreferences: SystemPreferences with get, set
+  abstract systemPreferences: SystemPreferences
   /// Create TouchBar layouts for native macOS applications
   ///
   /// https://electronjs.org/docs/api/touch-bar
-  abstract TouchBar: TouchBarStatic with get, set
+  abstract TouchBar: TouchBarStatic
   /// Add icons and context menus to the system's notification area.
   ///
   /// https://electronjs.org/docs/api/tray
-  abstract Tray: TrayStatic with get, set
+  abstract Tray: TrayStatic
   /// Render and control web pages.
   ///
   /// https://electronjs.org/docs/api/web-contents
-  abstract WebContents: WebContentsStatic with get, set
+  abstract WebContents: WebContentsStatic
 
 type RendererInterface =
   inherit CommonInterface
@@ -237,20 +241,20 @@ type RendererInterface =
   /// API.
   ///
   /// https://electronjs.org/docs/api/desktop-capturer
-  abstract desktopCapturer: DesktopCapturer with get, set
+  abstract desktopCapturer: DesktopCapturer
   /// Communicate asynchronously from a renderer process to the main process.
   ///
   /// https://electronjs.org/docs/api/ipc-renderer
-  abstract ipcRenderer: IpcRenderer with get, set
+  abstract ipcRenderer: IpcRenderer
   /// Use main process modules from the renderer process. The `remote` module
   /// provides a simple way to do inter-process communication (IPC) between the
   /// renderer process (web page) and the main process.
-  abstract remote: Remote with get, set
+  abstract remote: Remote
   /// Customize the rendering of the current web page. This module is an
   /// instance of the WebFrame class representing the top frame of the current
   /// BrowserWindow. Sub-frames can be retrieved by certain properties and
   /// methods (e.g. webFrame.firstChild).
-  abstract webFrame: WebFrame with get, set
+  abstract webFrame: WebFrame
 
 type AllElectron =
   inherit MainInterface
@@ -1151,7 +1155,7 @@ type App =
   /// lose its ability to reach outside the sandbox completely, until your app
   /// is restarted.
   abstract startAccessingSecurityScopedResource: bookmarkData: string -> (unit -> unit)
-  abstract commandLine: CommandLine with get, set
+  abstract commandLine: CommandLine
   /// [macOS, Windows] Enables full sandbox mode on the app. This method can
   /// only be called before app is ready.
   abstract enableSandbox: unit -> unit
@@ -1172,7 +1176,7 @@ type App =
   /// method will throw an error. The message in the error should be informative
   /// and tell you exactly what went wrong
   abstract moveToApplicationsFolder: unit -> bool
-  abstract dock: Dock with get, set
+  abstract dock: Dock
   /// Gets or sets the application menu on macOS, and each window's top menu on
   /// Windows and Linux.
   ///
@@ -1203,7 +1207,7 @@ type App =
   /// Returns true if the app is packaged, false otherwise. For many apps, this
   /// property can be used to distinguish development and production
   /// environments.
-  abstract isPackaged: bool with get, set
+  abstract isPackaged: bool
   /// A `Boolean` which when `true` disables the overrides that Electron has in
   /// place to ensure renderer processes are restarted on every navigation. The
   /// current default value for this property is `false`.
@@ -1307,8 +1311,8 @@ type AutoUpdater =
   abstract quitAndInstall: unit -> unit
 
 type BluetoothDevice =
-  abstract deviceName: string with get, set
-  abstract deviceId: string with get, set
+  abstract deviceName: string
+  abstract deviceId: string
 
 /// A BrowserView can be used to embed additional web content into a
 /// BrowserWindow. It is like a child window, except that it is positioned
@@ -1316,9 +1320,9 @@ type BluetoothDevice =
 type BrowserView =
   inherit EventEmitter<BrowserView>
   /// A WebContents object owned by this view.
-  abstract webContents: WebContents with get, set
+  abstract webContents: WebContents
   /// An integer representing the unique ID of the view.
-  abstract id: int with get, set
+  abstract id: int
   /// Force closing the view, the `unload` and `beforeunload` events won't be
   /// emitted for the web page. After you're done with a view, call this
   /// function in order to free memory and other resources as soon as possible.
@@ -1697,9 +1701,9 @@ type BrowserWindow =
   [<Emit "$0.removeListener('new-window-for-tab',$1)">] abstract removeListenerNewWindowForTab: listener: (Event -> unit) -> BrowserWindow
   /// A WebContents object this window owns. All web page related events and
   /// operations will be done via it.
-  abstract webContents: WebContents with get, set
+  abstract webContents: WebContents
   /// An integer representing the unique ID of the window.
-  abstract id: int with get, set
+  abstract id: int
   /// Force closing the window, the `unload` and `beforeunload` event won't be
   /// emitted for the web page, and `close` event will also not be emitted for
   /// this window, but it guarantees the `closed` event will be emitted.
@@ -2196,43 +2200,43 @@ type BrowserWindowProxy =
   /// origin preference.
   abstract postMessage: message: string * targetOrigin: string -> unit
   /// Set to true after the child window gets closed.
-  abstract closed: bool with get, set
+  abstract closed: bool
 
 type Certificate =
   /// PEM encoded data
-  abstract data: string with get, set
+  abstract data: string
   /// Issuer principal
-  abstract issuer: CertificatePrincipal with get, set
+  abstract issuer: CertificatePrincipal
   /// Issuer's Common Name
-  abstract issuerName: string with get, set
+  abstract issuerName: string
   /// Issuer certificate (if not self-signed)
-  abstract issuerCert: Certificate with get, set
+  abstract issuerCert: Certificate
   /// Subject principal
-  abstract subject: CertificatePrincipal with get, set
+  abstract subject: CertificatePrincipal
   /// Subject's Common Name
-  abstract subjectName: string with get, set
+  abstract subjectName: string
   /// Hex value represented string
-  abstract serialNumber: string with get, set
+  abstract serialNumber: string
   /// Start date of the certificate being valid in seconds
-  abstract validStart: float with get, set
+  abstract validStart: float
   /// End date of the certificate being valid in seconds
-  abstract validExpiry: float with get, set
+  abstract validExpiry: float
   /// Fingerprint of the certificate
   abstract fingerprint: string with get, set
 
 type CertificatePrincipal =
   /// Common Name.
-  abstract commonName: string with get, set
+  abstract commonName: string
   /// Organization names.
-  abstract organizations: string [] with get, set
+  abstract organizations: string []
   /// Organization Unit names.
-  abstract organizationUnits: string [] with get, set
+  abstract organizationUnits: string []
   /// Locality.
-  abstract locality: string with get, set
+  abstract locality: string
   /// Country or region.
-  abstract country: string with get, set
+  abstract country: string
   /// State or province.
-  abstract state: string with get, set
+  abstract state: string
 
 type ClientRequest =
   inherit Node.Stream.Writable<obj>
@@ -2493,8 +2497,8 @@ type Clipboard =
   abstract write: data: ClipboardData * ?``type``: ClipboardType -> unit
 
 type TraceBufferUsage =
-  abstract value: float with get, set
-  abstract percentage: float with get, set
+  abstract value: float
+  abstract percentage: float
 
 type ContentTracing =
   inherit EventEmitter<ContentTracing>
@@ -2540,27 +2544,27 @@ type ContentTracing =
 
 type Cookie =
   /// The name of the cookie.
-  abstract name: string with get, set
+  abstract name: string
   /// The value of the cookie.
-  abstract value: string with get, set
+  abstract value: string
   /// The domain of the cookie; this will be normalized with a preceding dot so
   /// that it's also valid for subdomains.
-  abstract domain: string option with get, set
+  abstract domain: string option
   /// The path of the cookie.
-  abstract path: string option with get, set
+  abstract path: string option
   /// Whether the cookie is marked as secure.
-  abstract secure: bool option with get, set
+  abstract secure: bool option
   /// Whether the cookie is marked as HTTP only.
-  abstract httpOnly: bool option with get, set
+  abstract httpOnly: bool option
   /// Whether the cookie is a host-only cookie; this will only be true if no
   /// domain was passed.
-  abstract hostOnly: bool option with get, set
+  abstract hostOnly: bool option
   /// Whether the cookie is a session cookie or a persistent cookie with an
   /// expiration date.
-  abstract session: bool option with get, set
+  abstract session: bool option
   /// The expiration date of the cookie as the number of seconds since the UNIX
   /// epoch. Not provided for session cookies.
-  abstract expirationDate: float option with get, set
+  abstract expirationDate: float option
 
 [<StringEnum; RequireQualifiedAccess>]
 type CookieChangedCause =
@@ -2607,14 +2611,14 @@ type Cookies =
 type CPUUsage =
   /// Percentage of CPU used since the last call to `getCPUUsage`. First call
   /// returns 0.
-  abstract percentCPUUsage: float with get, set
+  abstract percentCPUUsage: float
   /// The number of average idle cpu wakeups per second since the last call to
   /// `getCPUUsage`. First call returns 0. Will always return 0 on Windows.
-  abstract idleWakeupsPerSecond: float with get, set
+  abstract idleWakeupsPerSecond: float
 
 type CrashReport =
-  abstract date: DateTime with get, set
-  abstract id: string with get, set
+  abstract date: DateTime
+  abstract id: string
 
 type CrashReporter =
   inherit EventEmitter<CrashReporter>
@@ -2726,52 +2730,52 @@ type DesktopCapturerSource =
   /// chromeMediaSourceId constraint when calling
   /// [navigator.webkitGetUserMedia]. The format of the identifier will be
   /// window:XX or screen:XX, where XX is a random generated number.
-  abstract id: string with get, set
+  abstract id: string
   /// A screen source will be named either Entire Screen or Screen <index>,
   /// while the name of a window source will match the window title.
-  abstract name: string with get, set
+  abstract name: string
   /// A thumbnail image. There is no guarantee that the size of the thumbnail is
   /// the same as the `thumbnailSize` specified in the `options` passed to
   /// desktopCapturer.getSources. The actual size depends on the scale of the
   /// screen or window.
-  abstract thumbnail: NativeImage with get, set
+  abstract thumbnail: NativeImage
   /// A unique identifier that will correspond to the `id` of the matching
   /// returned by the Screen API. On some platforms, this is equivalent to the
   /// XX portion of the `id` field and on others it will differ. It will be an
   /// empty string if not available.
-  abstract display_id: string with get, set
+  abstract display_id: string
   /// An icon image of the application that owns the window or None if the
   /// source has a type screen. The size of the icon is not known in advance and
   /// depends on what the application provides.
-  abstract appIcon: NativeImage option with get, set
+  abstract appIcon: NativeImage option
 
 type OpenDialogResult =
   /// Whether or not the dialog was canceled.
-  abstract canceled: bool with get, set
+  abstract canceled: bool
   /// An array of file paths chosen by the user. If the dialog is cancelled this
   /// will be an empty array.
-  abstract filePaths: string [] with get, set
+  abstract filePaths: string []
   /// [macOS Mac App Store only] An array matching the filePaths array of base64
   /// encoded strings which contains security scoped bookmark data.
   /// securityScopedBookmarks must be enabled for this to be populated.
-  abstract bookmarks: string [] option with get, set
+  abstract bookmarks: string [] option
 
 type SaveDialogResult =
   /// Whether or not the dialog was canceled.
-  abstract canceled: bool with get, set
+  abstract canceled: bool
   /// If the dialog is canceled this will be null or empty string.
-  abstract filePath : string with get, set
+  abstract filePath : string
   /// [macOS Mac App Store only] Base64 encoded string which contains the
   /// security scoped bookmark data for the saved file. securityScopedBookmarks
   /// must be enabled for this to be present.
-  abstract bookmarks: string option with get, set
+  abstract bookmarks: string option
 
 type MessageBoxResult =
   /// The index of the clicked button.
-  abstract response: int with get, set
+  abstract response: int
   /// The checked state of the checkbox if checkboxLabel was set. Otherwise
   /// false
-  abstract checkboxChecked: bool with get, set
+  abstract checkboxChecked: bool
 
 type Dialog =
   inherit EventEmitter<Dialog>
@@ -2859,28 +2863,28 @@ type DisplayAccelerometerSupport =
 
 type Display =
   /// Unique identifier associated with the display.
-  abstract id: int with get, set
+  abstract id: int
   /// Can be 0, 90, 180, 270, represents screen rotation in clock-wise degrees.
-  abstract rotation: int with get, set
+  abstract rotation: int
   /// Output device's pixel scale factor.
-  abstract scaleFactor: float with get, set
-  abstract touchSupport: DisplayTouchSupport with get, set
+  abstract scaleFactor: float
+  abstract touchSupport: DisplayTouchSupport
   /// Whether or not the display is a monochrome display.
-  abstract monochrome: bool with get, set
-  abstract accelerometerSupport: DisplayAccelerometerSupport with get, set
+  abstract monochrome: bool
+  abstract accelerometerSupport: DisplayAccelerometerSupport
   /// Represents a color space (three-dimensional object which contains all
   /// realizable color combinations) for the purpose of color conversions
-  abstract colorSpace: string with get, set
+  abstract colorSpace: string
   /// The number of bits per pixel.
-  abstract colorDepth: int with get, set
+  abstract colorDepth: int
   /// The number of bits per color component.
-  abstract depthPerComponent: int with get, set
-  abstract bounds: Rectangle with get, set
-  abstract size: Size with get, set
-  abstract workArea: Rectangle with get, set
-  abstract workAreaSize: Size with get, set
+  abstract depthPerComponent: int
+  abstract bounds: Rectangle
+  abstract size: Size
+  abstract workArea: Rectangle
+  abstract workAreaSize: Size
   /// `true` for an internal display and `false` for an external display
-  abstract ``internal``: bool with get, set
+  abstract ``internal``: bool
 
 [<StringEnum; RequireQualifiedAccess>]
 type DownloadItemState =
@@ -3038,31 +3042,31 @@ type GlobalShortcut =
 
 type GPUFeatureStatus =
   /// Canvas.
-  abstract ``2d_canvas``: string with get, set
+  abstract ``2d_canvas``: string
   /// Flash.
-  abstract flash_3d: string with get, set
+  abstract flash_3d: string
   /// Flash Stage3D.
-  abstract flash_stage3d: string with get, set
+  abstract flash_stage3d: string
   /// Flash Stage3D Baseline profile.
-  abstract flash_stage3d_baseline: string with get, set
+  abstract flash_stage3d_baseline: string
   /// Compositing.
-  abstract gpu_compositing: string with get, set
+  abstract gpu_compositing: string
   /// Multiple Raster Threads.
-  abstract multiple_raster_threads: string with get, set
+  abstract multiple_raster_threads: string
   /// Native GpuMemoryBuffers.
-  abstract native_gpu_memory_buffers: string with get, set
+  abstract native_gpu_memory_buffers: string
   /// Rasterization.
-  abstract rasterization: string with get, set
+  abstract rasterization: string
   /// Video Decode.
-  abstract video_decode: string with get, set
+  abstract video_decode: string
   /// Video Encode.
-  abstract video_encode: string with get, set
+  abstract video_encode: string
   /// VPx Video Decode.
-  abstract vpx_decode: string with get, set
+  abstract vpx_decode: string
   /// WebGL.
-  abstract webgl: string with get, set
+  abstract webgl: string
   /// WebGL2.
-  abstract webgl2: string with get, set
+  abstract webgl2: string
 
 type InAppPurchase =
   inherit EventEmitter<InAppPurchase>
@@ -3148,37 +3152,37 @@ type IncomingMessage =
   /// See onError.
   [<Emit "$0.removeListener('error',$1)">] abstract removeListenerError: listener: (Error -> unit) -> IncomingMessage
   /// The HTTP response status code.
-  abstract statusCode: int with get, set
+  abstract statusCode: int
   /// The HTTP status message.
-  abstract statusMessage: string with get, set
+  abstract statusMessage: string
   /// the response HTTP headers. The headers object is formatted as follows: 1)
   /// All header names are lowercased. 2) Each header name produces an
   /// array-valued property on the headers object. 3) Each header value is
   /// pushed into the array associated with its header name.
-  abstract headers: obj option with get, set
+  abstract headers: obj option
   /// The HTTP protocol version number. Typical values are '1.0' or '1.1'.
   /// Additionally `httpVersionMajor` and `httpVersionMinor` are two
   /// Integer-valued readable properties that return respectively the HTTP major
   /// and minor version numbers.
-  abstract httpVersion: string with get, set
+  abstract httpVersion: string
   /// The HTTP protocol major version number.
-  abstract httpVersionMajor: int with get, set
+  abstract httpVersionMajor: int
   /// The HTTP protocol minor version number.
-  abstract httpVersionMinor: int with get, set
+  abstract httpVersionMinor: int
 
 type IOCounters =
   /// Then number of I/O other operations.
-  abstract otherOperationCount: float with get, set
+  abstract otherOperationCount: float
   /// Then number of I/O other transfers.
-  abstract otherTransferCount: float with get, set
+  abstract otherTransferCount: float
   /// The number of I/O read operations.
-  abstract readOperationCount: float with get, set
+  abstract readOperationCount: float
   /// The number of I/O read transfers.
-  abstract readTransferCount: float with get, set
+  abstract readTransferCount: float
   /// The number of I/O write operations.
-  abstract writeOperationCount: float with get, set
+  abstract writeOperationCount: float
   /// The number of I/O write transfers.
-  abstract writeTransferCount: float with get, set
+  abstract writeTransferCount: float
 
 type IpcMain =
   inherit EventEmitter<IpcMain>
@@ -3296,9 +3300,9 @@ type JumpListItem =
   abstract workingDirectory: string option with get, set
 
 type MemoryUsageDetails =
-  abstract count: int with get, set
-  abstract size: float with get, set
-  abstract liveSize: float with get, set
+  abstract count: int
+  abstract size: float
+  abstract liveSize: float
 
 type Menu =
   /// Emitted when menu.popup() is called.
@@ -3511,9 +3515,9 @@ type NetLog =
   /// were recorded.
   abstract stopLogging: unit -> Promise<string>
   /// Indicates whether network logs are recorded.
-  abstract currentlyLogging: bool with get, set
+  abstract currentlyLogging: bool
   /// The path to the current log file.
-  abstract currentlyLoggingPath: string option with get, set
+  abstract currentlyLoggingPath: string option
 
 type Notification =
   inherit EventEmitter<Notification>
@@ -3701,10 +3705,10 @@ type PowerSaveBlocker =
   abstract isStarted: id: int -> bool
 
 type PrinterInfo =
-  abstract name: string with get, set
-  abstract description: string with get, set
-  abstract status: int with get, set
-  abstract isDefault: bool with get, set
+  abstract name: string
+  abstract description: string
+  abstract status: int
+  abstract isDefault: bool
 
 [<StringEnum; RequireQualifiedAccess>]
 type ProcessType =
@@ -3718,9 +3722,9 @@ type ProcessType =
 type ProcessVersions =
   inherit Node.Base.ProcessVersions
   /// Chrome's version string.
-  abstract chrome: string with get
+  abstract chrome: string
   /// Electron's version string.
-  abstract electron: string with get
+  abstract electron: string
 
 type Process =
   inherit Node.Process.Process
@@ -3739,13 +3743,13 @@ type Process =
   [<Emit "$0.removeListener('loaded',$1)">] abstract removeListenerLoaded: listener: (unit -> unit) -> Process
   /// When app is started by being passed as parameter to the default app, this
   /// property is Some true in the main process, otherwise it is None.
-  abstract defaultApp: bool option with get, set
+  abstract defaultApp: bool option
   /// true when the current renderer context is the "main" renderer frame. If
   /// you want the ID of the current frame you should use webFrame.routingId.
-  abstract isMainFrame: bool with get, set
+  abstract isMainFrame: bool
   /// For Mac App Store build, this property is true, for other builds it is
   /// None.
-  abstract mas: bool option with get, set
+  abstract mas: bool option
   /// Controls ASAR support inside your application. Setting this to true will
   /// disable the support for asar archives in Node's built-in modules.
   abstract noAsar: bool with get, set
@@ -3758,10 +3762,10 @@ type Process =
   /// callbacks. Setting this to true will enable deprecation warnings.
   abstract enablePromiseAPIs: bool with get, set
   /// The path to the resources directory.
-  abstract resourcesPath: string with get, set
+  abstract resourcesPath: string
   /// When the renderer process is sandboxed, this property is true, otherwise
   /// it is None.
-  abstract sandboxed: bool option with get, set
+  abstract sandboxed: bool option
   /// Controls whether or not deprecation warnings will be thrown as exceptions.
   /// Setting this to true will throw errors for deprecations. This property is
   /// used instead of the --throw-deprecation command line flag.
@@ -3776,11 +3780,11 @@ type Process =
   /// --trace-warnings command line flag.
   abstract traceProcessWarnings: bool with get, set
   /// The current process's type.
-  abstract ``type``: ProcessType with get, set
-  abstract versions: ProcessVersions with get, set
+  abstract ``type``: ProcessType
+  abstract versions: ProcessVersions
   /// If the app is running as a Windows Store app (appx), this property is
-  /// true, for otherwise it is None.
-  abstract windowsStore: bool option with get, set
+  /// true, otherwise it is None.
+  abstract windowsStore: bool option
   /// Causes the main thread of the current process crash.
   abstract crash: unit -> unit
   /// Indicates the creation time of the application. The time is represented as
@@ -3827,30 +3831,30 @@ type ProcessMetricType =
 
 type ProcessMetric =
   /// Process id of the process.
-  abstract pid: int with get, set
+  abstract pid: int
   /// Process type.
-  abstract ``type``: ProcessMetricType with get, set
+  abstract ``type``: ProcessMetricType
   /// CPU usage of the process.
-  abstract cpu: CPUUsage with get, set
+  abstract cpu: CPUUsage
 
 type Product =
   /// The string that identifies the product to the Apple App Store.
-  abstract productIdentifier: string with get, set
+  abstract productIdentifier: string
   /// A description of the product.
-  abstract localizedDescription: string with get, set
+  abstract localizedDescription: string
   /// The name of the product.
-  abstract localizedTitle: string with get, set
+  abstract localizedTitle: string
   /// A string that identifies the version of the content.
-  abstract contentVersion: string with get, set
+  abstract contentVersion: string
   /// The total size of the content, in bytes.
-  abstract contentLengths: int [] with get, set
+  abstract contentLengths: int []
   /// The cost of the product in the local currency.
-  abstract price: float with get, set
+  abstract price: float
   /// The locale formatted price of the product.
-  abstract formattedPrice: string with get, set
+  abstract formattedPrice: string
   /// Indicates whether the App Store has downloadable content for this product.
   /// true if at least one file has been associated with the product.
-  abstract isDownloadable: bool with get, set
+  abstract isDownloadable: bool
 
 type Protocol =
   inherit EventEmitter<Protocol>
@@ -4017,7 +4021,7 @@ type Remote =
   abstract getGlobal: name: string -> obj option
   /// The `process` object in the main process. This is the same as
   /// remote.getGlobal('process') but is cached.
-  abstract ``process``: Process with get, set
+  abstract ``process``: Process
 
 [<StringEnum; RequireQualifiedAccess>]
 type DisplayMetricChangeType =
@@ -4221,13 +4225,13 @@ type Session =
   /// Returns an array of paths to preload scripts that have been registered.
   abstract getPreloads: unit -> string []
   /// A Cookies object for this session.
-  abstract cookies: Cookies with get, set
+  abstract cookies: Cookies
   /// A WebRequest object for this session.
-  abstract webRequest: WebRequest with get, set
+  abstract webRequest: WebRequest
   /// A Protocol object for this session.
-  abstract protocol: Protocol with get, set
+  abstract protocol: Protocol
   /// A NetLog object for this session.
-  abstract netLog: NetLog with get, set
+  abstract netLog: NetLog
 
 type SessionStatic =
   /// Returns a session instance from `partition` string. When there is an
@@ -4244,7 +4248,7 @@ type SessionStatic =
   /// options of an existing Session object.
   abstract fromPartition: partition: string * ?options: FromPartitionOptions -> Session
   /// The default session object of the app.
-  abstract defaultSession: Session with get, set
+  abstract defaultSession: Session
 
 [<StringEnum; RequireQualifiedAccess>]
 type WriteShortcutLinkOperation =
@@ -4507,12 +4511,12 @@ type SystemAnimationSettings =
   /// True if rich animations should be rendered. Looks at session type (e.g.
   /// remote desktop) and accessibility settings to give guidance for heavy
   /// animations.
-  abstract shouldRenderRichAnimation: bool with get, set
+  abstract shouldRenderRichAnimation: bool
   /// Determines on a per-platform basis whether scroll animations (e.g.
   /// produced by home/end key) should be enabled.
-  abstract scrollAnimationsEnabledBySystem: bool with get, set
+  abstract scrollAnimationsEnabledBySystem: bool
   /// Determines whether the user desires reduced motion based on platform APIs.
-  abstract prefersReducedMotion: bool with get, set
+  abstract prefersReducedMotion: bool
 
 type SystemPreferences =
   inherit EventEmitter<SystemPreferences>
@@ -4918,15 +4922,15 @@ type TouchBarStatic =
   /// Tip: If you don't have a MacBook with Touch Bar, you can use Touch Bar
   /// Simulator to test Touch Bar usage in your app.
   [<EmitConstructor>] abstract Create: options: TouchBarOptions -> TouchBar
-  abstract TouchBarButton: TouchBarButtonStatic with get, set
-  abstract TouchBarColorPicker: TouchBarColorPickerStatic with get, set
-  abstract TouchBarGroup: TouchBarGroupStatic with get, set
-  abstract TouchBarLabel: TouchBarLabelStatic with get, set
-  abstract TouchBarPopover: TouchBarPopoverStatic with get, set
-  abstract TouchBarScrubber: TouchBarScrubberStatic with get, set
-  abstract TouchBarSegmentedControl: TouchBarSegmentedControlStatic with get, set
-  abstract TouchBarSlider: TouchBarSliderStatic with get, set
-  abstract TouchBarSpacer: TouchBarSpacerStatic with get, set
+  abstract TouchBarButton: TouchBarButtonStatic
+  abstract TouchBarColorPicker: TouchBarColorPickerStatic
+  abstract TouchBarGroup: TouchBarGroupStatic
+  abstract TouchBarLabel: TouchBarLabelStatic
+  abstract TouchBarPopover: TouchBarPopoverStatic
+  abstract TouchBarScrubber: TouchBarScrubberStatic
+  abstract TouchBarSegmentedControl: TouchBarSegmentedControlStatic
+  abstract TouchBarSlider: TouchBarSliderStatic
+  abstract TouchBarSpacer: TouchBarSpacerStatic
 
 type TraceCategoriesAndOptions =
   /// A filter to control what category groups should be traced. A filter can
@@ -4963,18 +4967,18 @@ type TransactionState =
 
 type Transaction =
   /// A string that uniquely identifies a successful payment transaction.
-  abstract transactionIdentifier: string with get, set
+  abstract transactionIdentifier: string
   /// The date the transaction was added to the App Store’s payment queue.
-  abstract transactionDate: string with get, set
+  abstract transactionDate: string
   /// The identifier of the restored transaction by the App Store.
-  abstract originalTransactionIdentifier: string with get, set
+  abstract originalTransactionIdentifier: string
   /// The transaction state.
-  abstract transactionState: TransactionState with get, set
+  abstract transactionState: TransactionState
   /// The error code if an error occurred while processing the transaction.
-  abstract errorCode: int with get, set
+  abstract errorCode: int
   /// The error message if an error occurred while processing the transaction.
-  abstract errorMessage: string with get, set
-  abstract payment: Payment with get, set
+  abstract errorMessage: string
+  abstract payment: Payment
 
 [<StringEnum; RequireQualifiedAccess>]
 type HighlightMode =
@@ -6324,18 +6328,18 @@ type WebContents =
   /// The type of the webContent
   abstract getType: unit -> WebContentType
   /// The unique ID of this WebContents.
-  abstract id: int with get, set
+  abstract id: int
   /// A Session used by this webContents.
-  abstract session: Session with get, set
+  abstract session: Session
   /// A WebContents instance that might own this WebContents.
-  abstract hostWebContents: WebContents option with get, set
+  abstract hostWebContents: WebContents option
   /// A WebContents of DevTools for this WebContents.
   ///
   /// Note: Users should never store this object because it may become null when
   /// the DevTools has been closed.
-  abstract devToolsWebContents: WebContents option with get, set
+  abstract devToolsWebContents: WebContents option
   /// A Debugger instance for this webContents.
-  abstract debugger: Debugger with get, set
+  abstract debugger: Debugger
 
 type WebContentsStatic =
   /// Returns all WebContents instances. This will contain web contents for all
@@ -6488,26 +6492,26 @@ type WebFrame =
   /// A WebFrame representing top frame in frame hierarchy to which webFrame
   /// belongs, the property would be None if top frame is not in the current
   /// renderer process.
-  abstract top: WebFrame option with get, set
+  abstract top: WebFrame option
   /// A WebFrame representing the frame which opened webFrame, the property
   /// would be None if there's no opener or opener is not in the current
   /// renderer process.
-  abstract opener: WebFrame option with get, set
+  abstract opener: WebFrame option
   /// A WebFrame representing parent frame of webFrame, the property would be
   /// None if webFrame is top or parent is not in the current renderer process.
-  abstract parent: WebFrame option with get, set
+  abstract parent: WebFrame option
   /// A WebFrame representing the first child frame of webFrame, the property
   /// would be None if webFrame has no children or if first child is not in the
   /// current renderer process.
-  abstract firstChild: WebFrame option with get, set
+  abstract firstChild: WebFrame option
   /// A WebFrame representing next sibling frame, the property would be None if
   /// webFrame is the last frame in its parent or if the next sibling is not in
   /// the current renderer process.
-  abstract nextSibling: WebFrame option with get, set
+  abstract nextSibling: WebFrame option
   /// The unique frame id in the current renderer process. Distinct WebFrame
   /// instances that refer to the same underlying frame will have the same
   /// routingId.
-  abstract routingId: int with get, set
+  abstract routingId: int
 
 type WebRequest =
   inherit EventEmitter<WebRequest>
@@ -6633,11 +6637,11 @@ type AppDetailsOptions =
   abstract relaunchDisplayName: string with get, set
 
 type AuthInfo =
-  abstract isProxy: bool with get, set
-  abstract scheme: string with get, set
-  abstract host: string with get, set
-  abstract port: int with get, set
-  abstract realm: string with get, set
+  abstract isProxy: bool
+  abstract scheme: string
+  abstract host: string
+  abstract port: int
+  abstract realm: string
 
 type AutoResizeOptions =
   /// If true, the view's width will grow and shrink together with the window.
@@ -6924,46 +6928,46 @@ type ContextMenuInputFieldType =
 
 type ContextMenuParams =
   /// x coordinate.
-  abstract x: int with get, set
+  abstract x: int
   /// y coordinate.
-  abstract y: int with get, set
+  abstract y: int
   /// URL of the link that encloses the node the context menu was invoked on.
-  abstract linkURL: string with get, set
+  abstract linkURL: string
   /// Text associated with the link. May be an empty string if the contents of
   /// the link are an image.
-  abstract linkText: string with get, set
+  abstract linkText: string
   /// URL of the top level page that the context menu was invoked on.
-  abstract pageURL: string with get, set
+  abstract pageURL: string
   /// URL of the subframe that the context menu was invoked on.
-  abstract frameURL: string with get, set
+  abstract frameURL: string
   /// Source URL for the element that the context menu was invoked on. Elements
   /// with source URLs are images, audio and video.
-  abstract srcURL: string with get, set
+  abstract srcURL: string
   /// Type of the node the context menu was invoked on. Can be none, image,
   /// audio, video, canvas, file or plugin.
-  abstract mediaType: ContextMenuMediaType with get, set
+  abstract mediaType: ContextMenuMediaType
   /// Whether the context menu was invoked on an image which has non-empty
   /// contents.
-  abstract hasImageContents: bool with get, set
+  abstract hasImageContents: bool
   /// Whether the context is editable.
-  abstract isEditable: bool with get, set
+  abstract isEditable: bool
   /// Text of the selection that the context menu was invoked on.
-  abstract selectionText: string with get, set
+  abstract selectionText: string
   /// Title or alt text of the selection that the context was invoked on.
-  abstract titleText: string with get, set
+  abstract titleText: string
   /// The misspelled word under the cursor, if any.
-  abstract misspelledWord: string with get, set
+  abstract misspelledWord: string
   /// The character encoding of the frame on which the menu was invoked.
-  abstract frameCharset: string with get, set
+  abstract frameCharset: string
   /// If the context menu was invoked on an input field, the type of that field.
-  abstract inputFieldType: ContextMenuInputFieldType with get, set
+  abstract inputFieldType: ContextMenuInputFieldType
   /// Input source that invoked the context menu.
-  abstract menuSourceType: ContextMenuSourceType with get, set
+  abstract menuSourceType: ContextMenuSourceType
   /// The flags for the media element the context menu was invoked on.
-  abstract mediaFlags: ContextMenuMediaFlags with get, set
+  abstract mediaFlags: ContextMenuMediaFlags
   /// These flags indicate whether the renderer believes it is able to perform
   /// the corresponding action.
-  abstract editFlags: ContextMenuEditFlags with get, set
+  abstract editFlags: ContextMenuEditFlags
 
 type CrashReporterStartOptions =
   abstract companyName: string with get, set
@@ -7154,15 +7158,15 @@ type FromPartitionOptions =
   abstract cache: bool with get, set
 
 type HeapStatistics =
-  abstract totalHeapSize: int with get, set
-  abstract totalHeapSizeExecutable: int with get, set
-  abstract totalPhysicalSize: int with get, set
-  abstract totalAvailableSize: int with get, set
-  abstract usedHeapSize: int with get, set
-  abstract heapSizeLimit: int with get, set
-  abstract mallocedMemory: int with get, set
-  abstract peakMallocedMemory: int with get, set
-  abstract doesZapGarbage: bool with get, set
+  abstract totalHeapSize: int
+  abstract totalHeapSizeExecutable: int
+  abstract totalPhysicalSize: int
+  abstract totalAvailableSize: int
+  abstract usedHeapSize: int
+  abstract heapSizeLimit: int
+  abstract mallocedMemory: int
+  abstract peakMallocedMemory: int
+  abstract doesZapGarbage: bool
 
 type IgnoreMouseEventsOptions =
   /// [macOS, Windows] If true, forwards mouse move messages to Chromium,
@@ -7249,12 +7253,12 @@ type JumpListSettings =
   /// The minimum number of items that will be shown in the Jump List. For
   /// details, see
   /// https://docs.microsoft.com/en-us/windows/desktop/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist
-  abstract minItems: int with get, set
+  abstract minItems: int
   /// Items that the user has explicitly removed from custom categories in the
   /// Jump List. These items must not be re-added to the Jump List in the next
   /// call to app.setJumpList(). Windows will not display any custom category
   /// that contains any of the removed items.
-  abstract removedItems: JumpListItem [] with get, set
+  abstract removedItems: JumpListItem []
 
 type LoadFileOptions =
   /// Passed to url.format().
@@ -7279,22 +7283,22 @@ type LoadURLOptions =
 
 type LoginItemSettings =
   /// True if the app is set to open at login.
-  abstract openAtLogin: bool with get, set
+  abstract openAtLogin: bool
   /// [macOS] True if the app is set to open as hidden at login. This setting is
   /// not available on Mac App Store builds.
-  abstract openAsHidden: bool with get, set
+  abstract openAsHidden: bool
   /// True if the app was opened at login automatically. This setting is not
   /// available on Mac App Store builds.
-  abstract wasOpenedAtLogin: bool with get, set
+  abstract wasOpenedAtLogin: bool
   /// True if the app was opened as a hidden login item. This indicates that the
   /// app should not open any windows at startup. This setting is not available
   /// on Mac App Store builds.
-  abstract wasOpenedAsHidden: bool with get, set
+  abstract wasOpenedAsHidden: bool
   /// True if the app was opened as a login item that should restore the state
   /// from the previous session. This indicates that the app should restore the
   /// windows that were open the last time the app was closed. This setting is
   /// not available on Mac App Store builds.
-  abstract restoreState: bool with get, set
+  abstract restoreState: bool
 
 type GetLoginItemSettingsOptions =
   /// [Windows] The executable path to compare against. Defaults to
@@ -7520,19 +7524,19 @@ type NotificationOptions =
   abstract closeButtonText: string with get, set
 
 type OnBeforeRedirectDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract redirectURL: string with get, set
-  abstract statusCode: int with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract redirectURL: string
+  abstract statusCode: int
   /// The server IP address that the request was actually sent to.
-  abstract ip: string option with get, set
-  abstract fromCache: bool with get, set
-  abstract responseHeaders: obj with get, set
+  abstract ip: string option
+  abstract fromCache: bool
+  abstract responseHeaders: obj
 
 type OnBeforeRedirectFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7540,14 +7544,14 @@ type OnBeforeRedirectFilter =
   abstract urls: string [] with get, set
 
 type OnBeforeRequestDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract uploadData: UploadData [] with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract uploadData: UploadData []
 
 type OnBeforeRequestFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7555,14 +7559,14 @@ type OnBeforeRequestFilter =
   abstract urls: string [] with get, set
 
 type OnBeforeSendHeadersDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract requestHeaders: obj with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract requestHeaders: obj
 
 type OnBeforeSendHeadersFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7575,17 +7579,17 @@ type OnBeforeSendHeadersResponse =
   abstract requestHeaders: obj with get, set
 
 type OnCompletedDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract responseHeaders: obj with get, set
-  abstract fromCache: bool with get, set
-  abstract statusCode: int with get, set
-  abstract statusLine: string with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract responseHeaders: obj
+  abstract fromCache: bool
+  abstract statusCode: int
+  abstract statusLine: string
 
 type OnCompletedFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7593,16 +7597,16 @@ type OnCompletedFilter =
   abstract urls: string [] with get, set
 
 type OnErrorOccurredDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract fromCache: bool with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract fromCache: bool
   /// The error description.
-  abstract error: string with get, set
+  abstract error: string
 
 type OnErrorOccurredFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7610,16 +7614,16 @@ type OnErrorOccurredFilter =
   abstract urls: string [] with get, set
 
 type OnHeadersReceivedDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract statusLine: string with get, set
-  abstract statusCode: int with get, set
-  abstract responseHeaders: obj with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract statusLine: string
+  abstract statusCode: int
+  abstract responseHeaders: obj
 
 type OnHeadersReceivedFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7635,18 +7639,18 @@ type OnHeadersReceivedResponse =
   abstract statusLine: string with get, set
 
 type OnResponseStartedDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract responseHeaders: obj with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract responseHeaders: obj
   /// Indicates whether the response was fetched from disk cache.
-  abstract fromCache: bool with get, set
-  abstract statusCode: int with get, set
-  abstract statusLine: string with get, set
+  abstract fromCache: bool
+  abstract statusCode: int
+  abstract statusLine: string
 
 type OnResponseStartedFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7654,14 +7658,14 @@ type OnResponseStartedFilter =
   abstract urls: string [] with get, set
 
 type OnSendHeadersDetails =
-  abstract id: int with get, set
-  abstract url: string with get, set
-  abstract method: string with get, set
-  abstract webContentsId: int option with get, set
-  abstract resourceType: string with get, set
-  abstract referrer: string with get, set
-  abstract timestamp: float with get, set
-  abstract requestHeaders: obj with get, set
+  abstract id: int
+  abstract url: string
+  abstract method: string
+  abstract webContentsId: int option
+  abstract resourceType: string
+  abstract referrer: string
+  abstract timestamp: float
+  abstract requestHeaders: obj
 
 type OnSendHeadersFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -7760,9 +7764,9 @@ type DeviceEmulationParameters =
 
 type Payment =
   /// The identifier of the purchased product.
-  abstract productIdentifier: string with get, set
+  abstract productIdentifier: string
   /// The quantity purchased.
-  abstract quantity: int with get, set
+  abstract quantity: int
 
 [<StringEnum; RequireQualifiedAccess>]
 type PermissionCheckMediaType =
@@ -7777,23 +7781,23 @@ type PermissionRequestMediaType =
 
 type PermissionCheckHandlerDetails =
   /// The security orign of the `media` check.
-  abstract securityOrigin: string with get, set
+  abstract securityOrigin: string
   /// The type of media access being requested.
-  abstract mediaType: PermissionCheckMediaType with get, set
+  abstract mediaType: PermissionCheckMediaType
   /// The last URL the requesting frame loaded
-  abstract requestingUrl: string with get, set
+  abstract requestingUrl: string
   /// Whether the frame making the request is the main frame
-  abstract isMainFrame: bool with get, set
+  abstract isMainFrame: bool
 
 type PermissionRequestHandlerDetails =
   /// The url of the openExternal request.
-  abstract externalURL: string option with get, set
+  abstract externalURL: string option
   /// The types of media access being requested
-  abstract mediaTypes: PermissionRequestMediaType [] option with get, set
+  abstract mediaTypes: PermissionRequestMediaType [] option
   /// The last URL the requesting frame loaded
-  abstract requestingUrl: string with get, set
+  abstract requestingUrl: string
   /// Whether the frame making the request is the main frame
-  abstract isMainFrame: bool with get, set
+  abstract isMainFrame: bool
 
 type PopupOptions =
   /// Default is the focused window.
@@ -7863,13 +7867,13 @@ type ProcessMemoryInfo =
   /// used. As a result the resident set size value is not what one would
   /// expect. `private` memory is more representative of the actual
   /// pre-compression memory usage of the process on macOS.
-  abstract residentSet: int with get, set
+  abstract residentSet: int
   /// The amount of memory not shared by other processes, such as JS heap or
   /// HTML content in Kilobytes.
-  abstract ``private``: int with get, set
+  abstract ``private``: int
   /// The amount of memory shared between processes, typically memory consumed
   /// by the Electron code itself in Kilobytes.
-  abstract shared: int with get, set
+  abstract shared: int
 
 [<StringEnum; RequireQualifiedAccess>]
 type ProgressBarMode =
@@ -7892,10 +7896,10 @@ type SpellCheckProvider =
 type ClipboardBookmark =
   /// The title of the bookmark in the clipboard. Will be the empty string when
   /// the bookmark is unavailable.
-  abstract title: string with get, set
+  abstract title: string
   /// The URL of the bookmark in the clipboard. Will be the empty string when
   /// the bookmark is unavailable.
-  abstract url: string with get, set
+  abstract url: string
 
 type RedirectRequestUploadData =
   /// MIME type of the content.
@@ -7910,45 +7914,45 @@ type RedirectRequest =
   abstract uploadData: RedirectRequestUploadData with get, set
 
 type RegisterBufferProtocolRequest =
-  abstract url: string with get, set
-  abstract referrer: string with get, set
-  abstract method: string with get, set
-  abstract uploadData: UploadData [] with get, set
+  abstract url: string
+  abstract referrer: string
+  abstract method: string
+  abstract uploadData: UploadData []
 
 type RegisterFileProtocolRequest =
-  abstract url: string with get, set
-  abstract referrer: string with get, set
-  abstract method: string with get, set
-  abstract uploadData: UploadData [] with get, set
+  abstract url: string
+  abstract referrer: string
+  abstract method: string
+  abstract uploadData: UploadData []
 
 type RegisterHttpProtocolRequest =
-  abstract url: string with get, set
-  abstract headers: obj with get, set
-  abstract referrer: string with get, set
-  abstract method: string with get, set
-  abstract uploadData: UploadData [] with get, set
+  abstract url: string
+  abstract headers: obj
+  abstract referrer: string
+  abstract method: string
+  abstract uploadData: UploadData []
 
 type RegisterStreamProtocolRequest =
-  abstract url: string with get, set
-  abstract headers: obj with get, set
-  abstract referrer: string with get, set
-  abstract method: string with get, set
-  abstract uploadData: UploadData [] with get, set
+  abstract url: string
+  abstract headers: obj
+  abstract referrer: string
+  abstract method: string
+  abstract uploadData: UploadData []
 
 type RegisterStringProtocolRequest =
-  abstract url: string with get, set
-  abstract referrer: string with get, set
-  abstract method: string with get, set
-  abstract uploadData: UploadData [] with get, set
+  abstract url: string
+  abstract referrer: string
+  abstract method: string
+  abstract uploadData: UploadData []
 
 type RelaunchOptions =
   abstract args: string [] with get, set
   abstract execPath: string with get, set
 
 type LoginRequest =
-  abstract method: string with get, set
-  abstract url: string with get, set
-  abstract referrer: string with get, set
+  abstract method: string
+  abstract url: string
+  abstract referrer: string
 
 [<StringEnum; RequireQualifiedAccess>]
 type ResizeQuality =
@@ -7969,12 +7973,12 @@ type ResizeOptions =
   abstract quality: ResizeQuality with get, set
 
 type ResourceUsage =
-  abstract images: MemoryUsageDetails with get, set
-  abstract scripts: MemoryUsageDetails with get, set
-  abstract cssStyleSheets: MemoryUsageDetails with get, set
-  abstract xslStyleSheets: MemoryUsageDetails with get, set
-  abstract fonts: MemoryUsageDetails with get, set
-  abstract other: MemoryUsageDetails with get, set
+  abstract images: MemoryUsageDetails
+  abstract scripts: MemoryUsageDetails
+  abstract cssStyleSheets: MemoryUsageDetails
+  abstract xslStyleSheets: MemoryUsageDetails
+  abstract fonts: MemoryUsageDetails
+  abstract other: MemoryUsageDetails
 
 type OnBeforeRequestResponse =
   abstract cancel: bool with get, set
@@ -8041,15 +8045,15 @@ type GetDesktopCapturerSourcesOptions =
 
 type SystemMemoryInfo =
   /// The total amount of physical memory in Kilobytes available to the system.
-  abstract total: int with get, set
+  abstract total: int
   /// The total amount of memory not being used by applications or disk cache.
-  abstract free: int with get, set
+  abstract free: int
   /// [Windows, Linux] The total amount of swap memory in Kilobytes available to
   /// the system.
-  abstract swapTotal: int with get, set
+  abstract swapTotal: int
   /// [Windows, Linux] The free amount of swap memory in Kilobytes available to
   /// the system.
-  abstract swapFree: int with get, set
+  abstract swapFree: int
 
 type ToBitmapOptions =
   /// Defaults to 1.0.
@@ -8214,14 +8218,14 @@ type TouchBarSpacerOptions =
 type UploadProgress =
   /// Whether the request is currently active. If this is false no other
   /// properties will be set
-  abstract active: bool with get, set
+  abstract active: bool
   /// Whether the upload has started. If this is false both `current` and
   /// `total` will be set to 0.
-  abstract started: bool with get, set
+  abstract started: bool
   /// The number of bytes that have been uploaded so far
-  abstract current: int with get, set
+  abstract current: int
   /// The number of bytes that will be uploaded this request
-  abstract total: int with get, set
+  abstract total: int
 
 type VisibleOnAllWorkspacesOptions =
   /// Sets whether the window should be visible above fullscreen windows
@@ -8229,47 +8233,47 @@ type VisibleOnAllWorkspacesOptions =
 
 type ContextMenuEditFlags =
   /// Whether the renderer believes it can undo.
-  abstract canUndo: bool with get, set
+  abstract canUndo: bool
   /// Whether the renderer believes it can redo.
-  abstract canRedo: bool with get, set
+  abstract canRedo: bool
   /// Whether the renderer believes it can cut.
-  abstract canCut: bool with get, set
+  abstract canCut: bool
   /// Whether the renderer believes it can copy
-  abstract canCopy: bool with get, set
+  abstract canCopy: bool
   /// Whether the renderer believes it can paste.
-  abstract canPaste: bool with get, set
+  abstract canPaste: bool
   /// Whether the renderer believes it can delete.
-  abstract canDelete: bool with get, set
+  abstract canDelete: bool
   /// Whether the renderer believes it can select all.
-  abstract canSelectAll: bool with get, set
+  abstract canSelectAll: bool
 
 type FoundInPageResult =
-  abstract requestId: int with get, set
+  abstract requestId: int
   /// Position of the active match.
-  abstract activeMatchOrdinal: int with get, set
+  abstract activeMatchOrdinal: int
   /// Number of Matches.
-  abstract matches: int with get, set
+  abstract matches: int
   /// Coordinates of first match region.
-  abstract selectionArea: obj with get, set
-  abstract finalUpdate: bool with get, set
+  abstract selectionArea: obj
+  abstract finalUpdate: bool
 
 type ContextMenuMediaFlags =
   /// Whether the media element has crashed.
-  abstract inError: bool with get, set
+  abstract inError: bool
   /// Whether the media element is paused.
-  abstract isPaused: bool with get, set
+  abstract isPaused: bool
   /// Whether the media element is muted.
-  abstract isMuted: bool with get, set
+  abstract isMuted: bool
   /// Whether the media element has audio.
-  abstract hasAudio: bool with get, set
+  abstract hasAudio: bool
   /// Whether the media element is looping.
-  abstract isLooping: bool with get, set
+  abstract isLooping: bool
   /// Whether the media element's controls are visible.
-  abstract isControlsVisible: bool with get, set
+  abstract isControlsVisible: bool
   /// Whether the media element's controls are toggleable.
-  abstract canToggleControls: bool with get, set
+  abstract canToggleControls: bool
   /// Whether the media element can be rotated.
-  abstract canRotate: bool with get, set
+  abstract canRotate: bool
 
 [<StringEnum; RequireQualifiedAccess>]
 type AutoplayPolicy =
