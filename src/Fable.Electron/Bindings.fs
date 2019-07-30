@@ -559,27 +559,21 @@ type App =
   /// See onBrowserWindowFocus.
   [<Emit "$0.removeListener('browser-window-focus',$1)">] abstract removeListenerBrowserWindowFocus: listener: (Event -> BrowserWindow -> unit) -> App
   /// Emitted when a new browserWindow is created.
-  ///
-  /// Note: According to the Electron docs, the first parameter is an Event, but
-  /// Electron currently sends an empty object here.
-  [<Emit "$0.on('browser-window-created',$1)">] abstract onBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
+  [<Emit "$0.on('browser-window-created',$1)">] abstract onBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
   /// See onBrowserWindowCreated.
-  [<Emit "$0.once('browser-window-created',$1)">] abstract onceBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
+  [<Emit "$0.once('browser-window-created',$1)">] abstract onceBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
   /// See onBrowserWindowCreated.
-  [<Emit "$0.addListener('browser-window-created',$1)">] abstract addListenerBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
+  [<Emit "$0.addListener('browser-window-created',$1)">] abstract addListenerBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
   /// See onBrowserWindowCreated.
-  [<Emit "$0.removeListener('browser-window-created',$1)">] abstract removeListenerBrowserWindowCreated: listener: (unit -> BrowserWindow -> unit) -> App
+  [<Emit "$0.removeListener('browser-window-created',$1)">] abstract removeListenerBrowserWindowCreated: listener: (Event -> BrowserWindow -> unit) -> App
   /// Emitted when a new `webContents` is created.
-  ///
-  /// Note: According to the Electron docs, the first parameter is an Event, but
-  /// Electron currently sends an empty object here.
-  [<Emit "$0.on('web-contents-created',$1)">] abstract onWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
+  [<Emit "$0.on('web-contents-created',$1)">] abstract onWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
   /// See onWebContentsCreated.
-  [<Emit "$0.once('web-contents-created',$1)">] abstract onceWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
+  [<Emit "$0.once('web-contents-created',$1)">] abstract onceWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
   /// See onWebContentsCreated.
-  [<Emit "$0.addListener('web-contents-created',$1)">] abstract addListenerWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
+  [<Emit "$0.addListener('web-contents-created',$1)">] abstract addListenerWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
   /// See onWebContentsCreated.
-  [<Emit "$0.removeListener('web-contents-created',$1)">] abstract removeListenerWebContentsCreated: listener: (unit -> WebContents -> unit) -> App
+  [<Emit "$0.removeListener('web-contents-created',$1)">] abstract removeListenerWebContentsCreated: listener: (Event -> WebContents -> unit) -> App
   /// Emitted when failed to verify the `certificate` for `url`. To trust the
   /// certificate you should prevent the default behavior with
   /// event.preventDefault() and call `callback(true)`.
