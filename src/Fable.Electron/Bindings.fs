@@ -60,29 +60,30 @@ type ReturnValueEvent =
 
 type IpcMainEvent =
   inherit Browser.Types.Event
-  /// Set this to the value to be returned in a synchronous message.
-  abstract returnValue: obj option with get, set
   /// The ID of the renderer frame that sent this message.
   abstract frameId: int
-  /// The webContents that sent the message. You can call sender.send to reply
-  /// to the asynchronous message. See webContents.send for more information.
+  /// Set this to the value to be returned in a synchronous message.
+  abstract returnValue: obj option with get, set
+  /// The webContents that sent the message.
   abstract sender: WebContents
   /// A function that will send an IPC message to the renderer frame that sent
   /// the original message that you are currently handling. You should use this
   /// method to "reply" to the sent message in order to guarantee the reply will
   /// go to the correct process and frame.
-  abstract reply: channel: string * [<ParamArray>] args: obj [] -> unit
+  abstract reply: [<ParamArray>] args: obj [] -> unit
 
 type IpcRendererEvent =
   inherit Browser.Types.Event
+  /// The IpcRenderer instance that emitted the event originally
+  abstract sender: IpcRenderer
   /// Returns the webContents.id that sent the message, you can call
   /// event.sender.sendTo(event.senderId, ...) to reply to the message, see
   /// ipcRenderer.sendTo for more information. This only applies to messages
   /// sent from a different renderer. Messages sent directly from the main
   /// process set event.senderId to 0.
-  abstract senderId: unit -> int
+  abstract senderId: int
 
-type TrayInputEvent =
+type KeyboardEvent =
   inherit Browser.Types.Event
   /// Whether the Control key was used in an accelerator to trigger the Event
   abstract ctrlKey: bool
@@ -878,7 +879,7 @@ type App =
   abstract getPath: name: AppPathName -> string
   /// Fetches a path's associated icon.
   ///
-  /// On Windows, there a 2 kinds of icons: Icons associated with certain file
+  /// On Windows, there are 2 kinds of icons: Icons associated with certain file
   /// extensions, like .mp3, .png, etc., and icons inside the file itself, like
   /// .exe, .dll, .ico.
   ///
@@ -886,8 +887,11 @@ type App =
   /// mime type.
   abstract getFileIcon: path: string * ?options: FileIconOptions -> Promise<NativeImage>
   /// Overrides the `path` to a special directory or file associated with
-  /// `name`. If the path specifies a directory that does not exist, the
-  /// directory will be created by this method. On failure an `Error` is thrown.
+  /// `name`.
+  ///
+  /// If the path specifies a directory that does not exist, an Error is thrown.
+  /// In that case, the directory should be created with fs.mkdirSync or
+  /// similar.
   ///
   /// By default, web pages' cookies and caches will be stored under the
   /// UserData directory. If you want to change this location, you have to
@@ -1001,11 +1005,6 @@ type App =
   /// in the entire custom category being omitted from the Jump List. The list
   /// of removed items can be obtained using app.getJumpListSettings().
   abstract setJumpList: categories: JumpListCategory [] option -> SetJumpListResult
-  /// This method makes your application a Single Instance Application - instead
-  /// of allowing multiple instances of your app to run, this will ensure that
-  /// only a single instance of your app is running, and other instances signal
-  /// this instance and exit.
-  ///
   /// The return value of this method indicates whether or not this instance of
   /// your application successfully obtained the lock. If it failed to obtain
   /// the lock, you can assume that another instance of your application is
@@ -1118,19 +1117,6 @@ type App =
   /// you'll want to set the launch path to Update.exe, and pass arguments that
   /// specify your application name.
   abstract setLoginItemSettings: settings: SetLoginItemSettings -> unit
-  /// `true` if Chrome's accessibility support is enabled, `false` otherwise.
-  /// This property will be `true` if the use of assistive technologies, such as
-  /// screen readers, has been detected. Setting this property to `true`
-  /// manually enables Chrome's accessibility support, allowing developers to
-  /// expose accessibility switch to users in application settings.
-  ///
-  /// See Chromium's accessibility docs for more details. Disabled by default.
-  ///
-  /// This API must be called after the `ready` event is emitted.
-  ///
-  /// Note: Rendering accessibility tree can significantly affect the
-  /// performance of your app. It should not be enabled by default.
-  abstract accessibilitySupportEnabled: bool with get, set
   /// [macOS, Linux] Show the app's about panel options. These options can be
   /// overridden with app.setAboutPanelOptions(options).
   abstract showAboutPanel: unit -> unit
@@ -1156,8 +1142,8 @@ type App =
   /// is restarted.
   abstract startAccessingSecurityScopedResource: bookmarkData: string -> (unit -> unit)
   abstract commandLine: CommandLine
-  /// [macOS, Windows] Enables full sandbox mode on the app. This method can
-  /// only be called before app is ready.
+  /// Enables full sandbox mode on the app. This method can only be called
+  /// before app is ready.
   abstract enableSandbox: unit -> unit
   /// [macOS] Indicates whether the application is currently running from the
   /// systems Application folder. Use in combination with
@@ -1177,26 +1163,21 @@ type App =
   /// and tell you exactly what went wrong
   abstract moveToApplicationsFolder: unit -> bool
   abstract dock: Dock
-  /// Gets or sets the application menu on macOS, and each window's top menu on
-  /// Windows and Linux.
-  ///
-  /// On Windows and Linux, you can use a `&` in the top-level item name to
-  /// indicate which letter should get a generated accelerator. For example,
-  /// using &File for the file menu would result in a generated Alt-F
-  /// accelerator that opens the associated menu. The indicated character in the
-  /// button label gets an underline. The & character is not displayed on the
-  /// button label.
-  ///
-  /// Passing None will suppress the default menu. On Windows and Linux, this
-  /// has the additional effect of removing the menu bar from the window.
-  ///
-  /// Note: The default menu will be created automatically if the app does not
-  /// set one. It contains standard items such as File, Edit, View, Window and
-  /// Help.
-  ///
-  /// Note: The Menu instance doesn't support dynamic addition or removal of
-  /// menu items. Instance properties can still be dynamically modified.
+  /// Gets or sets the application menu.
   abstract applicationMenu: Menu option with get, set
+  /// `true` if Chrome's accessibility support is enabled, `false` otherwise.
+  /// This property will be `true` if the use of assistive technologies, such as
+  /// screen readers, has been detected. Setting this property to `true`
+  /// manually enables Chrome's accessibility support, allowing developers to
+  /// expose accessibility switch to users in application settings.
+  ///
+  /// See Chromium's accessibility docs for more details. Disabled by default.
+  ///
+  /// This API must be called after the `ready` event is emitted.
+  ///
+  /// Note: Rendering accessibility tree can significantly affect the
+  /// performance of your app. It should not be enabled by default.
+  abstract accessibilitySupportEnabled: bool with get, set
   /// The user agent string Electron will use as a global fallback.
   ///
   /// This is the user agent that will be used when no user agent is set at the
@@ -2637,30 +2618,29 @@ type CrashReporter =
   abstract getLastCrashReport: unit -> CrashReport option
   /// Returns all uploaded crash reports.
   abstract getUploadedReports: unit -> CrashReport []
-  /// [Linux, macOS] Returns a value indicating whether reports should be
-  /// submitted to the server. Set through the `start` method or
-  /// `setUploadToServer`.
+  /// Returns a value indicating whether reports should be submitted to the
+  /// server. Set through the `start` method or `setUploadToServer`.
   ///
   /// Note: This API can only be called from the main process.
   abstract getUploadToServer: unit -> bool
-  /// [Linux, macOS] Sets whether reports should be submitted to the server.
+  /// Sets whether reports should be submitted to the server.
   ///
   /// This would normally be controlled by user preferences. This has no effect
   /// if called before `start` is called.
   ///
   /// Note: This API can only be called from the main process.
   abstract setUploadToServer: uploadToServer: bool -> unit
-  /// [macOS] Set an extra parameter to be sent with the crash report. The
-  /// values specified here will be sent in addition to any values set via the
-  /// `extra` option when `start` was called. This API is only available on
-  /// macOS, if you need to add/update extra parameters on Linux and Windows
+  /// [macOS, Windows] Set an extra parameter to be sent with the crash report.
+  /// The values specified here will be sent in addition to any values set via
+  /// the `extra` option when `start` was called. This API is only available on
+  /// macOS and Windows, if you need to add/update extra parameters on Linux
   /// after your first call to `start` you can call `start` again with the
   /// updated `extra` options.
   ///
   /// Both `key` and `value` must be less than 64 characters long.
   abstract addExtraParameter: key: string * value: string -> unit
-  /// [macOS] Remove a extra parameter from the current set of parameters so
-  /// that it will not be sent with the crash report.
+  /// [macOS, Windows] Remove a extra parameter from the current set of
+  /// parameters so that it will not be sent with the crash report.
   abstract removeExtraParameter: key: string -> unit
   /// See all of the current parameters being passed to the crash reporter.
   abstract getParameters: unit -> unit
@@ -3358,7 +3338,7 @@ type MenuItem =
   abstract label: string option with get, set
   /// Fired when the MenuItem receives a click event. It can be called with
   /// menuItem.click(event, focusedWindow, focusedWebContents).
-  abstract click: (Event -> BrowserWindow -> WebContents -> unit) option with get, set
+  abstract click: (KeyboardEvent -> BrowserWindow -> WebContents -> unit) option with get, set
   /// The menu item's submenu, if present.
   abstract submenu: Menu option with get, set
   /// The type of the item.
@@ -4266,11 +4246,6 @@ type Shell =
   /// indicating whether the item was successfully opened.
   abstract openItem: fullPath: string -> bool
   /// Open the given external protocol URL in the desktop's default manner. (For
-  /// example, mailto: URLs in the user's default mail agent). `url` must be max
-  /// 2081 characters on Windows. Returns a value indicating whether an
-  /// application was available to open the URL.
-  abstract openExternalSync: url: string * ?options: OpenExternalOptions -> bool
-  /// Open the given external protocol URL in the desktop's default manner. (For
   /// example, mailto: URLs in the user's default mail agent).
   abstract openExternal: url: string * ?options: OpenExternalOptions -> Promise<unit>
   /// Move the given file to trash and returns a value indicating whether the
@@ -4980,45 +4955,35 @@ type Transaction =
   abstract errorMessage: string
   abstract payment: Payment
 
-[<StringEnum; RequireQualifiedAccess>]
-type HighlightMode =
-  /// Highlight the tray icon when it is clicked and also when its context menu
-  /// is open.
-  | Selection
-  /// Always highlight the tray icon.
-  | Always
-  /// Never highlight the tray icon.
-  | Never
-
 type Tray =
   inherit EventEmitter<Tray>
   /// Emitted when the tray icon is clicked. The listener gets the bounds of the
   /// tray icon and the position of the event.
-  [<Emit "$0.on('click',$1)">] abstract onClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  [<Emit "$0.on('click',$1)">] abstract onClick: listener: (KeyboardEvent -> Rectangle -> Point -> unit) -> Tray
   /// See onClick.
-  [<Emit "$0.once('click',$1)">] abstract onceClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  [<Emit "$0.once('click',$1)">] abstract onceClick: listener: (KeyboardEvent -> Rectangle -> Point -> unit) -> Tray
   /// See onClick.
-  [<Emit "$0.addListener('click',$1)">] abstract addListenerClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  [<Emit "$0.addListener('click',$1)">] abstract addListenerClick: listener: (KeyboardEvent -> Rectangle -> Point -> unit) -> Tray
   /// See onClick.
-  [<Emit "$0.removeListener('click',$1)">] abstract removeListenerClick: listener: (TrayInputEvent -> Rectangle -> Point -> unit) -> Tray
+  [<Emit "$0.removeListener('click',$1)">] abstract removeListenerClick: listener: (KeyboardEvent -> Rectangle -> Point -> unit) -> Tray
   /// [macOS, Windows] Emitted when the tray icon is right clicked. The listener
   /// gets the bounds of the tray icon.
-  [<Emit "$0.on('right-click',$1)">] abstract onRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.on('right-click',$1)">] abstract onRightClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// See onRightClick.
-  [<Emit "$0.once('right-click',$1)">] abstract onceRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.once('right-click',$1)">] abstract onceRightClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// See onRightClick.
-  [<Emit "$0.addListener('right-click',$1)">] abstract addListenerRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.addListener('right-click',$1)">] abstract addListenerRightClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// See onRightClick.
-  [<Emit "$0.removeListener('right-click',$1)">] abstract removeListenerRightClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.removeListener('right-click',$1)">] abstract removeListenerRightClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// [macOS, Windows] Emitted when the tray icon is double clicked. The
   /// listener gets the bounds of the tray icon.
-  [<Emit "$0.on('double-click',$1)">] abstract onDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.on('double-click',$1)">] abstract onDoubleClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// See onDoubleClick.
-  [<Emit "$0.once('double-click',$1)">] abstract onceDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.once('double-click',$1)">] abstract onceDoubleClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// See onDoubleClick.
-  [<Emit "$0.addListener('double-click',$1)">] abstract addListenerDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.addListener('double-click',$1)">] abstract addListenerDoubleClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// See onDoubleClick.
-  [<Emit "$0.removeListener('double-click',$1)">] abstract removeListenerDoubleClick: listener: (TrayInputEvent -> Rectangle -> unit) -> Tray
+  [<Emit "$0.removeListener('double-click',$1)">] abstract removeListenerDoubleClick: listener: (KeyboardEvent -> Rectangle -> unit) -> Tray
   /// [Windows] Emitted when the tray balloon shows.
   [<Emit "$0.on('balloon-show',$1)">] abstract onBalloonShow: listener: (unit -> unit) -> Tray
   /// See onBalloonShow.
@@ -5097,31 +5062,31 @@ type Tray =
   [<Emit "$0.removeListener('drag-end',$1)">] abstract removeListenerDragEnd: listener: (unit -> unit) -> Tray
   /// [macOS] Emitted when the mouse enters the tray icon. The listener receives
   /// the position of the event.
-  [<Emit "$0.on('mouse-enter',$1)">] abstract onMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.on('mouse-enter',$1)">] abstract onMouseEnter: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseEnter.
-  [<Emit "$0.once('mouse-enter',$1)">] abstract onceMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.once('mouse-enter',$1)">] abstract onceMouseEnter: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseEnter.
-  [<Emit "$0.addListener('mouse-enter',$1)">] abstract addListenerMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.addListener('mouse-enter',$1)">] abstract addListenerMouseEnter: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseEnter.
-  [<Emit "$0.removeListener('mouse-enter',$1)">] abstract removeListenerMouseEnter: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.removeListener('mouse-enter',$1)">] abstract removeListenerMouseEnter: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// [macOS] Emitted when the mouse exits the tray icon. The listener receives
   /// the position of the event.
-  [<Emit "$0.on('mouse-leave',$1)">] abstract onMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.on('mouse-leave',$1)">] abstract onMouseLeave: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseLeave.
-  [<Emit "$0.once('mouse-leave',$1)">] abstract onceMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.once('mouse-leave',$1)">] abstract onceMouseLeave: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseLeave.
-  [<Emit "$0.addListener('mouse-leave',$1)">] abstract addListenerMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.addListener('mouse-leave',$1)">] abstract addListenerMouseLeave: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseLeave.
-  [<Emit "$0.removeListener('mouse-leave',$1)">] abstract removeListenerMouseLeave: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.removeListener('mouse-leave',$1)">] abstract removeListenerMouseLeave: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// [macOS] Emitted when the mouse moves in the tray icon. The listener
   /// receives the position of the event.
-  [<Emit "$0.on('mouse-move',$1)">] abstract onMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.on('mouse-move',$1)">] abstract onMouseMove: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseMove.
-  [<Emit "$0.once('mouse-move',$1)">] abstract onceMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.once('mouse-move',$1)">] abstract onceMouseMove: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseMove.
-  [<Emit "$0.addListener('mouse-move',$1)">] abstract addListenerMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.addListener('mouse-move',$1)">] abstract addListenerMouseMove: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// See onMouseMove.
-  [<Emit "$0.removeListener('mouse-move',$1)">] abstract removeListenerMouseMove: listener: (TrayInputEvent -> Point -> unit) -> Tray
+  [<Emit "$0.removeListener('mouse-move',$1)">] abstract removeListenerMouseMove: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// Destroys the tray icon immediately.
   abstract destroy: unit -> unit
   /// Sets the image associated with this tray icon.
@@ -5136,19 +5101,12 @@ type Tray =
   abstract setPressedImage: image: string -> unit
   /// Sets the hover text for this tray icon.
   abstract setToolTip: toolTip: string -> unit
-  /// [macOS] Sets the title displayed aside of the tray icon in the status bar
+  /// [macOS] Sets the title displayed next to the tray icon in the status bar
   /// (Support ANSI colors).
   abstract setTitle: title: string -> unit
   /// [macOS] Returns the title displayed next to the tray icon in the status
   /// bar.
   abstract getTitle: unit -> string
-  /// [macOS] Sets when the tray's icon background becomes highlighted (in
-  /// blue). Default is HighlightMode.Selection.
-  ///
-  /// Note: You can use highlightMode with a BrowserWindow by toggling between
-  /// HighlightMode.Never and HighlightMode.Always modes when the window
-  /// visibility changes.
-  abstract setHighlightMode: mode: HighlightMode -> unit
   /// [macOS] Sets the option to ignore double click events. Ignoring these
   /// events allows you to detect every individual click of the tray icon. This
   /// value is set to false by default.
@@ -6378,7 +6336,7 @@ type WebFrame =
   /// asynchronously and calls the callback function with an array of misspelt
   /// words when complete. An example of using node-spellchecker as provider:
   abstract setSpellCheckProvider: language: string * provider: SpellCheckProvider -> unit
-  /// Inserts the specified CSS source code as a style sheet in the document.99
+  /// Inserts the specified CSS source code as a style sheet in the document.
   abstract insertCSS: css: string -> unit
   /// Inserts text to the focused element.
   abstract insertText: text: string -> unit
@@ -6874,31 +6832,51 @@ type ClearStorageDataOptions =
   abstract quotas: StorageQuota [] with get, set
 
 type CommandLine =
-  /// Append a switch (with optional value) to Chromium's command line.
+  /// <summary>
+  ///   Append a switch (with optional value) to Chromium's command line.
   ///
-  /// Note: This will not affect process.argv, and is mainly used by developers
-  /// to control some low-level Chromium behaviors.
-  ///
-  /// Parameters:
+  ///   Note: This will not affect process.argv. The intended usage of this
+  ///   function is to↵ control Chromium's behaviors.
+  /// </summary>
+  /// <param name="switch">A command-line switch, without the leading --</param>
+  /// <param name="value"></param>
   abstract appendSwitch: switch: string -> value: string -> unit
   /// Append an argument to Chromium's command line. The argument will be quoted
   /// correctly.
   ///
-  /// Note: This will not affect process.argv.
+  /// Switches will precede arguments regardless of appending order. If you're
+  /// appending an argument like --switch=value, consider using
+  /// appendSwitch('switch', 'value') instead.
+  ///
+  /// Note: This will not affect process.argv. The intended usage of this
+  /// function is to control Chromium's behavior.
   abstract appendArgument: value:string -> unit
   /// Indicates whether the command-line switch is present.
   abstract hasSwitch: switch:string -> bool
   /// Returns the command-line switch value.
   ///
-  /// Note: When the switch is not present, it returns empty string.
+  /// Note: When the switch is not present or has no value, it returns empty
+  /// string.
   abstract getSwitchValue: switch: string -> string
 
 type ProxyConfig =
   /// The URL associated with the PAC file.
+  ///
+  /// When pacScript and proxyRules are provided together, the proxyRules option
+  /// is ignored and pacScript configuration is applied.
   abstract pacScript: string with get, set
   /// Rules indicating which proxies to use.
+  ///
+  /// When pacScript and proxyRules are provided together, the proxyRules option
+  /// is ignored and pacScript configuration is applied.
+  ///
+  /// This property has to follow specific rules, see
+  /// https://electronjs.org/docs/api/session#sessetproxyconfig
   abstract proxyRules: string with get, set
   /// Rules indicating which URLs should bypass the proxy settings.
+  ///
+  /// This property has to follow specific rules, see
+  /// https://electronjs.org/docs/api/session#sessetproxyconfig
   abstract proxyBypassRules: string with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -7083,6 +7061,9 @@ type Dock =
   /// [macOS] Sets the application's dock menu. More information:
   /// https://developer.apple.com/design/human-interface-guidelines/macos/menus/dock-menus/
   abstract setMenu: menu: Menu -> unit
+  /// [macOS] Returns The application's dock menu. More information:
+  /// https://developer.apple.com/design/human-interface-guidelines/macos/menus/dock-menus/
+  abstract getMenu: unit -> Menu option
   /// [macOS] Sets the image associated with this dock icon.
   abstract setIcon: image: NativeImage -> unit
   /// [macOS] Sets the image associated with this dock icon.
@@ -7397,7 +7378,7 @@ type MenuItemType =
 
 type MenuItemOptions =
   /// Will be called when the menu item is clicked.
-  abstract click: (MenuItem -> BrowserWindow -> Event -> unit) with get, set
+  abstract click: (MenuItem -> BrowserWindow -> KeyboardEvent -> unit) with get, set
   /// The action of the menu item, when specified the `click` property will be
   /// ignored. More information: https://electronjs.org/docs/api/menu-item#roles
   abstract role: MenuItemRole with get, set
@@ -7409,9 +7390,13 @@ type MenuItemOptions =
   /// If false, the menu item will be greyed out and unclickable.
   abstract enabled: bool with get, set
   /// [macOS] Default is `true`, and when `false` will prevent the accelerator
-  /// from triggering the item if the item is not visible. This property is only
-  /// usable on macOS High Sierra 10.13 or newer. On Windows and Linux this has
-  /// no effect, since accelerators always work when items are hidden.
+  /// from triggering the item if the item is not visible.
+  ///
+  /// This is specified as being macOS-only because accelerators always work
+  /// when items are hidden on Windows and Linux. The option is exposed to users
+  /// to give them the option to turn it off, as this is possible in native
+  /// macOS development. This property is only usable on macOS High Sierra 10.13
+  /// or newer.
   abstract acceleratorWorksWhenHidden: bool with get, set
   /// If false, the menu item will be entirely hidden.
   abstract visible: bool with get, set
@@ -8291,9 +8276,10 @@ type WebPreferences =
   /// Whether node integration is enabled in web workers. Default is false. More
   /// about this can be found here: https://electronjs.org/docs/tutorial/multithreading
   abstract nodeIntegrationInWorker: bool with get, set
-  /// Experimental option for enabling NodeJS support in sub-frames such as
-  /// iframes. All your preloads will load for every iframe, you can use
-  /// process.isMainFrame to determine if you are in the main frame or not.
+  /// Experimental option for enabling Node.js support in sub-frames such as
+  /// iframes and child windows. All your preloads will load for every iframe,
+  /// you can use process.isMainFrame to determine if you are in the main frame
+  /// or not.
   abstract nodeIntegrationInSubFrames: bool with get, set
   /// Specifies a script that will be loaded before other scripts run in the
   /// page. This script will always have access to node APIs no matter whether
@@ -8348,8 +8334,6 @@ type WebPreferences =
   abstract textAreasAreResizable: bool with get, set
   /// Enables WebGL support. Default is true.
   abstract webgl: bool with get, set
-  /// Enables WebAudio support. Default is true.
-  abstract webaudio: bool with get, set
   /// Whether plugins should be enabled. Default is false.
   abstract plugins: bool with get, set
   /// Enables Chromium's experimental features. Default is false.
@@ -8398,8 +8382,8 @@ type WebPreferences =
   /// Console tab.
   abstract contextIsolation: bool with get, set
   /// Whether to use native window.open(). Defaults to false. Child windows will
-  /// always have node integration disabled. Note: This option is currently
-  /// experimental.
+  /// always have node integration disabled unless `nodeIntegrationInSubFrames`
+  /// is `true`. Note: This option is currently experimental.
   abstract nativeWindowOpen: bool with get, set
   /// A list of strings that will be appended to process.argv in the renderer
   /// process of this app. Useful for passing small bits of data down to
