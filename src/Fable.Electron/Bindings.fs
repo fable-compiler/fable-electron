@@ -868,9 +868,9 @@ type App =
   /// with app.getPath() or app.setPath(pathName, newPath). `path` must be
   /// absolute.
   ///
-  /// On macOS, this directory will be set by default to
-  /// /Library/Logs/YourAppName, and on Linux and Windows it will be placed
-  /// inside your userData directory.
+  /// Calling app.setAppLogsPath() without a path parameter will result in this
+  /// directory being set to `/Library/Logs/YourAppName` on macOS, and inside the
+  /// `userData` directory on Linux and Windows.
   abstract setAppLogsPath: path: string -> unit
   /// Returns the current application directory.
   abstract getAppPath: unit -> string
