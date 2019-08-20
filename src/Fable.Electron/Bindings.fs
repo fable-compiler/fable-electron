@@ -7459,7 +7459,7 @@ type MessageBoxOptions =
   abstract checkboxLabel: string with get, set
   /// Initial checked state of the checkbox. `false` by default.
   abstract checkboxChecked: bool with get, set
-  abstract icon: NativeImage with get, set
+  abstract icon: U2<NativeImage, string> with get, set
   /// The index of the button to be used to cancel the dialog, via the Esc key.
   /// By default this is assigned to the first button with "cancel" or "no" as
   /// the label. If no such labeled buttons exist and this option is not set, 0
