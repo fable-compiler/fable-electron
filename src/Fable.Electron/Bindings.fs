@@ -3338,7 +3338,7 @@ type MenuItem =
   abstract label: string option with get, set
   /// Fired when the MenuItem receives a click event. It can be called with
   /// menuItem.click(event, focusedWindow, focusedWebContents).
-  abstract click: (KeyboardEvent -> BrowserWindow -> WebContents -> unit) option with get, set
+  abstract click: Action<KeyboardEvent, BrowserWindow, WebContents> option with get, set
   /// The menu item's submenu, if present.
   abstract submenu: Menu option with get, set
   /// The type of the item.
@@ -7378,7 +7378,7 @@ type MenuItemType =
 
 type MenuItemOptions =
   /// Will be called when the menu item is clicked.
-  abstract click: (MenuItem -> BrowserWindow -> KeyboardEvent -> unit) with get, set
+  abstract click: Action<MenuItem, BrowserWindow, KeyboardEvent> with get, set
   /// The action of the menu item, when specified the `click` property will be
   /// ignored. More information: https://electronjs.org/docs/api/menu-item#roles
   abstract role: MenuItemRole with get, set
@@ -7876,7 +7876,7 @@ type ProgressBarOptions =
 type SpellCheckProvider =
   /// First argument is the words words to spellcheck. Second argument is a
   /// callback that must be called with misspelt words.
-  abstract spellCheck: (string [] -> (string [] -> unit) -> unit) with get, set
+  abstract spellCheck: Action<string [], string [] -> unit> with get, set
 
 type ClipboardBookmark =
   /// The title of the bookmark in the clipboard. Will be the empty string when
@@ -8172,7 +8172,7 @@ type TouchBarSegmentedControlOptions =
   /// Called when the user selects a new segment. Called with the index of the
   /// segment the user selected, and whether as a result of user selection the
   /// segment is selected or not.
-  abstract change: (int -> bool -> unit) with get, set
+  abstract change: Action<int, bool> with get, set
 
 type TouchBarSliderOptions =
   /// Label text.

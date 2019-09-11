@@ -4,13 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <Authors>Christer van der Meeren</Authors>
     <Description>Fable bindings and helpers for Electron.</Description>
     <PackageLicenseUrl>https://github.com/fable-compiler/fable-electron/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fable-compiler/fable-electron</PackageProjectUrl>
     <PackageTags>fable electron bindings</PackageTags>
-    <PackageReleaseNotes>Tiny breaking change based on updated Electron docs: In showMessageBox, made MessageBoxOptions.icon accept both NativeImage and string.</PackageReleaseNotes>
+    <PackageReleaseNotes>Breaking bugfix: Use explicit Action wrappers for MenuItem.click, MenuItemOptions.click, SpellCheckProvider.spellCheck, and TouchBarSegmentedControlOptions.change</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
