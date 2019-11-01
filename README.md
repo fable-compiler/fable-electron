@@ -18,7 +18,7 @@ For an example app with complete boilerplate for Electron apps using Fable and E
 
 To get started with the bindings, simply:
 
-* Install the `Fable.Electron` Nuget package as well as the `electron` npm package. Make sure the `electron` version is compatible with the bindings.
+* Install the `Fable.Electron` Nuget package as well as the `electron` npm package. Make sure the `electron` version is compatible with the bindings. Fable.Electron supports [Femto](https://github.com/Zaid-Ajaj/Femto/).
 * `open Electron`. In addition to all the the type definitions, you now have access to two entry points for the Electron API:
   * `main` for everything that can be used from the main process
   * `renderer` for everything that can be used from the renderer process

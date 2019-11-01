@@ -72,6 +72,13 @@ type IpcMainEvent =
   /// go to the correct process and frame.
   abstract reply: [<ParamArray>] args: obj [] -> unit
 
+type IpcMainInvokeEvent =
+  inherit Browser.Types.Event
+  /// The ID of the renderer frame that sent this message.
+  abstract frameId: int
+  /// The webContents that sent the message.
+  abstract sender: WebContents
+
 type IpcRendererEvent =
   inherit Browser.Types.Event
   /// The IpcRenderer instance that emitted the event originally
@@ -144,11 +151,15 @@ type MainInterface =
   ///
   /// https://electronjs.org/docs/api/client-request
   abstract ClientRequest: ClientRequestStatic
-  /// Collect tracing data from Chromium's content module to find performance
-  /// bottlenecks and slow operations. This module does not include a web
-  /// interface, so you need to open chrome://tracing/ in a Chrome browser and
-  /// load the generated file to view the result. Note: You should not use this
-  /// module until the `ready` event of the `app` module is emitted.
+  /// Collect tracing data from Chromium to find performance bottlenecks and
+  /// slow operations.
+  ///
+  /// This module does not include a web interface. To view recorded traces, use
+  /// [trace /// viewer](https://github.com/catapult-project/catapult/blob/master/tracing),
+  /// available at `chrome://tracing` in Chrome.
+  ///
+  /// Note: You should not use this module until the `ready` event of the `app`
+  /// module is emitted.
   ///
   /// https://electronjs.org/docs/api/content-tracing
   abstract contentTracing: ContentTracing
@@ -184,6 +195,10 @@ type MainInterface =
   ///
   /// https://electronjs.org/docs/api/menu-item
   abstract MenuItem: MenuItemStatic
+  /// Read and respond to changes in Chromium's native color theme.
+  ///
+  /// https://electronjs.org/docs/api/native-theme
+  abstract nativeTheme: NativeTheme
   /// Issue HTTP/HTTPS requests using Chromium's native networking library.
   ///
   /// https://electronjs.org/docs/api/net
@@ -198,6 +213,9 @@ type MainInterface =
   abstract Notification: NotificationStatic
   /// Monitor power state changes.
   ///
+  /// This module cannot be used until the `ready` event of the `app` module is
+  /// emitted.
+  ///
   /// https://electronjs.org/docs/api/power-monitor
   abstract powerMonitor: PowerMonitor
   /// Block the system from entering low-power (sleep) mode.
@@ -209,8 +227,9 @@ type MainInterface =
   /// https://electronjs.org/docs/api/protocol
   abstract protocol: Protocol
   /// Retrieve information about screen size, displays, cursor position, etc.
-  /// You cannot require or use this module until the `ready` event of the `app`
-  /// module is emitted.
+  ///
+  /// This module cannot be used until the `ready` event of the `app` module is
+  /// emitted.
   ///
   /// https://electronjs.org/docs/api/screen
   abstract screen: Screen
@@ -272,9 +291,10 @@ type GpuInfoType =
 type AppPathName =
   /// The user's home directory.
   | Home
-  /// Per-user application data directory, which by default points to: -
-  /// %APPDATA% on Windows - $XDG_CONFIG_HOME or ~/.config on Linux -
-  /// ~/Library/Application Support on macOS
+  /// Per-user application data directory, which by default points to:
+  ///  - %APPDATA% on Windows
+  ///  - $XDG_CONFIG_HOME or ~/.config on Linux
+  ///  - ~/Library/Application Support on macOS
   | AppData
   /// The directory for storing your app's configuration files, which by default
   /// it is the AppData directory appended with your app's name.
@@ -318,6 +338,17 @@ type SetJumpListResult =
   /// Custom categories can't be added to the Jump List due to user privacy or
   /// group policy settings.
   | CustomCategoryAccessDeniedError
+
+[<StringEnum; RequireQualifiedAccess>]
+type MoveToApplicationsFolderConflictType =
+  /// An app of the same name is present in the Applications directory.
+  | Exists
+  /// An app of the same name is present in the Applications directory and is
+  /// presently running.
+  | ExistsAndRunning
+
+type MoveToApplicationsFolderOptions =
+  abstract conflictHandler: MoveToApplicationsFolderConflictType -> bool with get, set
 
 type App =
   inherit EventEmitter<App>
@@ -429,7 +460,7 @@ type App =
   /// [macOS] Emitted when the user wants to open a URL with the application.
   /// The listener is passed the url.
   ///
-  /// Your application's Info.plist file must define the url scheme within the
+  /// Your application's Info.plist file must define the URL scheme within the
   /// CFBundleURLTypes key, and set NSPrincipalClass to AtomApplication.
   ///
   /// You should call `event.preventDefault()` if you want to handle this event.
@@ -639,6 +670,14 @@ type App =
   [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// See onLogin.
   [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
+  /// Emitted whenever there is a GPU info update.
+  [<Emit "$0.on('gpu-info-update',$1)">] abstract onGpuInfoUpdate: listener: (unit -> unit) -> App
+  /// See onGpuInfoUpdate.
+  [<Emit "$0.once('gpu-info-update',$1)">] abstract onceGpuInfoUpdate: listener: (unit -> unit) -> App
+  /// See onGpuInfoUpdate.
+  [<Emit "$0.addListener('gpu-info-update',$1)">] abstract addListenerGpuInfoUpdate: listener: (unit -> unit) -> App
+  /// See onGpuInfoUpdate.
+  [<Emit "$0.removeListener('gpu-info-update',$1)">] abstract removeListenerGpuInfoUpdate: listener: (unit -> unit) -> App
   /// Emitted when the GPU process crashes or is killed.
   ///
   /// Parameters:
@@ -869,13 +908,18 @@ type App =
   /// absolute.
   ///
   /// Calling app.setAppLogsPath() without a path parameter will result in this
-  /// directory being set to `/Library/Logs/YourAppName` on macOS, and inside the
+  /// directory being set to `~/Library/Logs/YourAppName` on macOS, and inside the
   /// `userData` directory on Linux and Windows.
-  abstract setAppLogsPath: path: string -> unit
+  abstract setAppLogsPath: ?path: string -> unit
   /// Returns the current application directory.
   abstract getAppPath: unit -> string
   /// Returns the specified special directory or file. On failure, an `Error` is
   /// thrown.
+  ///
+  /// If app.getPath(AppPathName.Logs) is called without called
+  /// app.setAppLogsPath() being called first, a default log directory will be
+  /// created equivalent to calling app.setAppLogsPath() without a path
+  /// parameter.
   abstract getPath: name: AppPathName -> string
   /// Fetches a path's associated icon.
   ///
@@ -905,12 +949,14 @@ type App =
   /// Returns the current application's name, which is the name in the
   /// application's package.json file.
   ///
-  /// Usually the `name` field of package.json is a short lower-cased name,
+  /// Usually the `name` field of package.json is a short lowercase name,
   /// according to the npm modules spec. You should usually also specify a
   /// `productName` field, which is your application's full capitalized name,
   /// and which will be preferred over `name` by Electron.
+  [<Obsolete("Use the name property instead")>]
   abstract getName: unit -> string
   /// Overrides the current application's name.
+  [<Obsolete("Use the name property instead")>]
   abstract setName: name: string -> unit
   /// Returns the current application locale. Possible return values are
   /// documented here: https://electronjs.org/docs/api/locales
@@ -982,7 +1028,7 @@ type App =
   ///
   /// See `setAsDefaultProtocolClient` for more details. 
   abstract isDefaultProtocolClient: protocol: string * ?path: string * ?args: string [] -> bool
-  /// [Windows] Adds `tasks` to the Tasks category of the JumpList on Windows.
+  /// [Windows] Adds `tasks` to the Tasks category of the Jump List on Windows.
   ///
   /// Note: If you'd like to customize the Jump List even more, use
   /// app.setJumpList(categories) instead.
@@ -1047,12 +1093,11 @@ type App =
   abstract setUserActivity: ``type``: string * userInfo: obj option * ?webpageURL: string -> unit
   /// [macOS] Returns the type of the currently running activity.
   abstract getCurrentActivityType: unit -> string
-  /// <summary>[macOS] Invalidates the current Handoff user activity.</summary>
-  ///
-  /// <param name="type">
-  ///   Uniquely identifies the activity. Maps to NSUserActivity.activityType
-  /// </param>
-  abstract invalidateCurrentActivity: ``type``: string -> unit
+  /// [macOS] Invalidates the current Handoff user activity.
+  abstract invalidateCurrentActivity: unit -> unit
+  /// [macOS] Marks the current Handoff user activity as inactive without
+  /// invalidating it.
+  abstract resignCurrentActivity: unit -> unit
   /// <summary>
   ///   [macOS] Updates the current activity if its type matches `type`, merging
   ///   the entries from `userInfo` into its current `userInfo` dictionary.
@@ -1085,11 +1130,15 @@ type App =
   /// the processes associated with the app.
   abstract getAppMetrics: unit -> ProcessMetric []
   /// Returns the Graphics Feature Status from chrome://gpu/.
+  ///
+  /// Note: This information is only usable after the `gpu-info-update` event is
+  /// emitted.
   abstract getGPUFeatureStatus: unit -> GPUFeatureStatus
   /// For GpuInfoType.Complete, returns an object containing all the GPU
   /// Information in chromium's GPUInfo object. This includes the version and
-  /// driver information that's shown on chrome://gpu page. For
-  /// GpuInfoType.Basic, returns a subset of the complete info. Using Basic
+  /// driver information that's shown on chrome://gpu page.
+  ///
+  /// For GpuInfoType.Basic, returns a subset of the complete info. Using Basic
   /// should be preferred if only basic information like vendorId or driverId is
   /// needed.
   abstract getGPUInfo: infoType: GpuInfoType -> Promise<obj>
@@ -1102,8 +1151,10 @@ type App =
   /// Note: Unity launcher requires the existence of a .desktop file to work.
   /// For more information please read Desktop Environment Integration:
   /// https://electronjs.org/docs/tutorial/desktop-environment-integration#unity-launcher
+  [<Obsolete("Use the badgeCount property")>]
   abstract setBadgeCount: count: int -> bool
   /// Returns the current value displayed in the counter badge.
+  [<Obsolete("Use the badgeCount property")>]
   abstract getBadgeCount: unit -> int
   /// [Linux] Whether the current desktop environment is Unity launcher.
   abstract isUnityRunning: unit -> bool
@@ -1141,7 +1192,6 @@ type App =
   /// lose its ability to reach outside the sandbox completely, until your app
   /// is restarted.
   abstract startAccessingSecurityScopedResource: bookmarkData: string -> (unit -> unit)
-  abstract commandLine: CommandLine
   /// Enables full sandbox mode on the app. This method can only be called
   /// before app is ready.
   abstract enableSandbox: unit -> unit
@@ -1161,34 +1211,71 @@ type App =
   /// this method returns false. If we fail to perform the copy, then this
   /// method will throw an error. The message in the error should be informative
   /// and tell you exactly what went wrong
-  abstract moveToApplicationsFolder: unit -> bool
-  abstract dock: Dock
-  /// Gets or sets the application menu.
-  abstract applicationMenu: Menu option with get, set
-  /// `true` if Chrome's accessibility support is enabled, `false` otherwise.
-  /// This property will be `true` if the use of assistive technologies, such as
-  /// screen readers, has been detected. Setting this property to `true`
-  /// manually enables Chrome's accessibility support, allowing developers to
-  /// expose accessibility switch to users in application settings.
   ///
-  /// See Chromium's accessibility docs for more details. Disabled by default.
+  /// By default, if an app of the same name as the one being moved exists in
+  /// the Applications directory and is not running, the existing app will be
+  /// trashed and the active app moved into its place. If it is running, the
+  /// pre-existing running app will assume focus and the the previously active
+  /// app will quit itself. This behavior can be changed by providing the
+  /// optional conflict handler, where the boolean returned by the handler
+  /// determines whether or not the move conflict is resolved with default
+  /// behavior. i.e. returning `false` will ensure no further action is taken,
+  /// returning `true` will result in the default behavior and the method
+  /// continuing.
+  abstract moveToApplicationsFolder: ?options: MoveToApplicationsFolderOptions -> bool
+  /// A Boolean property that's `true` if Chrome's accessibility support is
+  /// enabled, `false` otherwise. This property will be `true` if the use of
+  /// assistive technologies, such as screen readers, has been detected. Setting
+  /// this property to `true` manually enables Chrome's accessibility support,
+  /// allowing developers to expose accessibility switch to users in application
+  /// settings.
+  ///
+  /// See [Chromium's accessibility
+  /// docs](https://www.chromium.org/developers/design-documents/accessibility)
+  /// for more details. Disabled by default.
   ///
   /// This API must be called after the `ready` event is emitted.
   ///
   /// Note: Rendering accessibility tree can significantly affect the
   /// performance of your app. It should not be enabled by default.
   abstract accessibilitySupportEnabled: bool with get, set
-  /// The user agent string Electron will use as a global fallback.
+  /// Gets or sets the application menu.
+  abstract applicationMenu: Menu option with get, set
+  /// [Linux, macOS] Returns the badge count for current app. Setting the count
+  /// to 0 will hide the badge.
   ///
-  /// This is the user agent that will be used when no user agent is set at the
-  /// webContents or session level.  Useful for ensuring your entire app has the
-  /// same user agent. Set to a custom value as early as possible in your app's
-  /// initialization to ensure that your overridden value is used.
-  abstract userAgentFallback: string with get, set
+  /// On macOS, setting this to any nonzero integer shows on the dock icon. On
+  /// Linux, this property only works for Unity launcher.
+  ///
+  /// Note: Unity launcher requires the existence of a .desktop file to work,
+  /// for more information please read [Desktop Environment
+  /// Integration](https://electronjs.org/docs/tutorial/desktop-environment-integration#unity-launcher).
+  abstract badgeCount: int with get, set
+  /// Allows you to read and manipulate the command line arguments that Chromium
+  /// uses.
+  abstract commandLine: CommandLine
+  /// Allows you to perform actions on your app icon in the user's dock on
+  /// macOS.
+  abstract dock: Dock
   /// Returns true if the app is packaged, false otherwise. For many apps, this
   /// property can be used to distinguish development and production
   /// environments.
   abstract isPackaged: bool
+  /// Indicates the current application's name, which is the name in the
+  /// application's `package.json` file.
+  ///
+  /// Usually the `name` field of `package.json` is a short lowercase name,
+  /// according to the npm modules spec. You should usually also specify a
+  /// `productName` field, which is your application's full capitalized name,
+  /// and which will be preferred over `name` by Electron.
+  abstract name: string with get, set
+  /// The user agent string Electron will use as a global fallback.
+  ///
+  /// This is the user agent that will be used when no user agent is set at the
+  /// webContents or session level. It is useful for ensuring that your entire
+  /// app has the same user agent. Set to a custom value as early as possible in
+  /// your app's initialization to ensure that your overridden value is used.
+  abstract userAgentFallback: string with get, set
   /// A `Boolean` which when `true` disables the overrides that Electron has in
   /// place to ensure renderer processes are restarted on every navigation. The
   /// current default value for this property is `false`.
@@ -1331,26 +1418,55 @@ type BrowserViewStatic =
 [<StringEnum; RequireQualifiedAccess>]
 type AlwaysOnTopLevel =
   | Normal
+  /// Note: The window is placed below the Dock on macOS and below the taskbar
+  /// on Windows.
   | Floating
+  /// Note: The window is placed below the Dock on macOS and below the taskbar
+  /// on Windows.
   | [<CompiledName "torn-off-menu">] TornOffMenu
+  /// Note: The window is placed below the Dock on macOS and below the taskbar
+  /// on Windows.
   | [<CompiledName "modal-panel">] ModalPanel
+  /// Note: The window is placed below the Dock on macOS and below the taskbar
+  /// on Windows.
   | [<CompiledName "main-menu">] MainMenu
+  /// Note: The window is placed below the Dock on macOS and below the taskbar
+  /// on Windows.
   | Status
+  /// Note: The window is placed above the Dock on macOS and above the taskbar
+  /// on Windows.
   | [<CompiledName "pop-up-menu">] PopUpMenu
   | [<CompiledName "screen-saver">] ScreenSaver
 
 [<StringEnum; RequireQualifiedAccess>]
 type VibrancyType =
-  | [<CompiledName("appearance-based")>] AppearanceBased
-  | Light
-  | Dark
+  | [<CompiledName("appearance-based")>]
+    [<Obsolete("Will be removed in an upcoming version of macOS.")>]
+    AppearanceBased
+  | [<Obsolete("Will be removed in an upcoming version of macOS.")>]
+    Light
+  | [<Obsolete("Will be removed in an upcoming version of macOS.")>]
+    Dark
   | [<CompiledName("titlebar")>] TitleBar
   | Selection
   | Menu
   | Popover
   | Sidebar
-  | [<CompiledName("medium-light")>] MediumLight
-  | [<CompiledName("ultra-dark")>] UltraDark
+  | [<CompiledName("medium-light")>]
+    [<Obsolete("Will be removed in an upcoming version of macOS.")>]
+    MediumLight
+  | [<CompiledName("ultra-dark")>]
+    [<Obsolete("Will be removed in an upcoming version of macOS.")>]
+    UltraDark
+  | Header
+  | Sheet
+  | Window
+  | Hud
+  | [<CompiledName("fullscreen-ui")>] FullscreenUi
+  | Tooltip
+  | Content
+  | [<CompiledName("under-window")>] UnderWindow
+  | [<CompiledName("under-page")>] UnderPage
 
 [<StringEnum; RequireQualifiedAccess>]
 type SwipeDirection =
@@ -1363,7 +1479,7 @@ type BrowserWindow =
   inherit EventEmitter<BrowserWindow>
   /// Emitted when the document changed its title, calling
   /// event.preventDefault() will prevent the native window's title from
-  /// changing. `explicitSet` is false when title is synthesized from file url.
+  /// changing. `explicitSet` is false when title is synthesized from file URL.
   ///
   /// Parameters:
   ///
@@ -1460,6 +1576,10 @@ type BrowserWindow =
   [<Emit "$0.removeListener('hide',$1)">] abstract removeListenerHide: listener: (Event -> unit) -> BrowserWindow
   /// Emitted when the web page has been rendered (while not being shown) and
   /// window can be displayed without a visual flash.
+  ///
+  /// Please note that using this event implies that the renderer will be
+  /// considered "visible" and paint even though `show` is false. This event
+  /// will never fire if you use `paintWhenInitiallyHidden: false`.
   [<Emit "$0.on('ready-to-show',$1)">] abstract onReadyToShow: listener: (Event -> unit) -> BrowserWindow
   /// See onReadyToShow.
   [<Emit "$0.once('ready-to-show',$1)">] abstract onceReadyToShow: listener: (Event -> unit) -> BrowserWindow
@@ -1656,6 +1776,18 @@ type BrowserWindow =
   [<Emit "$0.addListener('swipe',$1)">] abstract addListenerSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
   /// See onSwipe.
   [<Emit "$0.removeListener('swipe',$1)">] abstract removeListenerSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
+  /// [macOS] Emitted on trackpad rotation gesture. Continually emitted until
+  /// rotation gesture is ended. The `rotation` value on each emission is the
+  /// angle in degrees rotated since the last emission. The last emitted event
+  /// upon a rotation gesture will always be of value 0. Counter-clockwise
+  /// rotation values are positive, while clockwise ones are negative.
+  [<Emit "$0.on('rotate-gesture',$1)">] abstract onRotateGesture: listener: (Event -> float -> unit) -> BrowserWindow
+  /// See onRotateGesture.
+  [<Emit "$0.once('rotate-gesture',$1)">] abstract onceRotateGesture: listener: (Event -> float -> unit) -> BrowserWindow
+  /// See onRotateGesture.
+  [<Emit "$0.addListener('rotate-gesture',$1)">] abstract addListenerRotateGesture: listener: (Event -> float -> unit) -> BrowserWindow
+  /// See onRotateGesture.
+  [<Emit "$0.removeListener('rotate-gesture',$1)">] abstract removeListenerRotateGesture: listener: (Event -> float -> unit) -> BrowserWindow
   /// [macOS] Emitted when the window opens a sheet.
   [<Emit "$0.on('sheet-begin',$1)">] abstract onSheetBegin: listener: (Event -> unit) -> BrowserWindow
   /// See onSheetBegin.
@@ -1685,6 +1817,36 @@ type BrowserWindow =
   abstract webContents: WebContents
   /// An integer representing the unique ID of the window.
   abstract id: int
+  /// Determines whether the window menu bar should hide itself automatically.
+  /// Once set, the menu bar will only show when users press the single Alt key.
+  ///
+  /// If the menu bar is already visible, setting this property to true won't
+  /// hide it immediately.
+  abstract autoHideMenuBar: bool with get, set
+  /// Determines whether the window can be manually minimized by user.
+  ///
+  /// On Linux the setter is a no-op, although the getter returns `true`.
+  abstract minimizable: bool with get, set
+  /// Determines whether the window can be manually maximized by user.
+  ///
+  /// On Linux the setter is a no-op, although the getter returns `true`.
+  abstract maximizable: bool with get, set
+  /// Determines whether the maximize/zoom window button toggles fullscreen mode
+  /// or maximizes the window.
+  abstract fullScreenable: bool with get, set
+  /// Determines whether the window can be manually resized by user.
+  abstract resizable: bool with get, set
+  /// Determines whether the window can be manually closed by user.
+  ///
+  /// On Linux the setter is a no-op, although the getter returns `true`.
+  abstract closable: bool with get, set
+  /// Determines Whether the window can be moved by user.
+  ///
+  /// On Linux the setter is a no-op, although the getter returns `true`.
+  abstract movable: bool with get, set
+  /// [macOS] Determines whether the window is excluded from the application’s
+  /// Windows menu. `false` by default.
+  abstract excludedFromShownWindowsMenu: bool with get, set
   /// Force closing the window, the `unload` and `beforeunload` event won't be
   /// emitted for the web page, and `close` event will also not be emitted for
   /// this window, but it guarantees the `closed` event will be emitted.
@@ -1765,7 +1927,7 @@ type BrowserWindow =
   /// <param name="ertraSize">
   ///   The extra size not to be included while maintaining the aspect ratio.
   /// </param>
-  abstract setAspectRatio: aspectRatio: float * extraSize: Size -> unit
+  abstract setAspectRatio: aspectRatio: float * ?extraSize: Size -> unit
   /// Sets the background color of the window as a hexadecimal value, like
   /// #66CD00 or #FFF or #80FFFFFF (alpha is supported if transparent is true).
   /// Default is #FFF (white).
@@ -1787,9 +1949,10 @@ type BrowserWindow =
   /// [macOS] Closes the currently open Quick Look panel.
   abstract closeFilePreview: unit -> unit
   /// Resizes and moves the window to the supplied bounds. Any properties that
-  /// are not supplied will default to their current values. animate is macOS
+  /// are not supplied will default to their current values. `animate` is macOS
   /// only.
   abstract setBounds: bounds: Rectangle * ?animate: bool -> unit
+  /// Returns the bounds of this BrowserView instance.
   abstract getBounds: unit -> Rectangle
   /// Resizes and moves the window's client area (e.g. the web page) to the
   /// supplied bounds. animate is macOS only.
@@ -1804,6 +1967,8 @@ type BrowserWindow =
   abstract getNormalBounds: unit -> Rectangle
   /// Disable or enable the window.
   abstract setEnabled: enable: bool -> unit
+  /// Indicates whether the window is enabled.
+  abstract isEnabled: unit -> bool
   /// Resizes the window. If width or height are below any set minimum size
   /// constraints the window will snap to its minimum size. animate is macOS only.
   abstract setSize: width: int * height: int * ?animate: bool -> unit
@@ -1823,42 +1988,61 @@ type BrowserWindow =
   /// Returns the window's maximum width and height.
   abstract getMaximumSize: unit -> int * int
   /// Sets whether the window can be manually resized by user.
+  [<Obsolete("Use the 'resizable' property.")>]
   abstract setResizable: resizable: bool -> unit
   /// Indicates whether the window can be manually resized by user.
+  [<Obsolete("Use the 'resizable' property.")>]
   abstract isResizable: unit -> bool
   /// [macOS, Windows] Sets whether the window can be moved by user. On Linux
   /// does nothing.
+  [<Obsolete("Use the 'movable' property.")>]
   abstract setMovable: movable: bool -> unit
   /// [macOS, Windows] Indicates whether the window can be moved by user. On
   /// Linux always returns true.
+  [<Obsolete("Use the 'movable' property.")>]
   abstract isMovable: unit -> bool
   /// [macOS, Windows] Sets whether the window can be manually minimized by
   /// user. On Linux does nothing.
+  [<Obsolete("Use the 'minimizable' property.")>]
   abstract setMinimizable: minimizable: bool -> unit
   /// [macOS, Windows] Indicates whether the window can be manually minimized by
   /// user. On Linux always returns true.
+  [<Obsolete("Use the 'minimizable' property.")>]
   abstract isMinimizable: unit -> bool
   /// [macOS, Windows] Sets whether the window can be manually maximized by
   /// user. On Linux does nothing.
+  [<Obsolete("Use the 'maximizable' property.")>]
   abstract setMaximizable: maximizable: bool -> unit
   /// [Windows, macOS] Indicates whether the window can be manually maximized by
   /// user. On Linux always returns true.
+  [<Obsolete("Use the 'maximizable' property.")>]
   abstract isMaximizable: unit -> bool
   /// Sets whether the maximize/zoom window button toggles fullscreen mode or
   /// maximizes the window.
+  [<Obsolete("Use the 'fullScreenable' property.")>]
   abstract setFullScreenable: fullscreenable: bool -> unit
   /// Indicates whether the maximize/zoom window button toggles fullscreen mode
   /// or maximizes the window.
+  [<Obsolete("Use the 'fullScreenable' property.")>]
   abstract isFullScreenable: unit -> bool
   /// [macOS, Windows] Sets whether the window can be manually closed by user.
   /// On Linux does nothing.
+  [<Obsolete("Use the 'closable' property.")>]
   abstract setClosable: closable: bool -> unit
   /// [macOS, Windows] Indicates whether the window can be manually closed by
   /// user. On Linux always returns true.
+  [<Obsolete("Use the 'closable' property.")>]
   abstract isClosable: unit -> bool
   /// Sets whether the window should show always on top of other windows. After
   /// setting this, the window is still a normal window, not a toolbox window
   /// which can not be focused on.
+  ///
+  /// `level` is macOS/Windows only. The default level is `Floating` when `flag`
+  /// is `true`. The `level` is reset to `Normal` when the `flag` is `false`.
+  /// Note that from floating to status included, the window is placed below the
+  /// Dock on macOS and below the taskbar on Windows. From pop-up-menu to a
+  /// higher it is shown above the Dock on macOS and above the taskbar on
+  /// Windows. See the macOS docs for more details.
   abstract setAlwaysOnTop: flag: bool * ?level: AlwaysOnTopLevel * ?relativeLevel: int -> unit
   /// Indicates whether the window is always on top of other windows.
   abstract isAlwaysOnTop: unit -> bool
@@ -1946,7 +2130,7 @@ type BrowserWindow =
   ///
   /// On Linux platform, only supports Unity desktop environment, you need to
   /// specify the *.desktop file name to desktopName field in package.json. By
-  /// default, it will assume app.getName().desktop.
+  /// default, it will assume `{app.name}.desktop`.
   ///
   /// On Windows, a mode can be passed. If you call setProgressBar without a
   /// mode set (but with a value within the valid range), ProgressBarMode.Normal
@@ -1972,8 +2156,10 @@ type BrowserWindow =
   /// always returns true.
   abstract hasShadow: unit -> bool
   /// [Windows, macOS] Sets the opacity of the window. On Linux does nothing.
+  /// Out of bound number values are clamped to the [0, 1] range.
   abstract setOpacity: opacity: float -> unit
-  /// [Windows, macOS] Returns a number between 0.0 (fully transparent) and 1.0 (fully opaque).
+  /// Returns a number between 0.0 (fully transparent) and 1.0 (fully opaque).
+  /// On Linux, always returns 1.
   abstract getOpacity: unit -> float
   /// [Windows, Linux] Sets a shape on the window. Passing an empty array
   /// reverts the window to being rectangular.
@@ -2020,8 +2206,10 @@ type BrowserWindow =
   ///
   /// If the menu bar is already visible, calling setAutoHideMenuBar(true) won't
   /// hide it immediately.
+  [<Obsolete("Use the 'autoHideMenuBar' property.")>]
   abstract setAutoHideMenuBar: hide: bool -> unit
   /// Indicates whether menu bar automatically hides itself.
+  [<Obsolete("Use the 'autoHideMenuBar' property.")>]
   abstract isMenuBarAutoHide: unit -> bool
   /// [Windows, Linux] Sets whether the menu bar should be visible. If the menu
   /// bar is auto-hide, users can still bring up the menu bar by pressing the
@@ -2050,6 +2238,8 @@ type BrowserWindow =
   /// Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
   abstract setContentProtection: enable: bool -> unit
   /// [Windows] Changes whether the window can be focused.
+  ///
+  /// On macOS it does not remove the focus from the window.
   abstract setFocusable: focusable: bool -> unit
   /// Sets parent as current window's parent window, passing None will turn
   /// current window into a top-level window.
@@ -2090,7 +2280,7 @@ type BrowserWindow =
   abstract setTouchBar: touchBar: TouchBar option -> unit
   /// Attach browserView to win. If there is some other browserViews was
   /// attached they will be removed from this window.
-  abstract setBrowserView: browserView: BrowserView -> unit
+  abstract setBrowserView: browserView: BrowserView option -> unit
   /// Returns an BrowserView what is attached. Returns None if none is attached.
   /// Throw error if multiple BrowserViews is attached.
   abstract getBrowserView: unit -> BrowserView option
@@ -2098,15 +2288,12 @@ type BrowserWindow =
   /// views.
   abstract addBrowserView: browserView: BrowserView -> unit
   abstract removeBrowserView: browserView: BrowserView -> unit
-  /// Returns array of BrowserView what was an attached with addBrowserView or
-  /// setBrowserView.
+  /// Returns array of BrowserView what was an attached with `addBrowserView` or
+  /// `setBrowserView`.
   ///
   /// Note: The BrowserView API is currently experimental and may change or be
   /// removed in future Electron releases.
   abstract getBrowserViews: unit -> BrowserView []
-  /// [macOS] Determines whether the window is excluded from the application’s
-  /// Windows menu. `false` by default.
-  abstract excludedFromShownWindowsMenu: bool with get, set
 
 type BrowserWindowStatic =
   /// Instantiates a BrowserWindow.
@@ -2179,7 +2366,7 @@ type BrowserWindowProxy =
   abstract print: unit -> unit
   /// Sends a message to the child window with the specified origin or * for no
   /// origin preference.
-  abstract postMessage: message: string * targetOrigin: string -> unit
+  abstract postMessage: message: 'a * targetOrigin: string -> unit
   /// Set to true after the child window gets closed.
   abstract closed: bool
 
@@ -2307,13 +2494,12 @@ type ClientRequest =
   /// request body as data will be streamed in small chunks instead of being
   /// internally buffered inside Electron process memory.
   abstract chunkedEncoding: bool with get, set
-  /// Adds an extra HTTP header. The header name will issued as it is without
+  /// Adds an extra HTTP header. The header name will be issued as-is without
   /// lowercasing. It can be called only before first write. Calling this method
-  /// after the first write will throw an error. If the passed value is not a
-  /// string, its toString() method will be called to obtain the final value.
-  abstract setHeader: name: string * value: obj -> unit
+  /// after the first write will throw an error.
+  abstract setHeader: name: string * value: string -> unit
   /// Returns the value of a previously set extra header.
-  abstract getHeader: name: string -> obj
+  abstract getHeader: name: string -> string
   /// Removes a previously set extra header name. This method can be called only
   /// before first write. Trying to call it after the first write will throw an
   /// error.
@@ -2428,53 +2614,72 @@ type ClipboardType =
 
 type Clipboard =
   inherit EventEmitter<Clipboard>
-  /// Returns the content in the clipboard as plain text.
+  /// Returns the content in the clipboard as plain text. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract readText: ?``type``: ClipboardType -> string
-  /// Writes the `text` into the clipboard as plain text.
+  /// Writes the `text` into the clipboard as plain text. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract writeText: text: string * ?``type``: ClipboardType -> unit
-  /// Returns the content in the clipboard as markup.
+  /// Returns the content in the clipboard as markup. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract readHTML: ?``type``: ClipboardType -> string
-  /// Writes `markup` to the clipboard.
+  /// Writes `markup` to the clipboard. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract writeHTML: markup: string * ?``type``: ClipboardType -> unit
-  /// Returns the image content in the clipboard.
+  /// Returns the image content in the clipboard. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract readImage: ?``type``: ClipboardType -> NativeImage
-  /// Writes `image` to the clipboard.
+  /// Writes `image` to the clipboard. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract writeImage: image: NativeImage * ?``type``: ClipboardType -> unit
-  /// Returns the content in the clipboard as RTF.
+  /// Returns the content in the clipboard as RTF. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract readRTF: ?``type``: ClipboardType -> string
-  /// Writes the `text` into the clipboard in RTF.
+  /// Writes the `text` into the clipboard in RTF. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract writeRTF: text: string * ?``type``: ClipboardType -> unit
   /// [macOS, Windows] Returns an object containing title and url keys
   /// representing the bookmark in the clipboard. The title and url values will
   /// be empty strings when the bookmark is unavailable.
   abstract readBookmark: unit -> ClipboardBookmark
   /// [macOS, Windows] Writes the title and url into the clipboard as a
-  /// bookmark.
+  /// bookmark. The default `type` is `ClipboardType.Clipboard`.
   ///
   /// Note: Most apps on Windows don't support pasting bookmarks into them so
   /// you can use clipboard.write to write both a bookmark and fallback text to
   /// the clipboard.
   abstract writeBookmark: title: string * url: string * ?``type``: ClipboardType -> unit
-  /// [macOS] Returns the text on the find pasteboard. This method uses
-  /// synchronous IPC when called from the renderer process. The cached value is
-  /// reread from the find pasteboard whenever the application is activated.
+  /// [macOS] Returns the text on the find pasteboard, which is the pasteboard
+  /// that holds information about the current state of the active application’s
+  /// find panel.
+  ///
+  /// This method uses synchronous IPC when called from the renderer process.
+  /// The cached value is reread from the find pasteboard whenever the
+  /// application is activated.
   abstract readFindText: unit -> string
-  /// [macOS] Writes the `text` into the find pasteboard as plain text. This
-  /// method uses synchronous IPC when called from the renderer process.
+  /// [macOS] Writes the `text` into the find pasteboard (the pasteboard that
+  /// holds information about the current state of the active application’s find
+  /// panel) as plain text. This method uses synchronous IPC when called from
+  /// the renderer process.
   abstract writeFindText: text: string -> unit
-  /// Clears the clipboard content.
+  /// Clears the clipboard content.  The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract clear: ?``type``: ClipboardType -> unit
-  /// Returns the supported formats for the clipboard.
+  /// Returns the supported formats for the clipboard.  The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract availableFormats: ?``type``: ClipboardType -> string []
-  /// Returns a value indicating whether the clipboard supports the specified format.
+  /// Returns a value indicating whether the clipboard supports the specified
+  /// format.  The default `type` is `ClipboardType.Clipboard`.
   abstract has: format: string * ?``type``: ClipboardType -> bool
   /// Reads `format` type from the clipboard.
   abstract read: format: string -> string
   /// Reads `format` type from the clipboard.
   abstract readBuffer: format: string -> Buffer
-  /// Writes the `buffer` into the clipboard as `format`.
+  /// Writes the `buffer` into the clipboard as `format`. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract writeBuffer: format: string * buffer: Buffer * ?``type``: ClipboardType -> unit
-  /// Writes `data` to the clipboard.
+  /// Writes `data` to the clipboard. The default `type` is
+  /// `ClipboardType.Clipboard`.
   abstract write: data: ClipboardData * ?``type``: ClipboardType -> unit
 
 type TraceBufferUsage =
@@ -2484,7 +2689,8 @@ type TraceBufferUsage =
 type ContentTracing =
   inherit EventEmitter<ContentTracing>
   /// Get a set of category groups. The category groups can change as new code
-  /// paths are reached.
+  /// paths are reached. See also the [list of built-in tracing
+  /// categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h).
   ///
   /// The returned promise resolves with an array of category groups once all
   /// child processes have acknowledged the getCategories request.
@@ -2494,6 +2700,9 @@ type ContentTracing =
   /// Recording begins immediately locally and asynchronously on child processes
   /// as soon as they receive the EnableRecording request.
   ///
+  /// If a recording is already running, the promise will be immediately
+  /// resolved, as only one trace operation can be in progress at a time.
+  ///
   /// The returned promise is resolved once all child processes have
   /// acknowledged the `startRecording` request.
   abstract startRecording: options: TraceCategoriesAndOptions -> Promise<unit>
@@ -2501,6 +2710,9 @@ type ContentTracing =
   ///
   /// Recording begins immediately locally and asynchronously on child processes
   /// as soon as they receive the EnableRecording request.
+  ///
+  /// If a recording is already running, the promise will be immediately
+  /// resolved, as only one trace operation can be in progress at a time.
   ///
   /// The returned promise is resolved once all child processes have
   /// acknowledged the `startRecording` request.
@@ -2510,15 +2722,17 @@ type ContentTracing =
   /// Child processes typically cache trace data and only rarely flush and send
   /// trace data back to the main process. This helps to minimize the runtime
   /// overhead of tracing since sending trace data over IPC can be an expensive
-  /// operation. So, to end tracing, we must asynchronously ask all child
+  /// operation. So, to end tracing, Chromium asynchronously asks all child
   /// processes to flush any pending trace data.
   ///
-  /// Trace data will be written into `resultFilePath` if it is not empty or
-  /// into a temporary file.
+  /// Trace data will be written into `resultFilePath`. If `resultFilePath` is
+  /// empty or not provided, trace data will be written to a temporary file, and
+  /// the path will be returned in the promise.
   ///
-  /// The returned promise resolves with a file that contains the traced data
-  /// once all child processes have acknowledged the stopRecording request
-  abstract stopRecording: resultFilePath: string -> Promise<string>
+  /// The returned promise resolves with a path to a file that contains the
+  /// traced data once all child processes have acknowledged the `stopRecording`
+  /// request
+  abstract stopRecording: ?resultFilePath: string -> Promise<string>
   /// Get the maximum usage across processes of trace buffer as a percentage of
   /// the full state.
   abstract getTraceBufferUsage: unit -> Promise<TraceBufferUsage>
@@ -2593,7 +2807,7 @@ type CPUUsage =
   /// Percentage of CPU used since the last call to `getCPUUsage`. First call
   /// returns 0.
   abstract percentCPUUsage: float
-  /// The number of average idle cpu wakeups per second since the last call to
+  /// The number of average idle CPU wakeups per second since the last call to
   /// `getCPUUsage`. First call returns 0. Will always return 0 on Windows.
   abstract idleWakeupsPerSecond: float
 
@@ -2652,8 +2866,9 @@ type CustomScheme =
 
 type Debugger =
   inherit EventEmitter<Debugger>
-  /// Emitted when debugging session is terminated. This happens either when
-  /// webContents is closed or devtools is invoked for the attached webContents.
+  /// Emitted when the debugging session is terminated. This happens either when
+  /// `webContents` is closed or devtools is invoked for the attached
+  /// `webContents`.
   ///
   /// Parameters:
   ///
@@ -2666,7 +2881,7 @@ type Debugger =
   [<Emit "$0.addListener('detach',$1)">] abstract addListenerDetach: listener: (Event -> string -> unit) -> Debugger
   /// See onDetach.
   [<Emit "$0.removeListener('detach',$1)">] abstract removeListenerDetach: listener: (Event -> string -> unit) -> Debugger
-  /// Emitted whenever debugging target issues instrumentation event.
+  /// Emitted whenever the debugging target issues an instrumentation event.
   ///
   /// Parameters:
   ///
@@ -2913,12 +3128,14 @@ type DownloadItem =
   ///
   /// The API is only available in session's `will-download` callback function.
   /// If user doesn't set the save path via the API, Electron will use the
-  /// original routine to determine the save path (usually prompts a save
-  /// dialog).
+  /// original routine to determine the save path; this usually prompts a save
+  /// dialog.
+  [<Obsolete("Use the 'savePath' property instead.")>]
   abstract setSavePath: path: string -> unit
   /// Returns the save path of the download item. This will be either the path
   /// set via downloadItem.setSavePath(path) or the path selected from the shown
   /// save dialog.
+  [<Obsolete("Use the 'savePath' property instead.")>]
   abstract getSavePath: unit -> string
   /// Set the save file dialog options.
   ///
@@ -2944,7 +3161,7 @@ type DownloadItem =
   abstract canResume: unit -> bool
   /// Cancels the download operation.
   abstract cancel: unit -> unit
-  /// Returns the origin url where the item is downloaded from.
+  /// Returns the origin URL where the item is downloaded from.
   abstract getURL: unit -> string
   /// Returns the files mime type.
   abstract getMimeType: unit -> string
@@ -2966,7 +3183,7 @@ type DownloadItem =
   abstract getContentDisposition: unit -> string
   /// Returns the current state.
   abstract getState: unit -> DownloadItemState
-  /// Returns the complete url chain of the item including any redirects.
+  /// Returns the complete URL chain of the item including any redirects.
   ///
   /// May be useful to resume a cancelled item when session is restarted.
   abstract getURLChain: unit -> string []
@@ -2983,6 +3200,13 @@ type DownloadItem =
   ///
   /// May be useful to resume a cancelled item when session is restarted.
   abstract getStartTime: unit -> float
+  /// Determines the save file path of the download item.
+  ///
+  /// The property is only available in session's `will-download` callback
+  /// function. If user doesn't set the save path via the property, Electron
+  /// will use the original routine to determine the save path; this usually
+  /// prompts a save dialog.
+  abstract savePath: string with get, set
   
 
 type FileFilter =
@@ -3135,10 +3359,7 @@ type IncomingMessage =
   abstract statusCode: int
   /// The HTTP status message.
   abstract statusMessage: string
-  /// the response HTTP headers. The headers object is formatted as follows: 1)
-  /// All header names are lowercased. 2) Each header name produces an
-  /// array-valued property on the headers object. 3) Each header value is
-  /// pushed into the array associated with its header name.
+  /// the response HTTP headers. The object has lower-case string[] members.
   abstract headers: obj option
   /// The HTTP protocol version number. Typical values are '1.0' or '1.1'.
   /// Additionally `httpVersionMajor` and `httpVersionMinor` are two
@@ -3174,10 +3395,40 @@ type IpcMain =
   /// removed.
   abstract once: channel: string * listener: (IpcMainEvent -> obj [] -> unit) -> IpcMain
   /// Removes listeners of the specified channel.
-  abstract removeAllListeners: channel: string -> IpcMain
+  abstract removeAllListeners: ?channel: string -> IpcMain
   /// Removes the specified listener from the listener array for the specified
   /// channel.
   abstract removeListener: channel: string * listener: (IpcMainEvent -> obj [] -> unit) -> IpcMain
+  /// Adds a handler for an `invoke`able IPC. This handler will be called
+  /// whenever a renderer calls `ipcRenderer.invoke(channel, ...args)`.
+  ///
+  /// If listener returns a `Promise`, the eventual result of the promise will
+  /// be returned as a reply to the remote caller. Otherwise, the return value
+  /// of the listener will be used as the value of the reply.
+  ///
+  /// The `event` that is passed as the first argument to the handler is the
+  /// same as that passed to a regular event listener. It includes information
+  /// about which WebContents is the source of the invoke request.
+  abstract handle: channel: string * listener: (IpcMainInvokeEvent -> obj [] -> 'a) -> unit
+  /// Adds a handler for an `invoke`able IPC. This handler will be called
+  /// whenever a renderer calls `ipcRenderer.invoke(channel, ...args)`.
+  ///
+  /// If listener returns a `Promise`, the eventual result of the promise will
+  /// be returned as a reply to the remote caller. Otherwise, the return value
+  /// of the listener will be used as the value of the reply.
+  ///
+  /// The `event` that is passed as the first argument to the handler is the
+  /// same as that passed to a regular event listener. It includes information
+  /// about which WebContents is the source of the invoke request.
+  abstract handle: channel: string * listener: (IpcMainInvokeEvent -> obj [] -> Promise<'a>) -> unit
+  /// Handles a single `invoke`able IPC message, then removes the listener. See
+  /// `handle`.
+  abstract handleOnce: channel: string * listener: (IpcMainInvokeEvent -> obj [] -> 'a) -> unit
+  /// Handles a single `invoke`able IPC message, then removes the listener. See
+  /// `handle`.
+  abstract handleOnce: channel: string * listener: (IpcMainInvokeEvent -> obj [] -> Promise<'a>) -> unit
+  /// Removes any handler for `channel`, if present.
+  abstract removeHandler: channel: string -> unit
 
 type IpcRenderer =
   inherit EventEmitter<IpcRenderer>
@@ -3199,6 +3450,14 @@ type IpcRenderer =
   ///
   /// The main process handles it by listening for channel with ipcMain module.
   abstract send: channel: string * [<ParamArray>] args: obj [] -> unit
+  /// Send a message to the main process asynchronously via `channel` and expect
+  /// an asynchronous result. Arguments will be serialized as JSON internally
+  /// and hence no functions or prototype chain will be included.
+  ///
+  /// The main process should listen for `channel` with `ipcMain.handle()`.
+  ///
+  /// Returns a promise that resolves with the response from the main process.
+  abstract invoke: channel: string * [<ParamArray>] args: obj [] -> unit
   /// Send a message to the main process synchronously via channel, you can also
   /// send arbitrary arguments. Arguments will be serialized in JSON internally
   /// and hence no functions or prototype chain will be included.
@@ -3351,6 +3610,8 @@ type MenuItem =
   abstract icon: U2<NativeImage, string> option with get, set
   /// The item's sublabel, this property can be dynamically changed.
   abstract sublabel: string option with get, set
+  /// [macOS] The item's hover text.
+  abstract toolTip: string option with get, set
   /// Indicates whether the item is enabled, this property can be dynamically
   /// changed.
   abstract enabled: bool option with get, set
@@ -3416,8 +3677,10 @@ type NativeImage =
   abstract isEmpty: unit -> bool
   abstract getSize: unit -> Size
   /// Marks the image as a template image.
+  [<Obsolete("Use the 'isMacTemplateImage' property instead.")>]
   abstract setTemplateImage: option: bool -> unit
   /// Indicates whether the image is a template image.
+  [<Obsolete("Use the 'isMacTemplateImage' property instead.")>]
   abstract isTemplateImage: unit -> bool
   /// Returns a cropped image.
   abstract crop: rect: Rectangle -> NativeImage
@@ -3432,6 +3695,11 @@ type NativeImage =
   /// to explicitly add different scale factor representations to an image. This
   /// can be called on empty images.
   abstract addRepresentation: options: AddRepresentationOptions -> unit
+  /// Determines whether the image is considered a [template
+  /// image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
+  ///
+  /// Please note that this property only has an effect on macOS.
+  abstract isMacTemplateImage: bool with get, set
 
 type NativeImageStatic =
   /// Creates an empty NativeImage instance.
@@ -3471,6 +3739,66 @@ type NativeImageStatic =
   /// Electron documentation of this method for more information.
   abstract createFromNamedImage: imageName: string * hslShift: float * float * float -> NativeImage
 
+[<StringEnum; RequireQualifiedAccess>]
+type ThemeSource =
+  | System
+  | Light
+  | Dark
+
+type NativeTheme =
+  inherit EventEmitter<NativeTheme>
+  /// Emitted when the notification is shown to the user, note this could be
+  /// fired multiple times as a notification can be shown multiple times through
+  /// the show() method.
+  [<Emit "$0.on('updated',$1)">] abstract onUpdated: listener: (Event -> unit) -> Notification
+  /// See onUpdated.
+  [<Emit "$0.once('updated',$1)">] abstract onceUpdated: listener: (Event -> unit) -> Notification
+  /// See onUpdated.
+  [<Emit "$0.addListener('updated',$1)">] abstract addListenerUpdated: listener: (Event -> unit) -> Notification
+  /// See onUpdated.
+  [<Emit "$0.removeListener('updated',$1)">] abstract removeListenerUpdated: listener: (Event -> unit) -> Notification
+  /// Indicates whether the OS / Chromium currently has a dark mode enabled or
+  /// is being instructed to show a dark-style UI. If you want to modify this
+  /// value you should use `nativeTheme.themeSource`.
+  abstract shouldUseDarkColors: bool
+  /// Override the value that Chromium has chosen to use internally.
+  ///
+  /// Setting this property to system will remove the override and everything
+  /// will be reset to the OS default. By default `themeSource` is `system`.
+  ///
+  /// Setting this to ThemeSource.Dark has the following effects:
+  ///
+  ///  - `nativeTheme.shouldUseDarkColors` will be `false` when accessed
+  ///  - Any UI Electron renderers on Linux and Windows including context menus, devtools, etc. will use the light UI.
+  ///  - Any UI the OS renders on macOS including menus, window frames, etc. will use the light UI.
+  ///  - The `prefers-color-scheme` CSS query will match `light` mode.
+  ///  - The `updated` event will be emitted
+  ///
+  /// Setting this to ThemeSource.Light has the following effects:
+  ///
+  ///  - `nativeTheme.shouldUseDarkColors` will be `true` when accessed
+  ///  - Any UI Electron renderers on Linux and Windows including context menus, devtools, etc. will use the dark UI.
+  ///  - Any UI the OS renders on macOS including menus, window frames, etc. will use the dark UI.
+  ///  - The `prefers-color-scheme` CSS query will match `dark` mode.
+  ///  - The `updated` event will be emitted
+  ///
+  /// The usage of this property should align with a classic "dark mode" state machine in your application where the user has three options.
+  ///
+  ///  - Follow OS --> `ThemeSource.System`
+  ///  - Dark Mode --> `ThemeSource.Dark`
+  ///  - Light Mode --> `ThemeSource.Light`
+  ///
+  /// Your application should then always use `shouldUseDarkColors` to
+  /// determine what CSS to apply.
+  abstract themeSource: ThemeSource with get, set
+  /// Indicates whether the OS / Chromium currently has high-contrast mode
+  /// enabled or is being instructed to show a high-constrast UI.
+  abstract shouldUseHighContrastColors: bool
+  /// Indicates whether the OS / Chromium currently has an inverted color scheme
+  /// or is being instructed to use an inverted color scheme.
+  abstract shouldUseInvertedColorScheme: bool
+  
+
 type Net =
   inherit EventEmitter<Net>
   /// Creates a ClientRequest instance using the provided options which are
@@ -3484,10 +3812,30 @@ type Net =
   /// according to the specified protocol scheme in the options object.
   abstract request: options: string -> ClientRequest
 
+[<StringEnum; RequireQualifiedAccess>]
+type NetLogCaptureMode =
+  | Default
+  | IncludeSensitive
+  | Everything
+
+type NetLogStartLoggingOptions =
+  /// What kinds of data should be captured. By default, only metadata about
+  /// requests will be captured. Setting this to
+  /// `NetLogCaptureMode.IncludeSensitive` will include cookies and
+  /// authentication data. Setting it to `NetLogCaptureMode.Everything` will
+  /// include all bytes transferred on sockets.
+  abstract captureMode: NetLogCaptureMode with get, set
+  /// When the log grows beyond this size, logging will automatically stop.
+  /// Defaults to unlimited.
+  abstract maxFileSize: float with get, set
+
+
 type NetLog =
   inherit EventEmitter<NetLog>
   /// Starts recording network events to `path`.
-  abstract startLogging: path: string -> unit
+  ///
+  /// The returned promise resolves when the net log has begun recording.
+  abstract startLogging: path: string * ?options: NetLogStartLoggingOptions -> Promise<unit>
   /// Stops recording network events. If not called, net logging will
   /// automatically end when app quits.
   ///
@@ -3497,6 +3845,7 @@ type NetLog =
   /// Indicates whether network logs are recorded.
   abstract currentlyLogging: bool
   /// The path to the current log file.
+  [<Obsolete>]
   abstract currentlyLoggingPath: string option
 
 type Notification =
@@ -3565,12 +3914,34 @@ type NotificationStatic =
   /// Indicates whether or not desktop notifications are supported on the
   /// current system
   abstract isSupported: unit -> bool
+  /// The title of the notification.
+  abstract title: string option with get, set
+  /// The subtitle of the notification.
+  abstract subtitle: string option with get, set
+  /// The body of the notification.
+  abstract body: string option with get, set
+  /// The reply placeholder of the notification.
+  abstract replyPlaceholder: string option with get, set
+  /// The sound of the notification.
+  abstract sound: string option with get, set
+  /// The close button text of the notification.
+  abstract closeButtonText: string option with get, set
+  /// Indicates whether the notification is silent.
+  abstract silent: bool with get, set
+  /// Indicates whether the notification has a reply action.
+  abstract hasReply: bool with get, set
+  /// The actions of the notification.
+  abstract actions: NotificationAction [] with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type NotificationActionType =
+  | Button
 
 type NotificationAction =
-  /// The type of action, can be button.
-  abstract ``type``: string with get, set
+  /// The type of action, can be `button`.
+  abstract ``type``: NotificationActionType with get, set
   /// The label for the given action.
-  abstract text: string with get, set
+  abstract text: string option with get, set
 
 type Point =
   abstract x: int with get, set
@@ -3777,6 +4148,10 @@ type Process =
   /// Returns an object with V8 heap statistics. Note that all statistics are
   /// reported in Kilobytes.
   abstract getHeapStatistics: unit -> HeapStatistics
+  /// Returns an object with Blink memory information. It can be useful for
+  /// debugging rendering / DOM related memory issues. Note that all values are
+  /// reported in Kilobytes.
+  abstract getBlinkMemoryInfo: unit -> BlinkMemoryInfo
   /// Returns an object giving memory usage statistics about the current
   /// process. Note that all statistics are reported in Kilobytes. This api
   /// should be called after app ready.
@@ -3809,6 +4184,24 @@ type ProcessMetricType =
   | [<CompiledName("Pepper Plugin Broker")>] PepperPluginBroker
   | [<CompiledName("Unknown")>] Unknown
 
+type MemoryInfo =
+  /// The amount of memory currently pinned to actual physical RAM.
+  abstract workingSetSize: int
+  /// The maximum amount of memory that has ever been pinned to actual physical
+  /// RAM.
+  abstract peakWorkingSetSize: int
+  /// [Windows] The amount of memory not shared by other processes, such as JS
+  /// heap or HTML content.
+  abstract privateBytes: int option
+
+[<StringEnum; RequireQualifiedAccess>]
+type ProcessIntegrityLevel =
+  | Untrusted
+  | Low
+  | Medium
+  | High
+  | Unknown
+
 type ProcessMetric =
   /// Process id of the process.
   abstract pid: int
@@ -3816,6 +4209,17 @@ type ProcessMetric =
   abstract ``type``: ProcessMetricType
   /// CPU usage of the process.
   abstract cpu: CPUUsage
+  /// Creation time for this process. The time is represented as number of
+  /// milliseconds since epoch. Since the `pid` can be reused after a process
+  /// dies, it is useful to use both the `pid` and the `creationTime` to
+  /// uniquely identify a process.
+  abstract creationTime: int
+  /// Memory information for the process.
+  abstract memory: MemoryInfo
+  /// [macOS, Windows] Whether the process is sandboxed on OS level.
+  abstract sandboxed: bool option
+  /// [Windows]
+  abstract integrityLevel: ProcessIntegrityLevel option
 
 type Product =
   /// The string that identifies the product to the Apple App Store.
@@ -3835,6 +4239,20 @@ type Product =
   /// Indicates whether the App Store has downloadable content for this product.
   /// true if at least one file has been associated with the product.
   abstract isDownloadable: bool
+
+type FilePathWithHeaders =
+  /// The path to the file to send.
+  abstract path: string
+  /// Additional headers to be sent. All members must be string.
+  abstract headers: obj
+
+type StringProtocolResponse =
+  /// MIME type of the response.
+  abstract mimeType: string with get, set
+  /// Charset of the response.
+  abstract charset: string with get, set
+  /// A string representing the response body.
+  abstract data: string option with get, set
 
 type Protocol =
   inherit EventEmitter<Protocol>
@@ -3885,7 +4303,30 @@ type Protocol =
   /// than protocols that follow the "generic URI syntax" like file:, so you
   /// probably want to call protocol.registerSchemesAsPrivileged to have your scheme
   /// treated as a standard scheme.
-  abstract registerFileProtocol: scheme: string * handler: (RegisterFileProtocolRequest -> (obj -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  abstract registerFileProtocol: scheme: string * handler: (RegisterFileProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Registers a protocol of scheme that will send the file as a response. The
+  /// handler will be called with handler(request, callback) when a request is
+  /// going to be created with scheme. completion will be called with
+  /// completion(None) when scheme is successfully registered or
+  /// completion(error) when failed.
+  ///
+  /// To handle the request, the handler's callback should be called with either
+  /// the file's path or an object that has a `path` property, e.g.
+  /// callback(filePath) or callback({ path: filePath }). The object may also
+  /// have a `headers` property which gives a map of headers to values for the
+  /// response headers, e.g. callback({ path: filePath, headers:
+  /// {"Content-Security-Policy": "default-src 'none'"]}).
+  ///
+  /// When callback is called with nothing, a number, or an object that has an
+  /// `error` property, the request will fail with the error number you
+  /// specified. For the available error numbers you can use, please see the net
+  /// error list.
+  ///
+  /// By default the scheme is treated like http:, which is parsed differently
+  /// than protocols that follow the "generic URI syntax" like file:, so you
+  /// probably want to call protocol.registerSchemesAsPrivileged to have your scheme
+  /// treated as a standard scheme.
+  abstract registerFileProtocol: scheme: string * handler: (RegisterFileProtocolRequest -> (FilePathWithHeaders -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
   /// Registers a protocol of `scheme` that will send a Buffer as a response.
   ///
   /// The usage is the same with registerFileProtocol, except for the handler's
@@ -3905,7 +4346,7 @@ type Protocol =
   ///
   /// The usage is the same with registerFileProtocol, except for the handler's
   /// callback signature.
-  abstract registerStringProtocol: scheme: string * handler: (RegisterStringProtocolRequest -> (MimeTypedBuffer -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  abstract registerStringProtocol: scheme: string * handler: (RegisterStringProtocolRequest -> (StringProtocolResponse -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
   /// Registers a protocol of `scheme` that will send an HTTP request as a
   /// response.
   ///
@@ -3940,6 +4381,9 @@ type Protocol =
   /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
   /// handler which sends a string as a response.
   abstract interceptStringProtocol: scheme: string * handler: (InterceptStringProtocolRequest -> (string -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
+  /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
+  /// handler which sends a string as a response.
+  abstract interceptStringProtocol: scheme: string * handler: (InterceptStringProtocolRequest -> (StringProtocolResponse -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
   /// Intercepts `scheme` protocol and uses `handler` as the protocol's new
   /// handler which sends a Buffer as a response.
   abstract interceptBufferProtocol: scheme: string * handler: (InterceptBufferProtocolRequest -> (Buffer -> unit) -> unit) * ?completion: (Error option -> unit) -> unit
@@ -4091,6 +4535,44 @@ type PermissionRequestHandlerPermission =
 type PermissionCheckHandlerPermission =
   | Media
 
+[<StringEnum; RequireQualifiedAccess>]
+type RemovePasswordType =
+  | Password
+
+[<StringEnum; RequireQualifiedAccess>]
+type RemovePasswordScheme =
+  | Basic
+  | Digest
+  | Ntlm
+  | Negotiate
+
+[<StringEnum; RequireQualifiedAccess>]
+type RemoveClientCertificateType =
+  | ClientCertificate
+
+type RemovePassword =
+  abstract ``type``: RemovePasswordType with get, set
+  /// When provided, the authentication info related to the origin will only be
+  /// removed otherwise the entire cache will be cleared.
+  abstract origin: string with get, set
+  /// Scheme of the authentication. Must be provided if removing by `origin`.
+  abstract scheme: RemovePasswordScheme with get, set
+  /// Realm of the authentication. Must be provided if removing by `origin`.
+  abstract realm: string with get, set
+  /// Credentials of the authentication. Must be provided if removing by
+  /// `origin`.
+  abstract username: string with get, set
+  /// Credentials of the authentication. Must be provided if removing by
+  /// `origin`.
+  abstract password: string with get, set
+
+type RemoveClientCertificate =
+  abstract ``type``: RemoveClientCertificateType with get, set
+  /// Origin of the server whose associated client certificate must be removed
+  /// from the cache.
+  abstract origin: string with get, set
+
+
 type Session =
   inherit EventEmitter<Session>
   /// Emitted when Electron is about to download item in webContents.
@@ -4104,6 +4586,20 @@ type Session =
   [<Emit "$0.addListener('will-download',$1)">] abstract addListenerWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
   /// See onWillDownload.
   [<Emit "$0.removeListener('will-download',$1)">] abstract removeListenerWillDownload: listener: (Event -> DownloadItem -> WebContents -> unit) -> Session
+  /// Emitted when a render process requests preconnection to a URL, generally
+  /// due to a [resource hint](https://w3c.github.io/resource-hints/).
+  ///
+  /// Parameters:
+  ///  - event
+  ///  - preconnectUrl: The URL being requested for preconnection by the renderer.
+  ///  - allowCredentials: True if the renderer is requesting that the connection include credentials (see the [spec](https://w3c.github.io/resource-hints/#preconnect) for more details.)
+  [<Emit "$0.on('preconnect',$1)">] abstract onPreconnect: listener: (Event -> string -> bool -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.once('preconnect',$1)">] abstract oncePreconnect: listener: (Event -> string -> bool -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.addListener('preconnect',$1)">] abstract addListenerPreconnect: listener: (Event -> string -> bool -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.removeListener('preconnect',$1)">] abstract removeListenerPreconnect: listener: (Event -> string -> bool -> unit) -> Session
   /// Returns the session's current cache size, in bytes.
   abstract getCacheSize: unit -> Promise<int>
   /// Clears the session’s HTTP cache.
@@ -4132,6 +4628,8 @@ type Session =
   abstract setDownloadPath: path: string -> unit
   /// Emulates network with the given configuration for the session.
   abstract enableNetworkEmulation: options: EnableNetworkEmulationOptions -> unit
+  /// Preconnects the given number of sockets to an origin.
+  abstract preconnect: options: PreconnectOptions -> unit
   /// Disables any network emulation already active for the session. Resets to
   /// the original network configuration.
   abstract disableNetworkEmulation: unit -> unit
@@ -4198,7 +4696,12 @@ type Session =
   ///
   /// Returns a promise that resolves when the session’s HTTP authentication
   /// cache has been cleared.
-  abstract clearAuthCache: unit -> Promise<unit>
+  abstract clearAuthCache: options: RemovePassword -> Promise<unit>
+  /// Clears the session’s HTTP authentication cache.
+  ///
+  /// Returns a promise that resolves when the session’s HTTP authentication
+  /// cache has been cleared.
+  abstract clearAuthCache: options: RemoveClientCertificate -> Promise<unit>
   /// Adds scripts that will be executed on ALL web contents that are associated
   /// with this session just before normal `preload` scripts run.
   abstract setPreloads: preloads: string [] -> unit
@@ -4288,10 +4791,11 @@ type Size =
 type StreamProtocolResponse<'a> =
   /// The HTTP response code.
   abstract statusCode: int with get, set
-  /// An object containing the response headers.
+  /// An object containing the response headers. The members are `string` or
+  /// `string[]`.
   abstract headers: obj with get, set
   /// A Node.js readable stream representing the response body.
-  abstract data: Node.Stream.Readable<'a> with get, set
+  abstract data: Node.Stream.Readable<'a> option with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type SetAppearance =
@@ -4300,6 +4804,12 @@ type SetAppearance =
 
 [<StringEnum; RequireQualifiedAccess>]
 type GetAppearance =
+  | Dark
+  | Light
+  | Unknown
+
+[<StringEnum; RequireQualifiedAccess>]
+type Appearance =
   | Dark
   | Light
   | Unknown
@@ -4515,23 +5025,38 @@ type SystemPreferences =
   /// [Windows] Called with true if an inverted color scheme (a high contrast
   /// color scheme with light text and dark backgrounds) is being used, false
   /// otherwise.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.on('inverted-color-scheme-changed',$1)">] abstract onInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onInvertedColorSchemeChanged.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.once('inverted-color-scheme-changed',$1)">] abstract onceInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onInvertedColorSchemeChanged.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.addListener('inverted-color-scheme-changed',$1)">] abstract addListenerInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onInvertedColorSchemeChanged.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.removeListener('inverted-color-scheme-changed',$1)">] abstract removeListenerInvertedColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// [Windows] Called with true if a high contrast theme is being used, false
   /// otherwise.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.on('high-contrast-color-scheme-changed',$1)">] abstract onHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onHighContrastColorSchemeChanged.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.once('high-contrast-color-scheme-changed',$1)">] abstract onceHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onHighContrastColorSchemeChanged.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.addListener('high-contrast-color-scheme-changed',$1)">] abstract addListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// See onHighContrastColorSchemeChanged.
+  [<Obsolete("Use the new 'updated' event on the 'nativeTheme' module.")>]
   [<Emit "$0.removeListener('high-contrast-color-scheme-changed',$1)">] abstract removeListenerHighContrastColorSchemeChanged: listener: (Event -> bool -> unit) -> SystemPreferences
   /// [macOS] Whether the system is in Dark Mode.
+  ///
+  /// Note: On macOS 10.15 Catalina in order for this API to return the correct
+  /// value when in the "automatic" dark mode setting you must either have
+  /// `NSRequiresAquaSystemAppearance=false` in your Info.plist or be on
+  /// Electron >=7.0.0. See the [dark mode guide](https://electronjs.org/docs/tutorial/mojave-dark-mode-guide)
+  /// for more information.
+  [<Obsolete("use the new 'nativeTheme.shouldUseDarkColors' API.")>]
   abstract isDarkMode: unit -> bool
   /// [macOS] Whether the Swipe between pages setting is on.
   abstract isSwipeTrackingFromScrollEventsEnabled: unit -> bool
@@ -4550,21 +5075,22 @@ type SystemPreferences =
   abstract postWorkspaceNotification: event: string * userInfo: obj option -> unit
   /// [macOS] Subscribes to native notifications of macOS, callback will be
   /// called with callback(event, userInfo) when the corresponding event
-  /// happens. The userInfo is an object that contains the user information
-  /// dictionary sent along with the notification.
+  /// happens. The `userInfo` is an object that contains the user information
+  /// dictionary sent along with the notification. The `object` is the sender of
+  /// the notification, and only supports `NSString` values for now.
   ///
   /// The id of the subscriber is returned, which can be used to unsubscribe the
   /// event. Under the hood this API subscribes to
   /// NSDistributedNotificationCenter.
-  abstract subscribeNotification: event: string * callback: (string -> obj option -> unit) -> int
+  abstract subscribeNotification: event: string * callback: (string -> obj option -> string -> unit) -> int
   /// [macOS] Same as subscribeNotification, but uses NSNotificationCenter for
   /// local defaults. This is necessary for events such as
   /// NSUserDefaultsDidChangeNotification.
-  abstract subscribeLocalNotification: event: string * callback: (string -> obj option -> unit) -> int
+  abstract subscribeLocalNotification: event: string * callback: (string -> obj option -> string -> unit) -> int
   /// [macOS] Same as subscribeNotification, but uses
   /// NSWorkspace.sharedWorkspace.notificationCenter. This is necessary for
   /// events such as NSWorkspaceDidActivateApplicationNotification.
-  abstract subscribeWorkspaceNotification: event: string * callback: (string -> obj option -> unit) -> int
+  abstract subscribeWorkspaceNotification: event: string * callback: (string -> obj option -> string -> unit) -> int
   /// [macOS] Removes the subscriber with `id`.
   abstract unsubscribeNotification: id: int -> unit
   /// [macOS] Same as unsubscribeNotification, but removes the subscriber from
@@ -4574,6 +5100,7 @@ type SystemPreferences =
   /// NSWorkspace.sharedWorkspace.notificationCenter.
   abstract unsubscribeWorkspaceNotification: id: int -> unit
   /// [macOS] Add the specified defaults to your application's NSUserDefaults.
+  /// The object values must be string, bool, or number.
   abstract registerDefaults: defaults: obj option -> unit
   /// [macOS] Returns the value of `key` in NSUserDefaults.
   abstract getUserDefault: key: string * ``type``: UserDefaultValueType -> obj option
@@ -4597,27 +5124,33 @@ type SystemPreferences =
   /// [macOS] Returns the system color setting in RGB hexadecimal form
   /// (#ABCDEF). See the MacOS docs for more details.
   abstract getColor: color: SystemPrefsColorMac -> string
-  /// [macOS] Returns one of several standard system colors that automatically
-  /// adapt to vibrancy and changes in accessibility settings like 'Increase
-  /// contrast' and 'Reduce transparency'. See Apple Documentation for more
-  /// details.
+  /// [macOS] Returns the standard system color formatted as #RRGGBBAA.
+  ///
+  /// Returns one of several standard system colors that automatically adapt to
+  /// vibrancy and changes in accessibility settings like 'Increase contrast'
+  /// and 'Reduce transparency'. See Apple Documentation for more details.
   abstract getSystemColor: color: SystemPrefsSystemColor -> string
   /// [Windows] Returns true if an inverted color scheme (a high contrast color
   /// scheme with light text and dark backgrounds) is active, false otherwise.
+  [<Obsolete("Use the new 'nativeTheme.shouldUseInvertedColorScheme' API.")>]
   abstract isInvertedColorScheme: unit -> bool
   /// [Windows] Returns true if a high contrast theme is active, false
   /// otherwise.
+  [<Obsolete("Use the new 'nativeTheme.shouldUseHighContrastColors' API.")>]
   abstract isHighContrastColorScheme: unit -> bool
   /// [macOS] Gets the macOS appearance setting that is currently applied to
   /// your application, maps to NSApplication.effectiveAppearance.
+  [<Obsolete("use the 'effectiveAppearance' property.")>]
   abstract getEffectiveAppearance: unit -> GetAppearance
   /// [macOS] Gets the macOS appearance setting that you have declared you want
   /// for your application, maps to NSApplication.appearance. You can use the
   /// setAppLevelAppearance API to set this value.
+  [<Obsolete("use the 'allLevelAppearance' property.")>]
   abstract getAppLevelAppearance: unit -> GetAppearance option
   /// [macOS] Sets the appearance setting for your application, this should
   /// override the system default and override the value of
   /// getEffectiveAppearance.
+  [<Obsolete("use the 'allLevelAppearance' property.")>]
   abstract setAppLevelAppearance: appearance: SetAppearance option -> unit
   /// [macOS] Returns a value indicating whether or not this device has the
   /// ability to use Touch ID.
@@ -4680,6 +5213,28 @@ type SystemPreferences =
   abstract askForMediaAccess: mediaType: MediaAccessType -> Promise<bool>
   /// Returns an object with system animation settings.
   abstract getAnimationSettings: unit -> SystemAnimationSettings
+  /// [macOS] Determines the macOS appearance setting for your application. This
+  /// maps to values in NSApplication.appearance. Setting this will override the
+  /// system default as well as the value of `getEffectiveAppearance`.
+  ///
+  /// Possible values that can be set are Appearance.Dark and Appearance.Light,
+  /// and possible return values are Appearance.Dark, AppLevelAppearance.Light,
+  /// and Appearance.Unknown.
+  ///
+  /// This property is only available on macOS 10.14 Mojave or newer.
+  abstract appLevelAppearance: Appearance with get, set
+  /// [macOS] Returns the macOS appearance setting that is currently applied to
+  /// your application, maps to NSApplication.effectiveAppearance
+  ///
+  /// Please note that until Electron is built targeting the 10.14 SDK, your
+  /// application's `effectiveAppearance` will default to `Appearance.Light` and
+  /// won't inherit the OS preference. In the interim in order for your
+  /// application to inherit the OS preference you must set the
+  /// `NSRequiresAquaSystemAppearance` key in your apps `Info.plist` to `false`.
+  /// If you are using `electron-packager` or `electron-forge` just set the
+  /// `enableDarwinDarkMode` packager option to `true`. See the Electron
+  /// Packager API for more details.
+  abstract effectiveAppearance: Appearance with get, set
 
 type Task =
   /// Path of the program to execute, usually you should specify
@@ -4927,10 +5482,50 @@ type TraceCategoriesAndOptions =
   /// applied on it.
   abstract traceOptions: string with get, set
 
+[<StringEnum; RequireQualifiedAccess>]
+type TraceConfigRecordingMode =
+  | [<CompiledName("record-until-full")>] RecordUntilFull
+  | [<CompiledName("record-continuously")>] RecordContinuously
+  | [<CompiledName("record-as-much-as-possible")>] RecordAsMuchAsPossible
+  | [<CompiledName("trace-to-console")>] TraceToConsole
+
 type TraceConfig =
-  abstract excluded_categories: string [] with get, set
-  abstract included_categories: string [] with get, set
-  abstract memory_dump_config: obj option with get, set
+  /// Defaults to record-until-full.
+  abstract recording_mode: TraceConfigRecordingMode
+  /// Maximum size of the trace recording buffer in kilobytes. Defaults to
+  /// 100MB.
+  abstract trace_buffer_size_in_kb: float
+  /// Maximum size of the trace recording buffer in events.
+  abstract trace_buffer_size_in_events: float
+  /// If `true`, filter event data according to a whitelist of events that have
+  /// been manually vetted to not include any PII. See the [implementation in
+  /// Chromium](https://chromium.googlesource.com/chromium/src/+/master/services/tracing/public/cpp/trace_event_args_whitelist.cc)
+  /// for specifics.
+  abstract enable_argument_filter: bool
+  /// A list of tracing categories to include. Can include glob-like patterns
+  /// using * at the end of the category name. See [tracing
+  /// categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h)
+  /// for the list of categories.
+  abstract included_categories: string
+  /// A list of tracing categories to exclude. Can include glob-like patterns
+  /// using * at the end of the category name. See [tracing
+  /// categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h)
+  /// for the list of categories.
+  abstract excluded_categories: string
+  /// A list of process IDs to include in the trace. If not specified, trace all
+  /// processes.
+  abstract included_process_ids: int []
+  /// A list of
+  /// [histogram](https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histograms/README.md)
+  /// names to report with the trace.
+  abstract histogram_names: string
+  /// If the `disabled-by-default-memory-infra` category is enabled, this
+  /// contains optional additional configuration for data collection. See the
+  /// [Chromium memory-infra
+  /// docs](https://chromium.googlesource.com/chromium/src/+/master/docs/memory-infra/memory_infra_startup_tracing.md#the-advanced-way)
+  /// for more information.
+  abstract memory_dump_config: obj
+
 
 [<StringEnum; RequireQualifiedAccess>]
 type TransactionState =
@@ -5339,6 +5934,23 @@ type SendMouseWheelEvent =
   abstract canScroll: bool with get, set
 
 
+[<StringEnum; RequireQualifiedAccess>]
+type ZoomChangedDirection =
+  | In
+  | Out
+
+
+[<StringEnum; RequireQualifiedAccess>]
+type CssOriginString =
+  | User
+  | Author
+
+
+type InsertCssOptions =
+  /// Specifying `CssOriginString.User` enables you to prevent websites from
+  /// overriding the CSS you insert. Default is `CssOriginString.Author`.
+  abstract cssOrigin: CssOriginString with get, set
+
 
 type WebContents =
   inherit EventEmitter<WebContents>
@@ -5351,10 +5963,9 @@ type WebContents =
   [<Emit "$0.addListener('did-finish-load',$1)">] abstract addListenerDidFinishLoad: listener: (Event -> unit) -> WebContents
   /// See onDidFinishLoad.
   [<Emit "$0.removeListener('did-finish-load',$1)">] abstract removeListenerDidFinishLoad: listener: (Event -> unit) -> WebContents
-  /// This event is like did-finish-load but emitted when the load failed or was
-  /// cancelled, e.g. window.stop() is invoked. The full list of error codes and
-  /// their meaning is available here:
-  /// https://cs.chromium.org/chromium/src/net/base/net_error_list.h
+  /// This event is like did-finish-load but emitted when the load failed. The
+  /// full list of error codes and their meaning is available
+  /// [here](https://cs.chromium.org/chromium/src/net/base/net_error_list.h).
   ///
   /// Parameters:
   ///
@@ -5372,6 +5983,25 @@ type WebContents =
   [<Emit "$0.addListener('did-fail-load',$1)">] abstract addListenerDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
   /// See onDidFailLoad.
   [<Emit "$0.removeListener('did-fail-load',$1)">] abstract removeListenerDidFailLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// This event is like `did-fail-load` but emitted when the load was cancelled
+  /// (e.g. `window.stop()` was invoked).
+  ///
+  /// Parameters:
+  ///
+  ///   - event
+  ///   - errorCode
+  ///   - errorDescription
+  ///   - validatedURL
+  ///   - isMainFrame
+  ///   - frameProcessId
+  ///   - frameRoutingId
+  [<Emit "$0.on('did-fail-provisional-load',$1)">] abstract onDidFailProvisionalLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFailProvisionalLoad.
+  [<Emit "$0.once('did-fail-provisional-load',$1)">] abstract onceDidFailProvisionalLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFailProvisionalLoad.
+  [<Emit "$0.addListener('did-fail-provisional-load',$1)">] abstract addListenerDidFailProvisionalLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
+  /// See onDidFailProvisionalLoad.
+  [<Emit "$0.removeListener('did-fail-provisional-load',$1)">] abstract removeListenerDidFailProvisionalLoad: listener: (Event -> int -> string -> string -> bool -> int -> int -> unit) -> WebContents
   /// Emitted when a frame has done navigation.
   ///
   /// Parameters:
@@ -5687,6 +6317,15 @@ type WebContents =
   [<Emit "$0.addListener('leave-html-full-screen',$1)">] abstract addLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
   /// See onLeaveHtmlFullScreen.
   [<Emit "$0.removeListener('leave-html-full-screen',$1)">] abstract removeLeaveHtmlFullScreen: listener: (Event -> unit) -> WebContents
+  /// Emitted when the user is requesting to change the zoom level using the
+  /// mouse wheel.
+  [<Emit "$0.on('zoom-changed',$1)">] abstract onZoomChanged: listener: (Event -> ZoomChangedDirection -> unit) -> WebContents
+  /// See onZoomChanged.
+  [<Emit "$0.once('zoom-changed',$1)">] abstract onceZoomChanged: listener: (Event -> ZoomChangedDirection -> unit) -> WebContents
+  /// See onZoomChanged.
+  [<Emit "$0.addListener('zoom-changed',$1)">] abstract addListenerZoomChanged: listener: (Event -> ZoomChangedDirection -> unit) -> WebContents
+  /// See onZoomChanged.
+  [<Emit "$0.removeListener('zoom-changed',$1)">] abstract removeListenerZoomChanged: listener: (Event -> ZoomChangedDirection -> unit) -> WebContents
   /// Emitted when DevTools is opened.
   [<Emit "$0.on('devtools-opened',$1)">] abstract onDevtoolsOpened: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsOpened.
@@ -5950,62 +6589,63 @@ type WebContents =
   /// listener is passed the module name. Calling event.preventDefault() will
   /// prevent the module from being returned. Custom value can be returned by
   /// setting event.returnValue.
-  [<Emit "$0.on('remote-require',$1)">] abstract onRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.on('remote-require',$1)">] abstract onRemoteRequire: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteRequire.
-  [<Emit "$0.once('remote-require',$1)">] abstract onceRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.once('remote-require',$1)">] abstract onceRemoteRequire: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteRequire.
-  [<Emit "$0.addListener('remote-require',$1)">] abstract addListenerRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.addListener('remote-require',$1)">] abstract addListenerRemoteRequire: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteRequire.
-  [<Emit "$0.removeListener('remote-require',$1)">] abstract removeListenerRemoteRequire: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.removeListener('remote-require',$1)">] abstract removeListenerRemoteRequire: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// Emitted when remote.getGlobal() is called in the renderer process. The
   /// listener is passed the global name. Calling event.preventDefault() will
   /// prevent the global from being returned. Custom value can be returned by
   /// setting event.returnValue.
-  [<Emit "$0.on('remote-get-global',$1)">] abstract onRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.on('remote-get-global',$1)">] abstract onRemoteGetGlobal: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteGetGlobal.
-  [<Emit "$0.once('remote-get-global',$1)">] abstract onceRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.once('remote-get-global',$1)">] abstract onceRemoteGetGlobal: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteGetGlobal.
-  [<Emit "$0.addListener('remote-get-global',$1)">] abstract addListenerRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.addListener('remote-get-global',$1)">] abstract addListenerRemoteGetGlobal: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteGetGlobal.
-  [<Emit "$0.removeListener('remote-get-global',$1)">] abstract removeListenerRemoteGetGlobal: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.removeListener('remote-get-global',$1)">] abstract removeListenerRemoteGetGlobal: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// Emitted when remote.getBuiltin() is called in the renderer process. The
   /// listener is passed the module name. Calling event.preventDefault() will
   /// prevent the module from being returned. Custom value can be returned by
   /// setting event.returnValue.
-  [<Emit "$0.on('remote-get-builtin',$1)">] abstract onRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.on('remote-get-builtin',$1)">] abstract onRemoteGetBuiltin: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteGetBuiltin.
-  [<Emit "$0.once('remote-get-builtin',$1)">] abstract onceRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.once('remote-get-builtin',$1)">] abstract onceRemoteGetBuiltin: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteGetBuiltin.
-  [<Emit "$0.addListener('remote-get-builtin',$1)">] abstract addListenerRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.addListener('remote-get-builtin',$1)">] abstract addListenerRemoteGetBuiltin: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// See onRemoteGetBuiltin.
-  [<Emit "$0.removeListener('remote-get-builtin',$1)">] abstract removeListenerRemoteGetBuiltin: listener: (ReturnValueEvent -> string -> unit) -> WebContents
+  [<Emit "$0.removeListener('remote-get-builtin',$1)">] abstract removeListenerRemoteGetBuiltin: listener: (IpcMainEvent -> string -> unit) -> WebContents
   /// Emitted when remote.getCurrentWindow() is called in the renderer process.
   /// Calling event.preventDefault() will prevent the object from being
   /// returned. Custom value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-current-window',$1)">] abstract onRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.on('remote-get-current-window',$1)">] abstract onRemoteGetCurrentWindow: listener: (IpcMainEvent -> unit) -> WebContents
   /// See onRemoteGetCurrentWindow.
-  [<Emit "$0.once('remote-get-current-window',$1)">] abstract onceRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.once('remote-get-current-window',$1)">] abstract onceRemoteGetCurrentWindow: listener: (IpcMainEvent -> unit) -> WebContents
   /// See onRemoteGetCurrentWindow.
-  [<Emit "$0.addListener('remote-get-current-window',$1)">] abstract addListenerRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.addListener('remote-get-current-window',$1)">] abstract addListenerRemoteGetCurrentWindow: listener: (IpcMainEvent -> unit) -> WebContents
   /// See onRemoteGetCurrentWindow.
-  [<Emit "$0.removeListener('remote-get-current-window',$1)">] abstract removeListenerRemoteGetCurrentWindow: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.removeListener('remote-get-current-window',$1)">] abstract removeListenerRemoteGetCurrentWindow: listener: (IpcMainEvent -> unit) -> WebContents
   /// Emitted when remote.getCurrentWebContents() is called in the renderer
   /// process. Calling event.preventDefault() will prevent the object from being
   /// returned. Custom value can be returned by setting event.returnValue.
-  [<Emit "$0.on('remote-get-current-web-contents',$1)">] abstract onRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.on('remote-get-current-web-contents',$1)">] abstract onRemoteGetCurrentWebContents: listener: (IpcMainEvent -> unit) -> WebContents
   /// See onRemoteGetCurrentWebContents.
-  [<Emit "$0.once('remote-get-current-web-contents',$1)">] abstract onceRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.once('remote-get-current-web-contents',$1)">] abstract onceRemoteGetCurrentWebContents: listener: (IpcMainEvent -> unit) -> WebContents
   /// See onRemoteGetCurrentWebContents.
-  [<Emit "$0.addListener('remote-get-current-web-contents',$1)">] abstract addListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.addListener('remote-get-current-web-contents',$1)">] abstract addListenerRemoteGetCurrentWebContents: listener: (IpcMainEvent -> unit) -> WebContents
   /// See onRemoteGetCurrentWebContents.
-  [<Emit "$0.removeListener('remote-get-current-web-contents',$1)">] abstract removeListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> unit) -> WebContents
+  [<Emit "$0.removeListener('remote-get-current-web-contents',$1)">] abstract removeListenerRemoteGetCurrentWebContents: listener: (IpcMainEvent -> unit) -> WebContents
   /// Loads the url in the window. The url must contain the protocol prefix,
   /// e.g. the http:// or file://. If the load should bypass http cache then use
   /// the pragma header to achieve it.
   ///
   /// The promise will resolve when the page has finished loading (see
-  /// did-finish-load), and rejects if the page fails to load (see
-  /// did-fail-load).
+  /// `did-finish-load`), and rejects if the page fails to load (see
+  /// `did-fail-load`). A noop rejection handler is already attached, which
+  /// avoids unhandled rejection errors.
   abstract loadURL: url: string * ?options: LoadURLOptions -> Promise<unit>
   /// Loads the given file in the window, filePath should be a path to an HTML
   /// file relative to the root of your application.
@@ -6056,11 +6696,20 @@ type WebContents =
   /// Indicates whether the renderer process has crashed.
   abstract isCrashed: unit -> bool
   /// Overrides the user agent for this web page.
+  [<Obsolete("Use the 'userAgent' property instead.")>]
   abstract setUserAgent: userAgent: string -> unit
   /// Returns the user agent for this web page.
+  [<Obsolete("Use the 'userAgent' property instead.")>]
   abstract getUserAgent: unit -> string
-  /// Injects CSS into the current web page.
-  abstract insertCSS: css: string -> unit
+  /// Injects CSS into the current web page and returns a unique key for the
+  /// inserted stylesheet that can later be used to remove the CSS via
+  /// `contents.removeInsertedCSS(key)`.
+  abstract insertCSS: css: string * ?options: InsertCssOptions -> Promise<string>
+  /// Removes the inserted CSS from the current web page. The stylesheet is
+  /// identified by its key, which is returned from `contents.insertCSS(css)`.
+  ///
+  /// The promise resolves if the removal was successful.
+  abstract removeInsertedCSS: key: string -> Promise<unit>
   /// Evaluates `code` in page.
   ///
   /// The returned promise resolves with the result of the executed code or is
@@ -6069,34 +6718,42 @@ type WebContents =
   /// In the browser window some HTML APIs like `requestFullScreen` can only be
   /// invoked by a gesture from the user. Setting `userGesture` to `true` will
   /// remove this limitation.
+  ///
+  /// Code execution will be suspended until web page stop loading.
   abstract executeJavaScript: code: string * ?userGesture: bool -> Promise<obj option>
   /// Ignore application menu shortcuts while this web contents is focused.
   abstract setIgnoreMenuShortcuts: ignore: bool -> unit
   /// Mute the audio on the current web page.
+  [<Obsolete("Use the 'audioMuted' property instead.")>]
   abstract setAudioMuted: muted: bool -> unit
   /// Indicates whether this page has been muted.
+  [<Obsolete("Use the 'audioMuted' property instead.")>]
   abstract isAudioMuted: unit -> bool
   /// Indicates whether audio is currently playing.
   abstract isCurrentlyAudible: unit -> bool
   /// Changes the zoom factor to the specified factor. Zoom factor is zoom
   /// percent divided by 100, so 300% = 3.0.
+  [<Obsolete("Use the 'zoomFactor' property instead.")>]
   abstract setZoomFactor: factor: float -> unit
   /// Returns the current zoom factor.
+  [<Obsolete("Use the 'zoomFactor' property instead.")>]
   abstract getZoomFactor: unit -> float
   /// Changes the zoom level to the specified level. The original size is 0 and
   /// each increment above or below represents zooming 20% larger or smaller to
   /// default limits of 300% and 50% of original size, respectively. The formula
   /// for this is scale := 1.2 ^ level.
+  [<Obsolete("Use the 'zoomLevel' property instead.")>]
   abstract setZoomLevel: level: float -> unit
   /// Returns the current zoom level.
+  [<Obsolete("Use the 'zoomLevel' property instead.")>]
   abstract getZoomLevel: unit -> float
   /// Sets the maximum and minimum pinch-to-zoom level.
   ///
   /// Note: Visual zoom is disabled by default in Electron. To re-enable it,
   /// call contents.setVisualZoomLevelLimits(1, 3)
-  abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
+  abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> Promise<unit>
   /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-  abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
+  abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> Promise<unit>
   /// Executes the editing command undo in web page.
   abstract undo: unit -> unit
   /// Executes the editing command redo in web page.
@@ -6122,7 +6779,7 @@ type WebContents =
   /// Executes the editing command replaceMisspelling in web page.
   abstract replaceMisspelling: text: string -> unit
   /// Inserts text to the focused element.
-  abstract insertText: text: string -> unit
+  abstract insertText: text: string -> Promise<unit>
   /// Starts a request to find all matches for the text in the web page. The
   /// result of the request can be obtained by subscribing to `found-in-page`
   /// event. Returns the request id used for the request.
@@ -6140,13 +6797,9 @@ type WebContents =
   /// When `silent` is set to true, Electron will pick the system's default
   /// printer if `deviceName` is empty and the default settings for printing.
   ///
-  /// Calling window.print() in web page is equivalent to calling
-  /// webContents.print({ silent: false, printBackground: false, deviceName:
-  /// ''}).
-  ///
   /// Use `page-break-before: always;` CSS style to force to print to a new
   /// page.
-  abstract print: ?options: PrintOptions * ?callback: (bool -> unit) -> unit
+  abstract print: ?options: PrintOptions * ?callback: (bool -> PrintFailureReason option -> unit) -> unit
   /// Prints window's web page as PDF with Chromium's preview printing custom
   /// settings.
   ///
@@ -6217,8 +6870,8 @@ type WebContents =
   /// Sends an input event to the page. `event` may be a instance of
   /// SendKeyboardEvent, SendMouseEvent, or SendMouseWheelEvent.
   ///
-  /// Note: The BrowserWindow containing the
-  /// contents needs to be focused for sendInputEvent() to work.
+  /// Note: The BrowserWindow containing the contents needs to be focused for
+  /// `sendInputEvent()` to work.
   abstract sendInputEvent: event: SendInputEvent -> unit
   /// Begin subscribing for presentation events and captured frames, the
   /// callback will be called with callback(image, dirtyRect) when there is a
@@ -6257,8 +6910,10 @@ type WebContents =
   abstract isPainting: unit -> bool
   /// If offscreen rendering is enabled sets the frame rate to the specified
   /// number. Only values between 1 and 60 are accepted.
+  [<Obsolete("Use the 'frameRate' property instead.")>]
   abstract setFrameRate: fps: int -> unit
   /// If offscreen rendering is enabled returns the current frame rate.
+  [<Obsolete("Use the 'frameRate' property instead.")>]
   abstract getFrameRate: unit -> int
   /// Schedules a full repaint of the window this web contents is in.
   ///
@@ -6285,6 +6940,23 @@ type WebContents =
   abstract setBackgroundThrottling: allowed: bool -> unit
   /// The type of the webContent
   abstract getType: unit -> WebContentType
+  /// Determines whether this page is muted.
+  abstract audioMuted: bool with get, set
+  /// Determines the user agent for this web page.
+  abstract userAgent: string with get, set
+  /// Determines the zoom level for this web contents.
+  ///
+  /// The original size is 0 and each increment above or below represents zooming 20%
+  /// larger or smaller to default limits of 300% and 50% of original size, respectively.
+  /// The formula for this is `scale := 1.2 ^ level`.
+  abstract zoomLevel: float with get, set
+  /// Determines the zoom factor for this web contents.
+  ///
+  /// The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
+  abstract zoomFactor: float with get, set
+  /// Sets the frame rate of the web contents to the specified number. Only values between
+  /// 1 and 60 are accepted.
+  abstract frameRate: int with get, set
   /// The unique ID of this WebContents.
   abstract id: int
   /// A Session used by this webContents.
@@ -6336,8 +7008,13 @@ type WebFrame =
   /// asynchronously and calls the callback function with an array of misspelt
   /// words when complete. An example of using node-spellchecker as provider:
   abstract setSpellCheckProvider: language: string * provider: SpellCheckProvider -> unit
-  /// Inserts the specified CSS source code as a style sheet in the document.
-  abstract insertCSS: css: string -> unit
+  /// Injects CSS into the current web page and returns a unique key for the inserted
+  /// stylesheet that can later be used to remove the CSS via
+  /// `webFrame.removeInsertedCSS(key)`.
+  abstract insertCSS: css: string -> string
+  /// Removes the inserted CSS from the current web page. The stylesheet is identified by
+  /// its key, which is returned from `webFrame.insertCSS(css)`.
+  abstract removeInsertedCSS: key: string -> unit
   /// Inserts text to the focused element.
   abstract insertText: text: string -> unit
   /// Evaluates `code` in page.
@@ -6369,39 +7046,6 @@ type WebFrame =
   /// <param name="scripts"></param>
   /// <param name="userGesture">Default is false</param>
   abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool -> Promise<obj option>
-  /// <summary>
-  ///   Set the content security policy of the isolated world.
-  /// </summary>
-  /// <param name="worldId">
-  ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. Chrome
-  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
-  ///   provide any integer here.
-  /// </param>
-  /// <param name="csp"></param>
-  abstract setIsolatedWorldContentSecurityPolicy: worldId: int * csp: string -> unit
-  /// <summary>
-  ///   Set the name of the isolated world. Useful in devtools.
-  /// </summary>
-  /// <param name="worldId">
-  ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. Chrome
-  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
-  ///   provide any integer here.
-  /// </param>
-  /// <param name="name"></param>
-  abstract setIsolatedWorldHumanReadableName: worldId: int * name: string -> unit
-  /// <summary>
-  ///   Set the security origin of the isolated world.
-  /// </summary>
-  /// <param name="worldId">
-  ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. Chrome
-  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
-  ///   provide any integer here.
-  /// </param>
-  /// <param name="securityOrigin"></param>
-  abstract setIsolatedWorldSecurityOrigin: worldId: int * securityOrigin: string -> unit
   /// <summary>
   ///   Set the security origin, content security policy and name of the
   ///   isolated world.
@@ -6559,6 +7203,8 @@ type AboutPanelOptions =
   abstract version: string with get, set
   /// [macOS] Credit information.
   abstract credits: string with get, set
+  /// [Linux] List of app authors.
+  abstract authors: string with get, set
   /// [Linux] The app's website.
   abstract website: string with get, set
   /// [Linux] Path to the app's icon.
@@ -6602,11 +7248,11 @@ type AuthInfo =
   abstract realm: string
 
 type AutoResizeOptions =
-  /// If true, the view's width will grow and shrink together with the window.
-  /// false by default.
+  /// If `true`, the view's width will grow and shrink together with the window.
+  /// `false` by default.
   abstract width: bool with get, set
-  /// If true, the view's height will grow and shrink together with the window.
-  /// false by default.
+  /// If `true`, the view's height will grow and shrink together with the
+  /// window. `false` by default.
   abstract height: bool with get, set
   /// If `true`, the view's x position and width will grow and shrink
   /// proportionly with the window. `false` by default.
@@ -6731,6 +7377,12 @@ type BrowserWindowOptions =
   abstract icon: U2<NativeImage, string> with get, set
   /// Whether window should be shown when created. Default is true.
   abstract show: bool with get, set
+  /// Whether the renderer should be active when `show` is `false` and it has
+  /// just been created. In order for `document.visibilityState` to work
+  /// correctly on first load with `show: false` you should set this to `false`.
+  /// Setting this to `false` will cause the `ready-to-show` event to not fire.
+  /// Default is `true`.
+  abstract paintWhenInitiallyHidden: bool with get, set
   /// Specify false to create a frameless window. Default is true.
   abstract frame: bool with get, set
   /// Specify parent window. Default is None.
@@ -6745,7 +7397,9 @@ type BrowserWindowOptions =
   abstract disableAutoHideCursor: bool with get, set
   /// Auto hide the menu bar unless the Alt key is pressed. Default is false.
   abstract autoHideMenuBar: bool with get, set
-  /// Enable the window to be resized larger than screen. Default is false.
+  /// Enable the window to be resized larger than screen. Only relevant for
+  /// macOS, as other OSes allow larger-than-screen windows by default. Default
+  /// is `false`.
   abstract enableLargerThanScreen: bool with get, set
   /// Window's background color as a hexadecimal value, like #66CD00 or #FFF or
   /// #80FFFFFF (alpha in #AARRGGBB format is supported if transparent is set to
@@ -6760,7 +7414,8 @@ type BrowserWindowOptions =
   /// Forces using dark theme for the window, only works on some GTK+3 desktop
   /// environments. Default is false.
   abstract darkTheme: bool with get, set
-  /// Makes the window transparent. Default is false.
+  /// Makes the window transparent. Default is `false`. On Windows, does not
+  /// work unless the window is frameless.
   abstract transparent: bool with get, set
   /// The type of window.
   abstract ``type``: BrowserWindowStyle with get, set
@@ -6774,8 +7429,8 @@ type BrowserWindowOptions =
   /// window animations. Default is true.
   abstract thickFrame: bool with get, set
   /// Add a type of vibrancy effect to the window, only on macOS. Please note
-  /// that using frame: false in combination with a vibrancy value requires that
-  /// you use a non-default titleBarStyle as well.
+  /// that using `frame: false` in combination with a vibrancy value requires
+  /// that you use a non-default `titleBarStyle` as well.
   abstract vibrancy: VibrancyType with get, set
   /// Controls the behavior on macOS when option-clicking the green stoplight
   /// button on the toolbar or by clicking the Window > Zoom menu item. If true,
@@ -6951,15 +7606,16 @@ type CrashReporterStartOptions =
   abstract companyName: string with get, set
   /// URL that crash reports will be sent to as POST.
   abstract submitURL: string with get, set
-  /// Defaults to app.getName().
+  /// Defaults to `app.name`.
   abstract productName: string with get, set
   /// Whether crash reports should be sent to the server Default is true.
   abstract uploadToServer: bool with get, set
   /// Default is false.
   abstract ignoreSystemCrashHandler: bool with get, set
   /// An object you can define that will be sent along with the report. Only
-  /// string properties are sent correctly. Nested objects are not supported and
-  /// the property names and values must be less than 64 characters long.
+  /// string properties are sent correctly. Nested objects are not supported.
+  /// When using Windows, the property names and values must be fewer than 64
+  /// characters.
   abstract extra: obj with get, set
   /// Directory to store the crashreports temporarily (only used when the crash
   /// reporter is started via process.crashReporter.start).
@@ -6995,11 +7651,11 @@ type ClipboardData =
   abstract html: string with get, set
   abstract image: NativeImage with get, set
   abstract rtf: string with get, set
-  /// The title of the url at `text`.
+  /// The title of the URL at `text`.
   abstract bookmark: string with get, set
 
 type SetCookieDetails =
-  /// The url to associate the cookie with. If invalid, the promise returned
+  /// The URL to associate the cookie with. If invalid, the promise returned
   /// when setting the cookie will be rejected.
   abstract url: string with get, set
   /// The name of the cookie. Empty by default if omitted.
@@ -7080,6 +7736,13 @@ type EnableNetworkEmulationOptions =
   /// Upload rate in Bps. Defaults to 0 which will disable upload throttling.
   abstract uploadThroughput: float with get, set
 
+type PreconnectOptions =
+  /// URL for preconnect. Only the origin is relevant for opening the socket.
+  abstract url: string with get, set
+  /// Number of sockets to preconnect. Must be between 1 and 6. Defaults to 1.
+  abstract numSockets: int with get, set
+
+
 [<StringEnum; RequireQualifiedAccess>]
 type AutoUpdateFeedServerType =
   | Json
@@ -7106,7 +7769,7 @@ type FileIconOptions =
   abstract size: FileIconSize with get, set
 
 type GetCookiesFilter =
-  /// Retrieves cookies which are associated with url. Empty implies retrieving
+  /// Retrieves cookies which are associated with URL. Empty implies retrieving
   /// cookies of all urls.
   abstract url: string with get, set
   /// Filters cookies by name.
@@ -7191,12 +7854,14 @@ type BeforeInputEventData =
 
 type InterceptBufferProtocolRequest =
   abstract url: string with get, set
+  abstract headers: obj
   abstract referrer: string with get, set
   abstract method: string with get, set
   abstract uploadData: UploadData [] with get, set
 
 type InterceptFileProtocolRequest =
   abstract url: string with get, set
+  abstract headers: obj
   abstract referrer: string with get, set
   abstract method: string with get, set
   abstract uploadData: UploadData [] with get, set
@@ -7217,6 +7882,7 @@ type InterceptStreamProtocolRequest =
 
 type InterceptStringProtocolRequest =
   abstract url: string with get, set
+  abstract headers: obj
   abstract referrer: string with get, set
   abstract method: string with get, set
   abstract uploadData: UploadData [] with get, set
@@ -7242,7 +7908,7 @@ type JumpListSettings =
   abstract removedItems: JumpListItem []
 
 type LoadFileOptions =
-  /// Passed to url.format().
+  /// Passed to url.format(). The members must be `string`.
   abstract query: obj with get, set
   /// Passed to url.format().
   abstract search: string with get, set
@@ -7250,14 +7916,14 @@ type LoadFileOptions =
   abstract hash: string with get, set
 
 type LoadURLOptions =
-  /// An HTTP Referrer url.
+  /// An HTTP Referrer URL.
   abstract httpReferrer: U2<string, Referrer> with get, set
   /// A user agent originating the request.
   abstract userAgent: string with get, set
   /// Extra headers separated by "\n"
   abstract extraHeaders: string with get, set
   abstract postData: U3<UploadRawData [], UploadFile [], UploadBlob []> with get, set
-  /// Base url (with trailing path separator) for files to be loaded by the data
+  /// Base URL (with trailing path separator) for files to be loaded by the data
   /// url. This is needed only if the specified url is a data url and needs to
   /// load other files.
   abstract baseURLForDataURL: string with get, set
@@ -7385,6 +8051,8 @@ type MenuItemOptions =
   abstract ``type``: MenuItemType with get, set
   abstract label: string with get, set
   abstract sublabel: string with get, set
+  /// [macOS] Hover text for this menu item.
+  abstract toolTip: string with get, set
   abstract accelerator: string with get, set
   abstract icon: U2<NativeImage, string> with get, set
   /// If false, the menu item will be greyed out and unclickable.
@@ -7403,8 +8071,8 @@ type MenuItemOptions =
   /// Should only be specified for MenuItemType.Checkbox and MenuItemType.Radio
   /// type menu items.
   abstract ``checked``: bool with get, set
-  /// If false, the accelerator won't be registered with the system, but it will
-  /// still be displayed. Defaults to true.
+  /// [Linux, Windows] If false, the accelerator won't be registered with the
+  /// system, but it will still be displayed. Defaults to true.
   abstract registerAccelerator: bool with get, set
   /// Should be specified for MenuItemType.SubMenu type menu items. If this
   /// property is set, then the `type` property may be omitted.
@@ -7521,6 +8189,7 @@ type OnBeforeRedirectDetails =
   /// The server IP address that the request was actually sent to.
   abstract ip: string option
   abstract fromCache: bool
+  /// Properties are `string`.
   abstract responseHeaders: obj
 
 type OnBeforeRedirectFilter =
@@ -7551,6 +8220,7 @@ type OnBeforeSendHeadersDetails =
   abstract resourceType: string
   abstract referrer: string
   abstract timestamp: float
+  /// Properties are `string`.
   abstract requestHeaders: obj
 
 type OnBeforeSendHeadersFilter =
@@ -7560,7 +8230,7 @@ type OnBeforeSendHeadersFilter =
 
 type OnBeforeSendHeadersResponse =
   abstract cancel: bool with get, set
-  /// When provided, request will be made with these headers.
+  /// When provided, request will be made with these headers. Properties must be `string`.
   abstract requestHeaders: obj with get, set
 
 type OnCompletedDetails =
@@ -7571,6 +8241,7 @@ type OnCompletedDetails =
   abstract resourceType: string
   abstract referrer: string
   abstract timestamp: float
+  /// Properties are `string`.
   abstract responseHeaders: obj
   abstract fromCache: bool
   abstract statusCode: int
@@ -7608,6 +8279,7 @@ type OnHeadersReceivedDetails =
   abstract timestamp: float
   abstract statusLine: string
   abstract statusCode: int
+  /// Properties are `string`.
   abstract responseHeaders: obj
 
 type OnHeadersReceivedFilter =
@@ -7618,6 +8290,7 @@ type OnHeadersReceivedFilter =
 type OnHeadersReceivedResponse =
   abstract cancel: bool with get, set
   /// When provided, the server is assumed to have responded with these headers.
+  /// Properties must be `string`.
   abstract responseHeaders: obj with get, set
   /// Should be provided when overriding responseHeaders to change header status
   /// otherwise original response header's status will be used.
@@ -7631,6 +8304,7 @@ type OnResponseStartedDetails =
   abstract resourceType: string
   abstract referrer: string
   abstract timestamp: float
+  /// Properties are `string`.
   abstract responseHeaders: obj
   /// Indicates whether the response was fetched from disk cache.
   abstract fromCache: bool
@@ -7650,6 +8324,7 @@ type OnSendHeadersDetails =
   abstract resourceType: string
   abstract referrer: string
   abstract timestamp: float
+  /// Properties are `string`.
   abstract requestHeaders: obj
 
 type OnSendHeadersFilter =
@@ -7797,14 +8472,74 @@ type PopupOptions =
   /// Called when menu is closed.
   abstract callback: (unit -> unit) with get, set
 
+[<StringEnum; RequireQualifiedAccess>]
+type PrintMarginType =
+  | Default
+  | None
+  | PrintableArea
+  | Custom
+
+type PrintMargin =
+  /// If `PrintOptionsMarginType.Custom` is chosen, you will also need to
+  /// specify `top`, `bottom`, `left`, and `right`.
+  abstract marginType: PrintMarginType
+  /// The top margin of the printed web page, in pixels.
+  abstract top: int
+  /// The bottom margin of the printed web page, in pixels.
+  abstract bottom: int
+  /// The left margin of the printed web page, in pixels.
+  abstract left: int
+  /// The right margin of the printed web page, in pixels.
+  abstract right: int
+
+type PageRange =
+  abstract from: int with get, set
+  abstract ``to``: int with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type PrintDuplexMode =
+  | Simplex
+  | ShortEdge
+  | LongEdge
+
+type PrintDpi =
+  /// The horizontal dpi.
+  abstract horizontal: int with get, set
+  /// The vertical dpi.
+  abstract vertical: int with get, set
+
 type PrintOptions =
   /// Don't ask user for print settings. Default is false.
   abstract silent: bool with get, set
-  /// Also prints the background color and image of the web page. Default is
-  /// false.
+  /// Prints the background color and image of the web page. Default is `false`.
   abstract printBackground: bool with get, set
-  /// Set the printer device name to use. Default is "".
+  /// Set the printer device name to use. Default is `""`.
   abstract deviceName: string with get, set
+  /// Set whether the printed web page will be in color or grayscale. Default is
+  /// `true`.
+  abstract color: bool with get, set
+  abstract margins: PrintMargin with get, set
+  /// Whether the web page should be printed in landscape mode. Default is
+  /// `false`.
+  abstract landscape: bool with get, set
+  /// The scale factor of the web page.
+  abstract scaleFactor: float with get, set
+  /// The number of pages to print per page sheet.
+  abstract pagesPerSheet: int with get, set
+  /// Whether the web page should be collated.
+  abstract collate: bool with get, set
+  /// The number of copies of the web page to print.
+  abstract copies: int with get, set
+  /// The page range to print.
+  abstract pageRanges: PageRange [] with get, set
+  /// Set the duplex mode of the printed web page.
+  abstract duplexMode: PrintDuplexMode with get, set
+  abstract dpi: PrintDpi with get, set
+
+[<StringEnum; RequireQualifiedAccess>]
+type PrintFailureReason =
+  | Cancelled
+  | Failed
 
 [<StringEnum; RequireQualifiedAccess>]
 type PrintToPDFSize =
@@ -7842,6 +8577,14 @@ type CustomSchemePrivileges =
   abstract supportFetchAPI: bool with get, set
   /// Default false.
   abstract corsEnabled: bool with get, set
+
+type BlinkMemoryInfo =
+  /// Size of all allocated objects in Kilobytes.
+  abstract allocated: int
+  /// Size of all marked objects in Kilobytes.
+  abstract marked: int
+  /// Total allocated space in Kilobytes.
+  abstract total: int
 
 type ProcessMemoryInfo =
   /// [Linux, Windows] The amount of memory currently pinned to actual physical
@@ -7886,7 +8629,7 @@ type ClipboardBookmark =
   /// the bookmark is unavailable.
   abstract url: string
 
-type RedirectRequestUploadData =
+type ProtocolResponseUploadData =
   /// MIME type of the content.
   abstract contentType: string with get, set
   /// Content to be sent.
@@ -7896,16 +8639,18 @@ type RedirectRequest =
   abstract url: string with get, set
   abstract method: string with get, set
   abstract session: Session option with get, set
-  abstract uploadData: RedirectRequestUploadData with get, set
+  abstract uploadData: ProtocolResponseUploadData with get, set
 
 type RegisterBufferProtocolRequest =
   abstract url: string
+  abstract headers: obj
   abstract referrer: string
   abstract method: string
   abstract uploadData: UploadData []
 
 type RegisterFileProtocolRequest =
   abstract url: string
+  abstract headers: obj
   abstract referrer: string
   abstract method: string
   abstract uploadData: UploadData []
@@ -7926,6 +8671,7 @@ type RegisterStreamProtocolRequest =
 
 type RegisterStringProtocolRequest =
   abstract url: string
+  abstract headers: obj
   abstract referrer: string
   abstract method: string
   abstract uploadData: UploadData []
@@ -8064,7 +8810,7 @@ type TouchBarButtonOptions =
   /// Button background color in hex format, i.e #ABCDEF.
   abstract backgroundColor: string with get, set
   /// Button icon.
-  abstract icon: NativeImage with get, set
+  abstract icon: U2<NativeImage, string> with get, set
   abstract iconPosition: TouchBarButtonIconPosition with get, set
   /// Function to call when the button is clicked.
   abstract click: (unit -> unit) with get, set
@@ -8239,7 +8985,7 @@ type FoundInPageResult =
   /// Number of Matches.
   abstract matches: int
   /// Coordinates of first match region.
-  abstract selectionArea: obj
+  abstract selectionArea: Rectangle
   abstract finalUpdate: bool
 
 type ContextMenuMediaFlags =

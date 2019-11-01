@@ -1,3 +1,7 @@
+### 4.0.0
+
+* Updated for Electron 7.0
+
 ### 3.0.0
 
 * Breaking bugfix: Use explicit Action wrappers for `MenuItem.click`, `MenuItemOptions.click`, `SpellCheckProvider.spellCheck`, and `TouchBarSegmentedControlOptions.change`
