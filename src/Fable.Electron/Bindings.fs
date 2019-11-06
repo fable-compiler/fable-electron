@@ -256,6 +256,10 @@ type MainInterface =
 
 type RendererInterface =
   inherit CommonInterface
+  /// Create a safe, bi-directional, synchronous bridge across isolated contexts
+  ///
+  /// https://electronjs.org/docs/api/context-bridge
+  abstract contextBridge: ContextBridge
   /// Access information about media sources that can be used to capture audio
   /// and video from the desktop using the `navigator.mediaDevices.getUserMedia`
   /// API.
@@ -2736,6 +2740,17 @@ type ContentTracing =
   /// Get the maximum usage across processes of trace buffer as a percentage of
   /// the full state.
   abstract getTraceBufferUsage: unit -> Promise<TraceBufferUsage>
+
+type ContextBridge =
+  /// Expose the specified object in the main world. See the [ContextBridge
+  /// docs](https://electronjs.org/docs/api/context-bridge) for details
+  ///
+  /// The API will be available on BrowserWindow as a property with the name specified by
+  /// `apiKey`. You can use the dynamic accessor from `Fable.Core.JsInterop` to retrieve
+  /// it:
+  ///
+  /// `(window?myKey: MyApiType).MyThing`
+  abstract exposeInMainWorld: apiKey: string * api: 'a -> unit
 
 type Cookie =
   /// The name of the cookie.

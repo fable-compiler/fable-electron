@@ -1,3 +1,7 @@
+### 4.1.0
+
+* Updated for Electron 7.1
+
 ### 4.0.0
 
 * Updated for Electron 7.0
