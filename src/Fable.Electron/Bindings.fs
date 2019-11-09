@@ -2201,6 +2201,8 @@ type BrowserWindow =
   abstract showDefinitionForSelection: unit -> unit
   /// [Windows, Linux] Changes window icon.
   abstract setIcon: icon: NativeImage -> unit
+  /// [Windows, Linux] Changes window icon.
+  abstract setIcon: icon: string -> unit
   /// [macOS] Sets whether the window traffic light buttons should be visible.
   ///
   /// This cannot be called when titleBarStyle is set to customButtonsOnHover.
@@ -8245,7 +8247,8 @@ type OnBeforeSendHeadersFilter =
 
 type OnBeforeSendHeadersResponse =
   abstract cancel: bool with get, set
-  /// When provided, request will be made with these headers. Properties must be `string`.
+  /// When provided, request will be made with these headers. Properties must be `string`
+  /// or `string []`.
   abstract requestHeaders: obj with get, set
 
 type OnCompletedDetails =
@@ -8305,7 +8308,7 @@ type OnHeadersReceivedFilter =
 type OnHeadersReceivedResponse =
   abstract cancel: bool with get, set
   /// When provided, the server is assumed to have responded with these headers.
-  /// Properties must be `string`.
+  /// Properties must be `string` or `string []`.
   abstract responseHeaders: obj with get, set
   /// Should be provided when overriding responseHeaders to change header status
   /// otherwise original response header's status will be used.
@@ -8648,7 +8651,7 @@ type ProtocolResponseUploadData =
   /// MIME type of the content.
   abstract contentType: string with get, set
   /// Content to be sent.
-  abstract data: string with get, set
+  abstract data: U2<string, Buffer> with get, set
 
 type RedirectRequest =
   abstract url: string with get, set

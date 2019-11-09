@@ -1,3 +1,9 @@
+### 4.2.0
+
+Changed according to Electron docs update:
+ - Breaking (small): `ProtocolResponseUploadData.data` is changed from `string` to `U2<string, Buffer>`
+ - Added `BrowserWindow.setIcon` overload accepting `string`
+
 ### 4.1.0
 
 * Updated for Electron 7.1
