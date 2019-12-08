@@ -664,16 +664,16 @@ type App =
   ///
   ///   - event
   ///   - webContents
-  ///   - request
+  ///   - authenticationResponseDetails
   ///   - authInfo
   ///   - callback(username, password)
-  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
+  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> WebContents -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// See onLogin.
-  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
+  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> WebContents -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// See onLogin.
-  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
+  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> WebContents -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// See onLogin.
-  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> WebContents -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> App
+  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> WebContents -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> App
   /// Emitted whenever there is a GPU info update.
   [<Emit "$0.on('gpu-info-update',$1)">] abstract onGpuInfoUpdate: listener: (unit -> unit) -> App
   /// See onGpuInfoUpdate.
@@ -6413,13 +6413,13 @@ type WebContents =
   ///   - request
   ///   - authInfo
   ///   - callback(username, password)
-  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  [<Emit "$0.on('login',$1)">] abstract onLogin: listener: (Event -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
   /// See onLogin.
-  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  [<Emit "$0.once('login',$1)">] abstract onceLogin: listener: (Event -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
   /// See onLogin.
-  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  [<Emit "$0.addListener('login',$1)">] abstract addListenerLogin: listener: (Event -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
   /// See onLogin.
-  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> LoginRequest -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
+  [<Emit "$0.removeListener('login',$1)">] abstract removeListenerLogin: listener: (Event -> AuthenticationResponseDetails -> AuthInfo -> (string -> string -> unit) -> unit) -> WebContents
   /// Emitted when a result is available for [webContents.findInPage] request.
   [<Emit "$0.on('found-in-page',$1)">] abstract onFoundInPage: listener: (Event -> FoundInPageResult -> unit) -> WebContents
   /// See onFoundInPage.
@@ -8698,10 +8698,8 @@ type RelaunchOptions =
   abstract args: string [] with get, set
   abstract execPath: string with get, set
 
-type LoginRequest =
-  abstract method: string
+type AuthenticationResponseDetails =
   abstract url: string
-  abstract referrer: string
 
 [<StringEnum; RequireQualifiedAccess>]
 type ResizeQuality =

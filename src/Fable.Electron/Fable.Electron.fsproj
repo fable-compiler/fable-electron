@@ -4,15 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>4.2.0</Version>
+    <Version>4.3.0</Version>
     <Authors>Christer van der Meeren</Authors>
     <Description>Fable bindings and helpers for Electron.</Description>
     <PackageLicenseUrl>https://github.com/fable-compiler/fable-electron/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fable-compiler/fable-electron</PackageProjectUrl>
     <PackageTags>fable electron bindings</PackageTags>
-    <PackageReleaseNotes>Changed according to Electron docs update:
- - Breaking (small): ProtocolResponseUploadData.data is changed from string to U2&lt;string, Buffer&gt;
- - Added BrowserWindow.setIcon overload accepting string</PackageReleaseNotes>
+    <PackageReleaseNotes>Small breaking change according to Electron docs update: Renamed LoginRequest to AuthenticationResponseDetails and removed its `method` and `referrer` properties (relevant for the `login` event on App and WebContents)</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
