@@ -2475,8 +2475,10 @@ type ClientRequest =
   [<Emit "$0.addListener('close',$1)">] abstract addListenerClose: listener: (unit -> unit) -> ClientRequest
   /// See onClose.
   [<Emit "$0.removeListener('close',$1)">] abstract removeListenerClose: listener: (unit -> unit) -> ClientRequest
-  /// Emitted when there is redirection and the mode is manual. Calling
-  /// request.followRedirect will continue with the redirection.
+  /// Emitted when the server returns a redirect response (e.g. 301 Moved Permanently).
+  /// Calling `request.followRedirect` will continue with the redirection. If this event
+  /// is handled, `request.followRedirect` must be called **synchronously**, otherwise the
+  /// request will be cancelled.
   ///
   /// Parameters:
   ///   - statusCode
@@ -2563,8 +2565,7 @@ type ClientRequest =
   /// ongoing event will emit `abort` and `close` events. Additionally, if there
   /// is an ongoing response object,it will emit the `aborted` event.
   abstract abort: unit -> unit
-  /// Continues any deferred redirection request when the redirection mode is
-  /// RedirectMode.Manual.
+  /// Continues any pending redirection. Can only be called during a `redirect` event.
   abstract followRedirect: unit -> unit
   /// You can use this method in conjunction with POST requests to get the
   /// progress of a file upload or other data transfer.
