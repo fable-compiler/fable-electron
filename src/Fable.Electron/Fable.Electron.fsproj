@@ -4,13 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>4.3.0</Version>
+    <Version>5.0.0</Version>
     <Authors>Christer van der Meeren</Authors>
     <Description>Fable bindings and helpers for Electron.</Description>
     <PackageLicenseUrl>https://github.com/fable-compiler/fable-electron/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fable-compiler/fable-electron</PackageProjectUrl>
     <PackageTags>fable electron bindings</PackageTags>
-    <PackageReleaseNotes>Small breaking change according to Electron docs update: Renamed LoginRequest to AuthenticationResponseDetails and removed its `method` and `referrer` properties (relevant for the `login` event on App and WebContents)</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated for Electron 8</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -18,7 +18,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <NpmDependencies>
-      <NpmPackage Name="electron" Version="gte 7.1 lt 8" DevDependency="true" ResolutionStrategy="max" />
+      <NpmPackage Name="electron" Version="gte 8.0 lt 9" DevDependency="true" ResolutionStrategy="max" />
     </NpmDependencies>
   </PropertyGroup>
   <ItemGroup>

@@ -960,6 +960,9 @@ type App =
   [<Obsolete("Use the name property instead")>]
   abstract getName: unit -> string
   /// Overrides the current application's name.
+  ///
+  /// **Note:** This function overrides the name used internally by Electron; it does not
+  /// affect the name that the OS uses.
   [<Obsolete("Use the name property instead")>]
   abstract setName: name: string -> unit
   /// Returns the current application locale. Possible return values are
@@ -1032,6 +1035,18 @@ type App =
   ///
   /// See `setAsDefaultProtocolClient` for more details. 
   abstract isDefaultProtocolClient: protocol: string * ?path: string * ?args: string [] -> bool
+  /// <summary>
+  ///   Returns the name of the application handling the protocol (aka URI scheme) of the
+  ///   URL, or an empty string if there is no handler. For instance, if Electron is the
+  ///   default handler of the URL, this could be `Electron` on Windows and Mac. However,
+  ///   don't rely on the precise format which is not guaranteed to remain unchanged.
+  ///   Expect a different format on Linux, possibly with a `.desktop` suffix.
+  /// </summary>
+  /// <param name="url">
+  ///   A URL with the protocol name to check. Unlike the other methods in this family,
+  ///   this accepts an entire URL, including `://` at a minimum (e.g. `https://`).
+  /// </param>
+  abstract getApplicationNameForProtocol: url: string -> string
   /// [Windows] Adds `tasks` to the Tasks category of the Jump List on Windows.
   ///
   /// Note: If you'd like to customize the Jump List even more, use
@@ -1175,10 +1190,15 @@ type App =
   /// [macOS, Linux] Show the app's about panel options. These options can be
   /// overridden with app.setAboutPanelOptions(options).
   abstract showAboutPanel: unit -> unit
-  /// [macOS, Linux] Set the about panel options. This will override the values
-  /// defined in the app's .plist file on MacOS. See the Apple docs for more
-  /// details. On Linux, values must be set in order to be shown; there are no
-  /// defaults.
+  /// [macOS, Linux] Set the about panel options. This will override the values defined in
+  /// the app's `.plist` file on MacOS. See the Apple docs for more details. On Linux,
+  /// values must be set in order to be shown; there are no defaults.
+  ///
+  /// If you do not set credits but still wish to surface them in your app, AppKit will
+  /// look for a file named "Credits.html", "Credits.rtf", and "Credits.rtfd", in that
+  /// order, in the bundle returned by the NSBundle class method main. The first file
+  /// found is used, and if none is found, the info area is left blank. See Apple
+  /// documentation for more information.
   abstract setAboutPanelOptions: options: AboutPanelOptions -> unit
   /// Returns a value indicating whether or not the current OS version allows
   /// for native emoji pickers.
@@ -1648,10 +1668,10 @@ type BrowserWindow =
   [<Emit "$0.addListener('resize',$1)">] abstract addListenerResize: listener: (Event -> unit) -> BrowserWindow
   /// See onResize.
   [<Emit "$0.removeListener('resize',$1)">] abstract removeListenerResize: listener: (Event -> unit) -> BrowserWindow
-  /// [Windows] Emitted before the window is moved. Calling
-  /// event.preventDefault() will prevent the window from being moved. Note that
-  /// this is only emitted when the window is being resized manually. Resizing
-  /// the window with setBounds/setSize will not emit this event.
+  /// [macOS; Windows] Emitted before the window is moved. On Windows, calling
+  /// `event.preventDefault()` will prevent the window from being moved. Note that this is
+  /// only emitted when the window is being resized manually. Resizing the window with
+  /// `setBounds`/`setSize` will not emit this event.
   ///
   /// Parameters:
   ///
@@ -1851,6 +1871,9 @@ type BrowserWindow =
   /// [macOS] Determines whether the window is excluded from the application’s
   /// Windows menu. `false` by default.
   abstract excludedFromShownWindowsMenu: bool with get, set
+  /// Defines an alternative title provided only to accessibility tools such as screen
+  /// readers. This string is not directly visible to users.
+  abstract accessibleTitle: string with get, set
   /// Force closing the window, the `unload` and `beforeunload` event won't be
   /// emitted for the web page, and `close` event will also not be emitted for
   /// this window, but it guarantees the `closed` event will be emitted.
@@ -2050,6 +2073,16 @@ type BrowserWindow =
   abstract setAlwaysOnTop: flag: bool * ?level: AlwaysOnTopLevel * ?relativeLevel: int -> unit
   /// Indicates whether the window is always on top of other windows.
   abstract isAlwaysOnTop: unit -> bool
+  /// <summary>
+  ///   Moves the window above the source window in the sense of z-order. If the
+  ///   `mediaSourceId` is not of type window or if the window does not exist then this
+  ///   method throws an error.
+  /// </summary>
+  /// <param name="mediaSourceId">
+  ///   Window id in the format of DesktopCapturerSource's id. For example
+  ///   "window:1869:0".
+  /// </param>
+  abstract moveAbove: mediaSourceId: string -> unit
   /// Moves window to top(z-order) regardless of focus
   abstract moveTop: unit -> unit
   /// Moves window to the center of the screen.
@@ -2077,6 +2110,13 @@ type BrowserWindow =
   abstract setKiosk: flag: bool -> unit
   /// Indicates whether the window is in kiosk mode.
   abstract isKiosk: unit -> bool
+  /// Returns the window id in the format of DesktopCapturerSource's id. For example
+  /// "window:0".
+  ///
+  /// More precisely the format is `window:id:other_id` where `id` is `HWND` on Windows,
+  /// `CGWindowID` (`uint64_t`) on macOS and `Window` (`unsigned long`) on Linux.
+  /// `other_id` is used to identify web contents (tabs) within the same top level window.
+  abstract getMediaSourceId: unit -> string
   /// The native type of the handle is HWND on Windows, NSView* on macOS, and
   /// Window (unsigned long) on Linux.
   abstract getNativeWindowHandle: unit -> Buffer
@@ -2284,11 +2324,11 @@ type BrowserWindow =
   /// Note: The TouchBar API is currently experimental and may change or be
   /// removed in future Electron releases.
   abstract setTouchBar: touchBar: TouchBar option -> unit
-  /// Attach browserView to win. If there is some other browserViews was
-  /// attached they will be removed from this window.
+  /// Attach the `browserView` to the window. If there are other BrowserViews attached,
+  /// they will be removed from this window.
   abstract setBrowserView: browserView: BrowserView option -> unit
-  /// Returns an BrowserView what is attached. Returns None if none is attached.
-  /// Throw error if multiple BrowserViews is attached.
+  /// Returns the BrowserView attached to the window. Returns None if one is not attached.
+  /// Throws an error if multiple BrowserViews are attached.
   abstract getBrowserView: unit -> BrowserView option
   /// Replacement API for setBrowserView supporting work with multi browser
   /// views.
@@ -2308,8 +2348,9 @@ type BrowserWindowStatic =
   abstract getAllWindows: unit -> BrowserWindow []
   /// Returns the window that is focused in this application.
   abstract getFocusedWindow: unit -> BrowserWindow option
-  /// Returns the window that owns the given webContents.
-  abstract fromWebContents: webContents: WebContents -> BrowserWindow
+  /// Returns the window that owns the given webContents or None if the contents are not
+  /// owned by a window.
+  abstract fromWebContents: webContents: WebContents -> BrowserWindow option
   /// Returns the window that owns the given browserView, or None if the given
   /// view is not attached to any window.
   abstract fromBrowserView: browserView: BrowserView -> BrowserWindow option
@@ -2875,7 +2916,9 @@ type CrashReporter =
   /// parameters so that it will not be sent with the crash report.
   abstract removeExtraParameter: key: string -> unit
   /// See all of the current parameters being passed to the crash reporter.
-  abstract getParameters: unit -> unit
+  abstract getParameters: unit -> obj
+  /// Returns the directory where crashes are temporarily stored before being uploaded.
+  abstract getCrashesDirectory: unit -> string
 
 type CustomScheme =
   /// Custom schemes to be registered with options.
@@ -2934,8 +2977,11 @@ type Debugger =
 
 type DesktopCapturer =
   inherit EventEmitter<DesktopCapturer>
-  /// Each returned DesktopCapturerSource represents a screen or an individual
-  /// window that can be captured.
+  /// Each returned DesktopCapturerSource represents a screen or an individual window that
+  /// can be captured.
+  ///
+  /// **Note:** Capturing the screen contents requires user consent on macOS 10.15
+  /// Catalina or higher, which can detected by `systemPreferences.getMediaAccessStatus`.
   abstract getSources: options: GetDesktopCapturerSourcesOptions -> Promise<DesktopCapturerSource []>
 
 type DesktopCapturerSource =
@@ -2968,9 +3014,10 @@ type OpenDialogResult =
   /// An array of file paths chosen by the user. If the dialog is cancelled this
   /// will be an empty array.
   abstract filePaths: string []
-  /// [macOS Mac App Store only] An array matching the filePaths array of base64
-  /// encoded strings which contains security scoped bookmark data.
-  /// securityScopedBookmarks must be enabled for this to be populated.
+  /// [macOS Mac App Store only] An array matching the filePaths array of base64 encoded
+  /// strings which contains security scoped bookmark data. securityScopedBookmarks must
+  /// be enabled for this to be populated. (For return values, see [table
+  /// here](https://www.electronjs.org/docs/all#bookmarks-array).)
   abstract bookmarks: string [] option
 
 type SaveDialogResult =
@@ -3462,29 +3509,58 @@ type IpcRenderer =
   /// Removes the specified listener from the listener array for the specified
   /// channel.
   abstract removeListener: channel: string * listener: (IpcRendererEvent -> obj [] -> unit) -> IpcRenderer
-  /// Send a message to the main process asynchronously via channel, you can
-  /// also send arbitrary arguments. Arguments will be serialized in JSON
-  /// internally and hence no functions or prototype chain will be included.
+  /// Send an asynchronous message to the main process via `channel`, along with
+  /// arguments. Arguments will be serialized with the [Structured Clone
+  /// Algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm),
+  /// just like
+  /// [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage),
+  /// so prototype chains will not be included. Sending Functions, Promises, Symbols,
+  /// WeakMaps, or WeakSets will throw an exception.
   ///
-  /// The main process handles it by listening for channel with ipcMain module.
+  /// **NOTE**: Sending non-standard JavaScript types such as DOM objects or special
+  /// Electron objects is deprecated, and will begin throwing an exception starting with
+  /// Electron 9.
+  ///
+  /// The main process handles it by listening for `channel` with the
+  /// [`ipcMain`](https://www.electronjs.org/docs/api/ipc-main) module.
   abstract send: channel: string * [<ParamArray>] args: obj [] -> unit
-  /// Send a message to the main process asynchronously via `channel` and expect
-  /// an asynchronous result. Arguments will be serialized as JSON internally
-  /// and hence no functions or prototype chain will be included.
+  /// Send a message to the main process via `channel` and expect a result asynchronously.
+  /// Arguments will be serialized with the [Structured Clone
+  /// Algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm),
+  /// just like
+  /// [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage),
+  /// so prototype chains will not be included. Sending Functions, Promises, Symbols,
+  /// WeakMaps, or WeakSets will throw an exception.
   ///
-  /// The main process should listen for `channel` with `ipcMain.handle()`.
+  /// **NOTE**: Sending non-standard JavaScript types such as DOM objects or special
+  /// Electron objects is deprecated, and will begin throwing an exception starting with
+  /// Electron 9.
+  ///
+  /// The main process should listen for `channel` with
+  /// [`ipcMain.handle()`](https://www.electronjs.org/docs/api/ipc-main#ipcmainhandlechannel-listener).
   ///
   /// Returns a promise that resolves with the response from the main process.
-  abstract invoke: channel: string * [<ParamArray>] args: obj [] -> unit
-  /// Send a message to the main process synchronously via channel, you can also
-  /// send arbitrary arguments. Arguments will be serialized in JSON internally
-  /// and hence no functions or prototype chain will be included.
+  abstract invoke: channel: string * [<ParamArray>] args: obj [] -> Promise<obj>
+  /// Send a message to the main process via `channel` and expect a result synchronously.
+  /// Arguments will be serialized with the [Structured Clone
+  /// Algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm),
+  /// just like
+  /// [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage),
+  /// so prototype chains will not be included. Sending Functions, Promises, Symbols,
+  /// WeakMaps, or WeakSets will throw an exception.
   ///
-  /// The main process handles it by listening for channel with ipcMain module,
-  /// and replies by setting event.returnValue.
+  /// **NOTE**: Sending non-standard JavaScript types such as DOM objects or special
+  /// Electron objects is deprecated, and will begin throwing an exception starting with
+  /// Electron 9.
   ///
-  /// Note: Sending a synchronous message will block the whole renderer process,
-  /// unless you know what you are doing you should never use it.
+  /// The main process handles it by listening for `channel` with
+  /// [`ipcMain`](https://www.electronjs.org/docs/api/ipc-main) module, and replies by
+  /// setting `event.returnValue`.
+  ///
+  /// ⚠️ **WARNING**: Sending a synchronous message will block the whole renderer process
+  /// until the reply is received, so use this method only as a last resort. It's much
+  /// better to use the asynchronous version,
+  /// [`invoke()`](https://www.electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args).
   abstract sendSync: channel: string * [<ParamArray>] args: obj [] -> obj option
   /// Sends a message to a window with `webContentsId` via `channel`.
   abstract sendTo: webContentsId: int * channel: string * [<ParamArray>] args: obj [] -> unit
@@ -3866,6 +3942,17 @@ type NetLog =
   [<Obsolete>]
   abstract currentlyLoggingPath: string option
 
+[<StringEnum; RequireQualifiedAccess>]
+type NotificationUrgency =
+  | Normal
+  | Critical
+  | Low
+
+[<StringEnum; RequireQualifiedAccess>]
+type NotificationTimeoutType =
+  | Default
+  | Never
+
 type Notification =
   inherit EventEmitter<Notification>
   /// Emitted when the notification is shown to the user, note this could be
@@ -3926,12 +4013,6 @@ type Notification =
   abstract show: unit -> unit
   /// Dismisses the notification.
   abstract close: unit -> unit
-
-type NotificationStatic =
-  [<EmitConstructor>] abstract Create: options: NotificationOptions -> Notification
-  /// Indicates whether or not desktop notifications are supported on the
-  /// current system
-  abstract isSupported: unit -> bool
   /// The title of the notification.
   abstract title: string option with get, set
   /// The subtitle of the notification.
@@ -3948,8 +4029,22 @@ type NotificationStatic =
   abstract silent: bool with get, set
   /// Indicates whether the notification has a reply action.
   abstract hasReply: bool with get, set
+  /// [Linux] The urgency level of the notification. Default is NotificationUrgency.Low.
+  /// See [NotifyUrgency](https://developer.gnome.org/notification-spec/#urgency-levels)
+  /// for more information.
+  abstract urgency: NotificationUrgency with get, set
+  /// [Linux, Windows] The type of timeout duration for the notification. If set to
+  /// NotificationTimeoutType.Never, the notification never expires. It stays open until
+  /// closed by the calling API or the user.
+  abstract timeoutType: NotificationTimeoutType with get, set
   /// The actions of the notification.
   abstract actions: NotificationAction [] with get, set
+
+type NotificationStatic =
+  [<EmitConstructor>] abstract Create: options: NotificationOptions -> Notification
+  /// Indicates whether or not desktop notifications are supported on the
+  /// current system
+  abstract isSupported: unit -> bool
 
 [<StringEnum; RequireQualifiedAccess>]
 type NotificationActionType =
@@ -4704,6 +4799,12 @@ type Session =
   abstract getUserAgent: unit -> string
   /// <param name="identifier">Valid UUID</param>
   abstract getBlobData: identifier: string -> Promise<Buffer>
+  /// Initiates a download of the resource at `url`. The API will generate a
+  /// `DownloadItem` that can be accessed with the `will-download` event.
+  ///
+  /// **Note:** This does not perform any security checks that relate to a page's origin,
+  /// unlike `webContents.downloadURL`.
+  abstract downloadURL: url: string -> unit
   /// Allows resuming cancelled or interrupted downloads from previous Session.
   /// The API will generate a DownloadItem that can be accessed with the
   /// `will-download` event. The DownloadItem will not have any WebContents
@@ -4725,6 +4826,41 @@ type Session =
   abstract setPreloads: preloads: string [] -> unit
   /// Returns an array of paths to preload scripts that have been registered.
   abstract getPreloads: unit -> string []
+  /// The built in spellchecker does not automatically detect what language a user is
+  /// typing in. In order for the spell checker to correctly check their words you must
+  /// call this API with an array of language codes. You can get the list of supported
+  /// language codes with the `availableSpellCheckerLanguages` property.
+  ///
+  /// **Note:** On macOS the OS spellchecker is used and will detect your language
+  /// automatically. This API is a no-op on macOS.
+  abstract setSpellCheckerLanguages: languages: string [] -> unit
+  /// Returns an array of language codes the spellchecker is enabled for. If this list is
+  /// empty the spellchecker will fallback to using `en-US`. By default on launch if this
+  /// setting is an empty list Electron will try to populate this setting with the current
+  /// OS locale. This setting is persisted across restarts.
+  ///
+  /// **Note:** On macOS the OS spellchecker is used and has it's own list of languages.
+  /// This API is a no-op on macOS.
+  abstract getSpellCheckerLanguages: unit -> string []
+  /// By default Electron will download hunspell dictionaries from the Chromium CDN. If
+  /// you want to override this behavior you can use this API to point the dictionary
+  /// downloader at your own hosted version of the hunspell dictionaries. We publish a
+  /// `hunspell_dictionaries.zip` file with each release which contains the files you need
+  /// to host here.
+  ///
+  /// **Note:** On macOS the OS spellchecker is used and therefore we do not download any
+  /// dictionary files. This API is a no-op on macOS.
+  abstract setSpellCheckerDictionaryDownloadURL: url: string -> unit
+  /// Adds a word to the custom dictionary and returns a value indicating whether the word
+  /// was successfully written.
+  ///
+  /// **Note:** On macOS and Windows 10 this word will be written to the OS custom
+  /// dictionary as well.
+  abstract addWordToSpellCheckerDictionary: word: string -> bool
+  /// Gets all the known available spell checker languages. Providing a language code to
+  /// the `setSpellCheckerLanaguages` API that isn't in this array will result in an
+  /// error.
+  abstract availableSpellCheckerLanguages: string []
   /// A Cookies object for this session.
   abstract cookies: Cookies
   /// A WebRequest object for this session.
@@ -4769,9 +4905,15 @@ type Shell =
   /// Open the given external protocol URL in the desktop's default manner. (For
   /// example, mailto: URLs in the user's default mail agent).
   abstract openExternal: url: string * ?options: OpenExternalOptions -> Promise<unit>
-  /// Move the given file to trash and returns a value indicating whether the
-  /// item was successfully moved to the trash.
-  abstract moveItemToTrash: fullPath: string -> bool
+  /// <summary>
+  ///   Move the given file to trash and returns a value indicating whether the item was
+  ///   successfully moved to the trash or otherwise deleted.
+  /// </summary>
+  /// <param name="deleteOnFail">
+  ///   [macOS] Whether or not to unilaterally remove the item if the Trash is disabled or
+  ///   unsupported on the volume.
+  /// </param>
+  abstract moveItemToTrash: fullPath: string * ?deleteOnFail: bool -> bool
   /// Play the beep sound.
   abstract beep: unit -> unit
   /// [Windows] Creates or updates a shortcut link at shortcutPath. Returns a
@@ -4836,6 +4978,12 @@ type Appearance =
 type MediaAccessType =
   | Microphone
   | Camera
+
+[<StringEnum; RequireQualifiedAccess>]
+type MediaAccessTypeForStatus =
+  | Microphone
+  | Camera
+  | Screen
 
 [<StringEnum; RequireQualifiedAccess>]
 type MediaAccessStatus =
@@ -4928,7 +5076,7 @@ type SystemPrefsColorWin =
 [<StringEnum; RequireQualifiedAccess>]
 type SystemPrefsColorMac =
   /// The text on a selected surface in a list or table.
-  | [<CompiledName("alternate-selected-control-text")>] AlternateSelectedControlText
+  | [<CompiledName("alternate-selected-control-text"); Obsolete>] AlternateSelectedControlText
   /// The background of a large interface element, such as a browser or table.
   | [<CompiledName("control-background")>] ControlBackground
   /// The surface of a control.
@@ -4937,7 +5085,7 @@ type SystemPrefsColorMac =
   | [<CompiledName("control-text")>] ControlText
   /// The text of a control that’s disabled.
   | [<CompiledName("disabled-control-text")>] DisabledControlText
-  /// The color of a find indicator.
+  /// [macOS 10.14] The color of a find indicator.
   | [<CompiledName("find-highlight")>] FindHighlight
   /// The gridlines of an interface element such as a table.
   | [<CompiledName("grid")>] Grid
@@ -4962,19 +5110,19 @@ type SystemPrefsColorMac =
   /// The text of a label of lesser importance than a normal label such as a
   /// label used to represent a subheading or additional information.
   | [<CompiledName("secondary-label")>] SecondaryLabel
-  /// The background for selected content in a key window or view.
+  /// [macOS 10.14] The background for selected content in a key window or view.
   | [<CompiledName("selected-content-background")>] SelectedContentBackground
   /// The surface of a selected control.
   | [<CompiledName("selected-control")>] SelectedControl
   /// The text of a selected control.
   | [<CompiledName("selected-control-text")>] SelectedControlText
   /// The text of a selected menu.
-  | [<CompiledName("selected-menu-item")>] SelectedMenuItem
+  | [<CompiledName("selected-menu-item-text")>] SelectedMenuItemText
   /// The background of selected text.
   | [<CompiledName("selected-text-background")>] SelectedTextBackground
   /// Selected text.
   | [<CompiledName("selected-text")>] SelectedText
-  /// A separator between different sections of content.
+  /// [macOS 10.14] A separator between different sections of content.
   | [<CompiledName("separator")>] Separator
   /// The virtual shadow cast by a raised object onscreen.
   | [<CompiledName("shadow")>] Shadow
@@ -4987,11 +5135,11 @@ type SystemPrefsColorMac =
   | [<CompiledName("text")>] Text
   /// The background behind a document's content.
   | [<CompiledName("under-page-background")>] UnderPageBackground
-  /// The selected content in a non-key window or view.
+  /// [macOS 10.14] The selected content in a non-key window or view.
   | [<CompiledName("unemphasized-selected-content-background")>] UnemphasizedSelectedContentBackground
-  /// A background for selected text in a non-key window or view.
+  /// [macOS 10.14] A background for selected text in a non-key window or view.
   | [<CompiledName("unemphasized-selected-text-background")>] UnemphasizedSelectedTextBackground
-  /// Selected text in a non-key window or view.
+  /// [macOS 10.14] Selected text in a non-key window or view.
   | [<CompiledName("unemphasized-selected-text")>] UnemphasizedSelectedText
   /// The background of a window.
   | [<CompiledName("window-background")>] WindowBackground
@@ -5205,10 +5353,11 @@ type SystemPreferences =
   ///   process is untrusted.
   /// </param>
   abstract isTrustedAccessibilityClient: prompt: bool -> bool
-  /// [macOS] This user consent was not required until macOS 10.14 Mojave, so
-  /// this method will always return MediaAccessStatus.Granted if your system is
-  /// running 10.13 High Sierra or lower.
-  abstract getMediaAccessStatus: mediaType: string -> MediaAccessStatus
+  /// [macOS] This user consent was not required on macOS 10.13 High Sierra or lower so
+  /// this method will always return `granted`. macOS 10.14 Mojave or higher requires
+  /// consent for `microphone` and `camera` access. macOS 10.15 Catalina or higher
+  /// requires consent for `screen` access.
+  abstract getMediaAccessStatus: mediaType: MediaAccessTypeForStatus -> MediaAccessStatus
   /// Returns a promise that resolves with true if consent was granted and false
   /// if it was denied. If an invalid mediaType is passed, the promise will be
   /// rejected. If an access request was denied and later is changed through the
@@ -5309,6 +5458,9 @@ type ITouchBarItem =
 type TouchBarButton =
   inherit EventEmitter<TouchBarButton>
   inherit ITouchBarItem
+  /// The description of the button to be read by a screen reader. Will only be read by
+  /// screen readers if no label is set.
+  abstract accessibilityLabel: string with get, set
   /// The button's current text. Changing this value immediately updates the
   /// button in the touch bar.
   abstract label: string with get, set
@@ -5348,6 +5500,8 @@ type TouchBarLabel =
   /// The label's current text. Changing this value immediately updates the
   /// label in the touch bar.
   abstract label: string with get, set
+  /// The description of the label to be read by a screen reader.
+  abstract accessibilityLabel: string with get, set
   /// A hex code representing the label's current text color. Changing this
   /// value immediately updates the label in the touch bar.
   abstract textColor: string with get, set
@@ -5374,6 +5528,8 @@ type TouchBarScrubberStyle =
   | Background
   /// Maps to [NSScrubberSelectionStyle outlineOverlayStyle].
   | Outline
+  /// Removes all styles.
+  | None
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarScrubberMode =
@@ -5391,11 +5547,11 @@ type TouchBarScrubber =
   abstract items: ScrubberItem [] with get, set
   /// The style that selected items in the scrubber should have. Updating this
   /// value immediately updates the control in the touch bar.
-  abstract selectedStyle: TouchBarScrubberStyle option with get, set
+  abstract selectedStyle: TouchBarScrubberStyle with get, set
   /// The style that selected items in the scrubber should have. This style is
   /// overlayed on top of the scrubber item instead of being placed behind it.
   /// Updating this value immediately updates the control in the touch bar.
-  abstract overlayStyle: TouchBarScrubberStyle option with get, set
+  abstract overlayStyle: TouchBarScrubberStyle with get, set
   /// Whether to show the left / right selection arrows in this scrubber.
   /// Updating this value immediately updates the control in the touch bar.
   abstract showArrowButtons: bool with get, set
@@ -5729,6 +5885,13 @@ type Tray =
   abstract getIgnoreDoubleClickEvents: unit -> bool
   /// [Windows] Displays a tray balloon.
   abstract displayBalloon: options: DisplayBalloonOptions -> unit
+  /// Removes a tray balloon.
+  abstract removeBalloon: unit -> unit
+  /// Returns focus to the taskbar notification area. Notification area icons should use
+  /// this message when they have completed their UI operation. For example, if the icon
+  /// displays a shortcut menu, but the user presses ESC to cancel it, use `tray.focus()`
+  /// to return focus to the notification area.
+  abstract focus: unit -> unit
   /// [macOS, Windows] Pops up the context menu of the tray icon. When `menu` is
   /// passed, the menu will be shown instead of the tray icon's context menu.
   ///
@@ -5899,8 +6062,11 @@ type InputEventType =
 type InputEventModifier =
   | Shift
   | Control
+  | Ctrl
   | Alt
   | Meta
+  | Command
+  | Cmd
   | IsKeypad
   | IsAutoRepeat
   | LeftButtonDown
@@ -5968,6 +6134,14 @@ type InsertCssOptions =
   /// Specifying `CssOriginString.User` enables you to prevent websites from
   /// overriding the CSS you insert. Default is `CssOriginString.Author`.
   abstract cssOrigin: CssOriginString with get, set
+
+
+type SharedWorkerInfo =
+  /// The unique id of the shared worker.
+  abstract id: string
+  /// The url of the shared worker.
+  abstract url: string
+
 
 
 type WebContents =
@@ -6532,8 +6706,7 @@ type WebContents =
   [<Emit "$0.addListener('devtools-reload-page',$1)">] abstract addListenerDevtoolsReloadPage: listener: (unit -> unit) -> WebContents
   /// See onDevtoolsReloadPage.
   [<Emit "$0.removeListener('devtools-reload-page',$1)">] abstract removeListenerDevtoolsReloadPage: listener: (unit -> unit) -> WebContents
-  /// Emitted when the associated window logs a console message. Will not be
-  /// emitted for windows with offscreen rendering enabled.
+  /// Emitted when the associated window logs a console message.
   ///
   /// Parameters:
   ///
@@ -6739,6 +6912,21 @@ type WebContents =
   ///
   /// Code execution will be suspended until web page stop loading.
   abstract executeJavaScript: code: string * ?userGesture: bool -> Promise<obj option>
+  /// <summary>
+  ///   Works like executeJavaScript but evaluates scripts in an isolated context.
+  ///
+  ///   The returned promise resolves with the result of the executed code or is rejected
+  ///   if the result of the code is a rejected promise.
+  /// </summary>
+  /// <param name="worldId">
+  ///   The ID of the world to run the javascript in, 0 is the default world,
+  ///   999 is the world used by Electrons contextIsolation feature. Chrome
+  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
+  ///   provide any integer here.
+  /// </param>
+  /// <param name="scripts"></param>
+  /// <param name="userGesture">Default is false</param>
+  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool -> Promise<obj option>
   /// Ignore application menu shortcuts while this web contents is focused.
   abstract setIgnoreMenuShortcuts: ignore: bool -> unit
   /// Mute the audio on the current web page.
@@ -6771,6 +6959,7 @@ type WebContents =
   /// call contents.setVisualZoomLevelLimits(1, 3)
   abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> Promise<unit>
   /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
+  [<Obsolete>]
   abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> Promise<unit>
   /// Executes the editing command undo in web page.
   abstract undo: unit -> unit
@@ -6807,6 +6996,27 @@ type WebContents =
   /// Captures a snapshot of the page within rect. Omitting rect will capture
   /// the whole visible page.
   abstract capturePage: ?rect: Rectangle -> Promise<NativeImage>
+  /// Returns a value indicating whether this page is being captured. It returns `true`
+  /// when the capturer count is large then 0.
+  abstract isBeingCaptured: unit -> bool
+  /// <summary>
+  ///   Increase the capturer count by one. The page is considered visible when its
+  ///   browser window is hidden and the capturer count is non-zero. If you would like the
+  ///   page to stay hidden, you should ensure that `stayHidden` is set to true.
+  ///
+  ///   This also affects the Page Visibility API.
+  /// </summary>
+  /// <param name="size">The perferred size for the capturer.</param>
+  /// <param name="stayHidden">Keep the page hidden instead of visible.</param>
+  abstract incrementCapturerCount: ?size: Size * ?stayHidden: bool -> unit
+  /// <summary>
+  ///   Decrease the capturer count by one. The page will be set to hidden or occluded
+  ///   state when its browser window is hidden or occluded and the capturer count reaches
+  ///   zero. If you want to decrease the hidden capturer count instead you should set
+  ///   `stayHidden` to true.
+  /// </summary>
+  /// <param name="stayHidden">Keep the page hidden instead of visible.</param>
+  abstract decrementCapturerCount: ?stayHidden: bool -> unit
   /// Get the system printer list.
   abstract getPrinters: unit -> PrinterInfo []
   /// Prints window's web page. The callback indicates whether the print call
@@ -6862,24 +7072,45 @@ type WebContents =
   abstract inspectElement: x: int * y: int -> unit
   /// Opens the developer tools for the shared worker context.
   abstract inspectSharedWorker: unit -> unit
+  /// Inspects the shared worker based on its ID.
+  abstract inspectSharedWorkerById: workerId: string -> unit
+  /// Returns information about all Shared Workers.
+  abstract getAllSharedWorkers: unit -> SharedWorkerInfo []
   /// Opens the developer tools for the service worker context.
   abstract inspectServiceWorker: unit -> unit
-  /// Send an asynchronous message to renderer process via `channel`, you can
-  /// also send arbitrary arguments. Arguments will be serialized in JSON
-  /// internally and hence no functions or prototype chain will be included.
+  /// Send an asynchronous message to the main process via `channel`, along with
+  /// arguments. Arguments will be serialized with the [Structured Clone
+  /// Algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm),
+  /// just like
+  /// [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage),
+  /// so prototype chains will not be included. Sending Functions, Promises, Symbols,
+  /// WeakMaps, or WeakSets will throw an exception.
   ///
-  /// The renderer process can handle the message by listening to channel with
-  /// the ipcRenderer module.
+  /// **NOTE**: Sending non-standard JavaScript types such as DOM objects or special
+  /// Electron objects is deprecated, and will begin throwing an exception starting with
+  /// Electron 9.
+  ///
+  /// The main process handles it by listening for `channel` with the
+  /// [`ipcMain`](https://www.electronjs.org/docs/api/ipc-main) module.
   abstract send: channel: string * [<ParamArray>] args: obj [] -> unit
   /// Send an asynchronous message to a specific frame in a renderer process via
-  /// `channel`. Arguments will be serialized as JSON internally and as such no
-  /// functions or prototype chains will be included.
+  /// `channel`, along with arguments. Arguments will be serialized with the [Structured
+  /// Clone
+  /// Algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm),
+  /// just like
+  /// [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage),
+  /// so prototype chains will not be included. Sending Functions, Promises, Symbols,
+  /// WeakMaps, or WeakSets will throw an exception.
   ///
-  /// The renderer process can handle the message by listening to channel with
-  /// the ipcRenderer module.
+  /// > **NOTE**: Sending non-standard JavaScript types such as DOM objects or special
+  /// Electron objects is deprecated, and will begin throwing an exception starting with
+  /// Electron 9.
   ///
-  /// If you want to get the frameId of a given renderer context you should use
-  /// the webFrame.routingId value.
+  /// The renderer process can handle the message by listening to `channel` with the
+  /// [`ipcRenderer`](https://www.electronjs.org/docs/api/ipc-renderer) module.
+  ///
+  /// If you want to get the `frameId` of a given renderer context you should use the
+  /// `webFrame.routingId` value.
   abstract sendToFrame: frameId: int * channel: string * [<ParamArray>] args: obj [] -> unit
   /// Enable device emulation with the given parameters.
   abstract enableDeviceEmulation: parameters: DeviceEmulationParameters -> unit
@@ -7018,8 +7249,6 @@ type WebFrame =
   /// Note: Visual zoom is disabled by default in Electron. To re-enable it,
   /// call: webFrame.setVisualZoomLevelLimits(1, 3)
   abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
-  /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-  abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> unit
   /// Sets a provider for spell checking in input fields and text areas. The
   /// provider must be an object that has a spellCheck method that accepts an
   /// array of individual words for spellchecking. The spellCheck function runs
@@ -7439,6 +7668,9 @@ type BrowserWindowOptions =
   abstract ``type``: BrowserWindowStyle with get, set
   /// The style of window title bar. Default is TitleBarStyle.Default.
   abstract titleBarStyle: TitleBarStyle with get, set
+  /// Set a custom position for the traffic light buttons. Can only be used with
+  /// `titleBarStyle` set to `TitleBarStyle.Hidden`.
+  abstract trafficLightPosition: Point with get, set
   /// Shows the title in the title bar in full screen mode on macOS for all
   /// titleBarStyle options. Default is false.
   abstract fullscreenWindowTitle: bool with get, set
@@ -7608,6 +7840,9 @@ type ContextMenuParams =
   abstract titleText: string
   /// The misspelled word under the cursor, if any.
   abstract misspelledWord: string
+  /// An array of suggested words to show the user to replace the `misspelledWord`. Only
+  /// available if there is a misspelled word and spellchecker is enabled.
+  abstract dictionarySuggestions: string []
   /// The character encoding of the frame on which the menu was invoked.
   abstract frameCharset: string
   /// If the context menu was invoked on an input field, the type of that field.
@@ -7694,10 +7929,32 @@ type SetCookieDetails =
   /// retained between sessions.
   abstract expirationDate: float with get, set
 
+[<StringEnum; RequireQualifiedAccess>]
+type BalloonIconType =
+  | None
+  | Info
+  | Warning
+  | Error
+  | Custom
+
+
 type DisplayBalloonOptions =
+  /// Icon to use when `iconType` is `custom`.
   abstract icon: U2<NativeImage, string> with get, set
+  /// Default is `BalloonIconType.Custom`.
+  abstract iconType: BalloonIconType with get, set
   abstract title: string with get, set
   abstract content: string with get, set
+  /// The large version of the icon should be used. Default is `true`. Maps to
+  /// [`NIIF_LARGE_ICON`](https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa#niif_large_icon-0x00000020).
+  abstract largeIcon: bool with get, set
+  /// Do not play the associated sound. Default is `false`. Maps to
+  /// [`NIIF_NOSOUND`](https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa#niif_nosound-0x00000010).
+  abstract noSound: bool with get, set
+  /// Do not display the balloon notification if the current user is in "quiet time".
+  /// Default is `false`. Maps to
+  /// [`NIIF_RESPECT_QUIET_TIME`](https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa#niif_respect_quiet_time-0x00000080).
+  abstract respectQuietTime: bool with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type DockBounceType =
@@ -7912,7 +8169,7 @@ type DraggedItem =
   abstract files: string [] with get, set
   /// The image showing under the cursor when dragging. Must be non-empty on
   /// macOS.
-  abstract icon: NativeImage with get, set
+  abstract icon: U2<NativeImage, string> with get, set
 
 type JumpListSettings =
   /// The minimum number of items that will be shown in the Jump List. For
@@ -8183,10 +8440,14 @@ type NotificationOptions =
   abstract icon: U2<string, NativeImage> with get, set
   /// [macOS] Whether or not to add an inline reply option to the notification.
   abstract hasReply: bool with get, set
+  /// [Linux, Windows] The timeout duration of the notification.
+  abstract timeoutType: NotificationTimeoutType with get, set
   /// [macOS] The placeholder to write in the inline reply input field.
   abstract replyPlaceholder: string with get, set
   /// [macOS] The name of the sound file to play when the notification is shown.
   abstract sound: string with get, set
+  /// [Linux] The urgency level of the notification.
+  abstract urgency: NotificationUrgency with get, set
   /// [macOS] Actions to add to the notification. Please read the available
   /// actions and limitations in the NotificationAction documentation.
   abstract actions: NotificationAction [] with get, set
@@ -8368,7 +8629,7 @@ type OpenDevToolsOptions =
   abstract activate: bool with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
-type DialogFeature =
+type OpenDialogFeature =
   /// Allow files to be selected. Note: On Windows and Linux, can not be
   /// combined with OpenDirectory. OpenDirectory will take precedence.
   | OpenFile
@@ -8392,6 +8653,24 @@ type DialogFeature =
   /// [macOS] Treat packages, such as .app folders, as a directory instead of a
   /// file.
   | TreatPackageAsDirectory
+  /// Do not add the item being opened to the recent documents list.
+  | DontAddToRecent
+
+[<StringEnum; RequireQualifiedAccess>]
+type SaveDialogFeature =
+  /// Show hidden files in dialog.
+  | ShowHiddenFiles
+  /// [macOS] Allow creating new directories from dialog.
+  | CreateDirectory
+  /// [macOS] Treat packages, such as .app folders, as a directory instead of a
+  /// file.
+  | TreatPackageAsDirectory
+  /// [linux] Sets whether the user will be presented a confirmation dialog if the user
+  /// types a file name that already exists.
+  | ShowOverwriteConfirmation
+  /// Do not add the item being opened to the recent documents list.
+  | DontAddToRecent
+
 
 type OpenDialogOptions =
   abstract title: string with get, set
@@ -8403,7 +8682,7 @@ type OpenDialogOptions =
   abstract filters: FileFilter [] with get, set
   /// Contains which features the dialog should use. The following values are
   /// supported:
-  abstract properties: DialogFeature [] with get, set
+  abstract properties: OpenDialogFeature [] with get, set
   /// [macOS] Message to display above input boxes.
   abstract message: string with get, set
   /// [Mac App Store] Create security scoped bookmarks when packaged for the Mac
@@ -8532,7 +8811,8 @@ type PrintOptions =
   abstract silent: bool with get, set
   /// Prints the background color and image of the web page. Default is `false`.
   abstract printBackground: bool with get, set
-  /// Set the printer device name to use. Default is `""`.
+  /// Set the printer device name to use. Must be the system-defined name and not the
+  /// 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Brother QL-820NWB'.
   abstract deviceName: string with get, set
   /// Set whether the printed web page will be in color or grayscale. Default is
   /// `true`.
@@ -8554,6 +8834,10 @@ type PrintOptions =
   /// Set the duplex mode of the printed web page.
   abstract duplexMode: PrintDuplexMode with get, set
   abstract dpi: PrintDpi with get, set
+  /// String to be printed as page header.
+  abstract header: string with get, set
+  /// String to be printed as page footer.
+  abstract footer: string with get, set
 
 [<StringEnum; RequireQualifiedAccess>]
 type PrintFailureReason =
@@ -8751,6 +9035,9 @@ type SaveDialogOptions =
   abstract nameFieldLabel: string with get, set
   /// [macOS] Show the tags input box, defaults to true.
   abstract showsTagField: bool with get, set
+  /// Contains which features the dialog should use. The following values are
+  /// supported:
+  abstract properties: SaveDialogFeature [] with get, set
   /// [Mac App Store] Create a security scoped bookmark when packaged for the
   /// Mac App Store. If this option is enabled and the file doesn't already
   /// exist a blank file will be created at the chosen path.
@@ -8824,10 +9111,15 @@ type TouchBarButtonIconPosition =
 type TouchBarButtonOptions =
   /// Button text.
   abstract label: string with get, set
+  /// A short description of the button for use by screenreaders like VoiceOver. When
+  /// defining `accessibilityLabel`, ensure you have considered macOS [best
+  /// practices](https://developer.apple.com/documentation/appkit/nsaccessibilitybutton/1524910-accessibilitylabel?language=objc).
+  abstract accessibilityLabel: string with get, set
   /// Button background color in hex format, i.e #ABCDEF.
   abstract backgroundColor: string with get, set
   /// Button icon.
   abstract icon: U2<NativeImage, string> with get, set
+  /// Defaults to TouchBarButtonIconPosition.Overlay.
   abstract iconPosition: TouchBarButtonIconPosition with get, set
   /// Function to call when the button is clicked.
   abstract click: (unit -> unit) with get, set
@@ -8852,6 +9144,10 @@ type TouchBarGroupOptions =
 type TouchBarLabelOptions =
   /// Text to display.
   abstract label: string with get, set
+  /// A short description of the button for use by screenreaders like VoiceOver. When
+  /// defining `accessibilityLabel`, ensure you have considered macOS [best
+  /// practices](https://developer.apple.com/documentation/appkit/nsaccessibilitybutton/1524910-accessibilitylabel?language=objc).
+  abstract accessibilityLabel: string with get, set
   /// Hex color of text, i.e #ABCDEF.
   abstract textColor: string with get, set
 
@@ -8876,9 +9172,9 @@ type TouchBarScrubberOptions =
   /// user touched
   abstract highlight: (int -> unit) with get, set
   /// Selected item style. Defaults to None.
-  abstract selectedStyle: TouchBarScrubberStyle option with get, set
+  abstract selectedStyle: TouchBarScrubberStyle with get, set
   /// Selected overlay item style. Defaults to None.
-  abstract overlayStyle: TouchBarScrubberStyle option with get, set
+  abstract overlayStyle: TouchBarScrubberStyle with get, set
   /// Defaults to false.
   abstract showArrowButtons: bool with get, set
   /// Defaults to TouchBarScrubberMode.Free.
@@ -8888,35 +9184,40 @@ type TouchBarScrubberOptions =
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarSegmentedControlSegmentStyle =
-  /// The appearance of the segmented control is automatically determined based
-  /// on the type of window in which the control is displayed and the position
-  /// within the window.
+  /// The appearance of the segmented control is automatically determined based on the
+  /// type of window in which the control is displayed and the position within the window.
+  /// Maps to `NSSegmentStyleAutomatic`.
   | Automatic
-  /// The control is displayed using the rounded style.
+  /// The control is displayed using the rounded style. Maps to `NSSegmentStyleRounded`.
   | Rounded
-  /// The control is displayed using the textured rounded style.
+  /// The control is displayed using the textured rounded style. Maps to
+  /// `NSSegmentStyleTexturedRounded`.
   | [<CompiledName("textured-rounded")>] TexturedRounded
-  /// The control is displayed using the round rect style.
+  /// The control is displayed using the round rect style. Maps to
+  /// `NSSegmentStyleRoundRect`.
   | [<CompiledName("round-rect")>] RoundRect
-  /// The control is displayed using the textured square style.
+  /// The control is displayed using the textured square style. Maps to
+  /// `NSSegmentStyleTexturedSquare`.
   | [<CompiledName("textured-square")>] TexturedSquare
-  /// The control is displayed using the capsule style.
+  /// The control is displayed using the capsule style. Maps to `NSSegmentStyleCapsule`.
   | Capsule
-  /// The control is displayed using the small square style.
+  /// The control is displayed using the small square style. Maps to
+  /// `NSSegmentStyleSmallSquare`.
   | [<CompiledName("small-square")>] SmallSquare
-  /// The segments in the control are displayed very close to each other but not
-  /// touching.
+  /// The segments in the control are displayed very close to each other but not touching.
+  /// Maps to `NSSegmentStyleSeparated`.
   | Separated
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarSegmentedControlMode =
-  /// One item selected at a time, selecting one deselects the previously
-  /// selected item.
+  /// One item selected at a time, selecting one deselects the previously selected item.
+  /// Maps to `NSSegmentSwitchTrackingSelectOne`.
   | Single
-  /// Multiple items can be selected at a time.
+  /// Multiple items can be selected at a time. Maps to
+  /// `NSSegmentSwitchTrackingSelectAny`.
   | Multiple
-  /// Make the segments act as buttons, each segment can be pressed and released
-  /// but never marked as active.
+  /// Make the segments act as buttons, each segment can be pressed and released but never
+  /// marked as active. Maps to `NSSegmentSwitchTrackingMomentary`.
   | Buttons
 
 type TouchBarSegmentedControlOptions =
@@ -8952,11 +9253,12 @@ type TouchBarSliderOptions =
 
 [<StringEnum; RequireQualifiedAccess>]
 type TouchBarSpacerSize =
-  /// Small space between items.
+  /// Small space between items. Maps to `NSTouchBarItemIdentifierFixedSpaceSmall`. This
+  /// is the default.
   | Small
-  /// Large space between items.
+  /// Large space between items. Maps to `NSTouchBarItemIdentifierFixedSpaceLarge`.
   | Large
-  /// Take up all available space.
+  /// Take up all available space. Maps to `NSTouchBarItemIdentifierFlexibleSpace`.
   | Flexible
 
 type TouchBarSpacerOptions =
@@ -8977,6 +9279,7 @@ type UploadProgress =
 
 type VisibleOnAllWorkspacesOptions =
   /// Sets whether the window should be visible above fullscreen windows
+  [<Obsolete>]
   abstract visibleOnFullScreen: bool with get, set
 
 type ContextMenuEditFlags =
@@ -9055,9 +9358,6 @@ type WebPreferences =
   /// engine. This is not the same as the `nodeIntegration` option and the APIs
   /// available to the preload script are more limited. Read more about the
   /// option here: https://electronjs.org/docs/api/sandbox-option.
-  ///
-  /// Note: This option is currently experimental and may change or be
-  /// removed in future Electron releases.
   abstract sandbox: bool with get, set
   /// Whether to enable the `remote` module. Default is true.
   abstract enableRemoteModule: bool with get, set
@@ -9167,6 +9467,11 @@ type WebPreferences =
   /// Whether to prevent the window from resizing when entering HTML Fullscreen.
   /// Default is `false`.
   abstract disableHtmlFullscreenWindowResize: bool with get, set
+  /// An alternative title string provided only to accessibility tools such as screen
+  /// readers. This string is not directly visible to users.
+  abstract accessibleTitle: string with get, set
+  /// Whether to enable the builtin spellchecker. Default is `false`.
+  abstract spellcheck: bool with get, set
 
 type DefaultFontFamily =
   /// Defaults to Times New Roman.

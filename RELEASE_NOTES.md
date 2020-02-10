@@ -1,3 +1,7 @@
+### 5.0.0
+
+* Updated for Electron 8
+
 ### 4.3.0
 
 * Small breaking change according to Electron docs update: Renamed `LoginRequest` to `AuthenticationResponseDetails` and removed its `method` and `referrer` properties  (relevant for the `login` event on `App` and `WebContents`)
