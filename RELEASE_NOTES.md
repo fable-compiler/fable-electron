@@ -1,3 +1,7 @@
+### 5.1.0
+
+* Minor update based on updated Electron docs
+
 ### 5.0.0
 
 * Updated for Electron 8

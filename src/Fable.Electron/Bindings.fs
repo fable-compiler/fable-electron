@@ -8526,6 +8526,7 @@ type OnCompletedDetails =
   abstract fromCache: bool
   abstract statusCode: int
   abstract statusLine: string
+  abstract error: string
 
 type OnCompletedFilter =
   /// Array of URL patterns that will be used to filter out the requests that do
@@ -8560,6 +8561,8 @@ type OnHeadersReceivedDetails =
   abstract statusLine: string
   abstract statusCode: int
   /// Properties are `string`.
+  abstract requestHeaders: obj
+  /// Properties are `string []`.
   abstract responseHeaders: obj
 
 type OnHeadersReceivedFilter =
