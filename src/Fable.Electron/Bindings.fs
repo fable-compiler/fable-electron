@@ -989,34 +989,34 @@ type App =
   abstract addRecentDocument: path: string -> unit
   /// [macOS, Windows] Clears the recent documents list.
   abstract clearRecentDocuments: unit -> unit
-  /// This method sets the current executable as the default handler for a
-  /// protocol (aka URI scheme). It allows you to integrate your app deeper into
-  /// the operating system. Once registered, all links with `your-protocol://`
-  /// will be opened with the current executable. The whole link, including
-  /// protocol, will be passed to your application as a parameter.
+  /// <summary>
+  ///   Sets the current executable as the default handler for a protocol (aka URI
+  ///   scheme). It allows you to integrate your app deeper into the operating system.
+  ///   Once registered, all links with `your-protocol://` will be opened with the current
+  ///   executable. The whole link, including protocol, will be passed to your application
+  ///   as a parameter.
   ///
-  /// `protocol` is the name of your protocol, without ://
+  ///   Returns a value indicating whether the call succeeded.
   ///
-  /// Returns a value indicating whether the call succeeded.
+  ///   Note: On macOS, you can only register protocols that have been added to your app's
+  ///   info.plist, which can not be modified at runtime. However, you can change the file
+  ///   during build time via Electron Forge, Electron Packager, or by editing info.plist
+  ///   with a text editor. Please refer to Apple's documentation for details.
   ///
-  /// On Windows, you can provide optional parameters path (the path to your
-  /// executable, defaults to process.execPath), and args, an array of arguments
-  /// to be passed to your executable when it launches.
+  ///   Note: In a Windows Store environment (when packaged as an `appx`) this API will
+  ///   return `true` for all calls but the registry key it sets won't be accessible by
+  ///   other applications.  In order to register your Windows Store application as a
+  ///   default protocol handler you must declare the protocol in your manifest:
+  ///   https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol
   ///
-  /// Note: On macOS, you can only register protocols that have been added to
-  /// your app's info.plist, which can not be modified at runtime. You can
-  /// however change the file with a simple text editor or script during build
-  /// time. Please refer to Apple's documentation for details.
-  ///
-  /// Note: In a Windows Store environment (when packaged as an `appx`) this API
-  /// will return `true` for all calls but the registry key it sets won't be
-  /// accessible by other applications.  In order to register your Windows Store
-  /// application as a default protocol handler you must declare the protocol in
-  /// your manifest:
-  /// https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol
-  ///
-  /// The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme
-  /// internally.
+  ///   The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
+  /// </summary>
+  /// <param name="protocol">
+  ///   The name of your protocol, without `://`. For example, if you want your app to
+  ///   handle `electron://` links, pass `electron` as the value for this parameter.
+  /// </param>
+  /// <param name="path">The path to the Electron executable.</param>
+  /// <param name="args">Arguments passed to the executable.</param>
   abstract setAsDefaultProtocolClient: protocol: string * ?path: string * ?args: string [] -> bool
   /// This method checks if the current executable as the default handler for a
   /// protocol (aka URI scheme). If so, it will remove the app as the default
