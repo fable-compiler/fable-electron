@@ -2317,6 +2317,12 @@ type BrowserWindow =
   /// [macOS] Adds a vibrancy effect to the browser window. Passing None will
   /// remove the vibrancy effect on the window.
   abstract setVibrancy: ``type``: VibrancyType option -> unit
+  /// Set a custom position for the traffic light buttons. Can only be used with
+  /// `titleBarStyle` set to `TitleBarStyle.Hidden`.
+  abstract setTrafficLightPosition: position: Point -> unit
+  /// Returns the current position for the traffic light buttons. Can only be used with
+  /// `titleBarStyle` set to `TitleBarStyle.Hidden`.
+  abstract setTrafficLightPosition: position: unit -> Point
   /// [macOS] Sets the touchBar layout for the current window. Specifying None
   /// clears the touch bar. This method only has an effect if the machine has a
   /// touch bar and is running on macOS 10.12.1+.
@@ -4713,6 +4719,55 @@ type Session =
   [<Emit "$0.addListener('preconnect',$1)">] abstract addListenerPreconnect: listener: (Event -> string -> bool -> unit) -> Session
   /// See onPreconnect.
   [<Emit "$0.removeListener('preconnect',$1)">] abstract removeListenerPreconnect: listener: (Event -> string -> bool -> unit) -> Session
+  /// Emitted when a hunspell dictionary file has been successfully initialized. This
+  /// occurs after the file has been downloaded.
+  ///
+  /// Parameters:
+  ///  - event
+  ///  - languageCode: The language code of the dictionary file
+  [<Emit "$0.on('spellcheck-dictionary-initialized',$1)">] abstract onSpellcheckDictionaryInitialized: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.once('spellcheck-dictionary-initialized',$1)">] abstract onceSpellcheckDictionaryInitialized: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.addListener('spellcheck-dictionary-initialized',$1)">] abstract addListenerSpellcheckDictionaryInitialized: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.removeListener('spellcheck-dictionary-initialized',$1)">] abstract removeListenerSpellcheckDictionaryInitialized: listener: (Event -> string -> unit) -> Session
+  /// Emitted when a hunspell dictionary file starts downloading.
+  ///
+  /// Parameters:
+  ///  - event
+  ///  - languageCode: The language code of the dictionary file
+  [<Emit "$0.on('spellcheck-dictionary-download-begin',$1)">] abstract onSpellcheckDictionaryDownloadBegin: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.once('spellcheck-dictionary-download-begin',$1)">] abstract onceSpellcheckDictionaryDownloadBegin: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.addListener('spellcheck-dictionary-download-begin',$1)">] abstract addListenerSpellcheckDictionaryDownloadBegin: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.removeListener('spellcheck-dictionary-download-begin',$1)">] abstract removeListenerSpellcheckDictionaryDownloadBegin: listener: (Event -> string -> unit) -> Session
+  /// Emitted when a hunspell dictionary file has been successfully downloaded.
+  ///
+  /// Parameters:
+  ///  - event
+  ///  - languageCode: The language code of the dictionary file
+  [<Emit "$0.on('spellcheck-dictionary-download-success',$1)">] abstract onSpellcheckDictionaryDownloadSuccess: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.once('spellcheck-dictionary-download-success',$1)">] abstract onceSpellcheckDictionaryDownloadSuccess: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.addListener('spellcheck-dictionary-download-success',$1)">] abstract addListenerSpellcheckDictionaryDownloadSuccess: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.removeListener('spellcheck-dictionary-download-success',$1)">] abstract removeListenerSpellcheckDictionaryDownloadSuccess: listener: (Event -> string -> unit) -> Session
+  /// Emitted when a hunspell dictionary file has been successfully downloaded.
+  ///
+  /// Parameters:
+  ///  - event
+  ///  - languageCode: The language code of the dictionary file
+  [<Emit "$0.on('spellcheck-dictionary-download-failure',$1)">] abstract onSpellcheckDictionaryDownloadFailure: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.once('spellcheck-dictionary-download-failure',$1)">] abstract onceSpellcheckDictionaryDownloadFailure: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.addListener('spellcheck-dictionary-download-failure',$1)">] abstract addListenerSpellcheckDictionaryDownloadFailure: listener: (Event -> string -> unit) -> Session
+  /// See onPreconnect.
+  [<Emit "$0.removeListener('spellcheck-dictionary-download-failure',$1)">] abstract removeListenerSpellcheckDictionaryDownloadFailure: listener: (Event -> string -> unit) -> Session
   /// Returns the session's current cache size, in bytes.
   abstract getCacheSize: unit -> Promise<int>
   /// Clears the session’s HTTP cache.
