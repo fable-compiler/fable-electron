@@ -1,3 +1,7 @@
+### 5.3.0
+
+* Updated for Electron 8.2
+
 ### 5.2.0
 
 * Updated for Electron 8.1

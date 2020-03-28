@@ -2636,6 +2636,9 @@ type ClientRequestOptions =
   /// to the empty string. The session option prevails on partition. Thus if a
   /// session is explicitly specified, partition is ignored.
   abstract partition: string with get, set
+  /// Whether to send cookies with this request from the provided session. This will make
+  /// the `net` request's cookie behavior match a `fetch` request. Default is `false`.
+  abstract useSessionCookies: bool with get, set
   /// The protocol scheme in the form 'scheme:'. Currently supported values are
   /// 'http:' or 'https:'. Defaults to 'http:'.
   abstract protocol: string with get, set
@@ -6992,8 +6995,8 @@ type WebContents =
   abstract isAudioMuted: unit -> bool
   /// Indicates whether audio is currently playing.
   abstract isCurrentlyAudible: unit -> bool
-  /// Changes the zoom factor to the specified factor. Zoom factor is zoom
-  /// percent divided by 100, so 300% = 3.0.
+  /// Changes the zoom factor to the specified factor. Zoom factor is zoom percent divided
+  /// by 100, so 300% = 3.0. The factor must be greater than 0.0. Default is 1.0.
   [<Obsolete("Use the 'zoomFactor' property instead.")>]
   abstract setZoomFactor: factor: float -> unit
   /// Returns the current zoom factor.
@@ -7288,8 +7291,8 @@ type WebContentsStatic =
 
 type WebFrame =
   inherit EventEmitter<WebFrame>
-  /// Changes the zoom factor to the specified factor. Zoom factor is zoom
-  /// percent divided by 100, so 300% = 3.0.
+  /// Changes the zoom factor to the specified factor. Zoom factor is zoom percent divided
+  /// by 100, so 300% = 3.0. The factor must be greater than 0.0. Default is 1.0.
   abstract setZoomFactor: factor: float -> unit
   /// Returns the current zoom factor.
   abstract getZoomFactor: unit -> float
@@ -9517,6 +9520,8 @@ type WebPreferences =
   /// not defined the default message would be used, note that currently the
   /// default message is in English and not localized.
   abstract safeDialogsMessage: string with get, set
+  /// Whether to disable dialogs completely. Overrides `safeDialogs`. Default is `false`.
+  abstract disableDialogs: bool with get, set
   /// Whether dragging and dropping a file or link onto the page causes a
   /// navigation. Default is false.
   abstract navigateOnDragDrop: bool with get, set
