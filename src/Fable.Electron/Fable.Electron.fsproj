@@ -4,13 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>5.3.0</Version>
+    <Version>5.4.0</Version>
     <Authors>Christer van der Meeren</Authors>
     <Description>Fable bindings and helpers for Electron.</Description>
     <PackageLicenseUrl>https://github.com/fable-compiler/fable-electron/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fable-compiler/fable-electron</PackageProjectUrl>
     <PackageTags>fable electron bindings</PackageTags>
-    <PackageReleaseNotes>Updated for Electron 8.2</PackageReleaseNotes>
+    <PackageReleaseNotes>Minor breaking fix based on updated docs: On TraceConfig, the properties included_categories, excluded_categories, and histogram_names are now string [] instead of string</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

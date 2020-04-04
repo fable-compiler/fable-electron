@@ -5738,19 +5738,19 @@ type TraceConfig =
   /// using * at the end of the category name. See [tracing
   /// categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h)
   /// for the list of categories.
-  abstract included_categories: string
+  abstract included_categories: string []
   /// A list of tracing categories to exclude. Can include glob-like patterns
   /// using * at the end of the category name. See [tracing
   /// categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h)
   /// for the list of categories.
-  abstract excluded_categories: string
+  abstract excluded_categories: string []
   /// A list of process IDs to include in the trace. If not specified, trace all
   /// processes.
   abstract included_process_ids: int []
   /// A list of
   /// [histogram](https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histograms/README.md)
   /// names to report with the trace.
-  abstract histogram_names: string
+  abstract histogram_names: string []
   /// If the `disabled-by-default-memory-infra` category is enabled, this
   /// contains optional additional configuration for data collection. See the
   /// [Chromium memory-infra
