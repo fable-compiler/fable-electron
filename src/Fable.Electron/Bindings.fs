@@ -370,12 +370,14 @@ type App =
   [<Emit "$0.addListener('will-finish-launching',$1)">] abstract addListenerWillFinishLaunching: listener: (Event -> unit) -> App
   /// See onWillFinishLaunching.
   [<Emit "$0.removeListener('will-finish-launching',$1)">] abstract removeListenerWillFinishLaunching: listener: (Event -> unit) -> App
-  /// Emitted when Electron has finished initializing. You can call
-  /// `app.isReady()` to check if this event has already fired.
+  /// Emitted when Electron has finished initializing. You can call `app.isReady()` to
+  /// check if this event has already fired.
   ///
   /// The second parameter is macOS only and holds the `userInfo` of the
-  /// `NSUserNotification` that was used to open the application, if it was
-  /// launched from Notification Center.
+  /// `NSUserNotification` that was used to open the application, if it was launched from
+  /// Notification Center.
+  ///
+  /// You can call `app.isReady()` to check if this event has already fired.
   [<Emit "$0.on('ready',$1)">] abstract onReady: listener: (Event -> obj -> unit) -> App
   /// See onReady.
   [<Emit "$0.once('ready',$1)">] abstract onceReady: listener: (Event -> obj -> unit) -> App
@@ -1793,6 +1795,12 @@ type BrowserWindow =
   /// See onScrollTouchEdge.
   [<Emit "$0.removeListener('scroll-touch-edge',$1)">] abstract removeListenerScrollTouchEdge: listener: (Event -> unit) -> BrowserWindow
   /// [macOS] Emitted on 3-finger swipe.
+  ///
+  /// The method underlying this event is built to handle older macOS-style trackpad
+  /// swiping, where the content on the screen doesn't move with the swipe. Most macOS
+  /// trackpads are not configured to allow this kind of swiping anymore, so in order for
+  /// it to emit properly the 'Swipe between pages' preference in System Preferences >
+  /// Trackpad > More Gestures must be set to 'Swipe with two or three fingers'.
   [<Emit "$0.on('swipe',$1)">] abstract onSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
   /// See onSwipe.
   [<Emit "$0.once('swipe',$1)">] abstract onceSwipe: listener: (Event -> SwipeDirection -> unit) -> BrowserWindow
