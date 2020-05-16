@@ -1,3 +1,7 @@
+### 5.5.0
+
+* Updated for Electron 8.3
+
 ### 5.4.0
 
 * Minor breaking fix based on updated docs: On `TraceConfig`, the properties `included_categories`, `excluded_categories`, and `histogram_names` are now `string []` instead of `string `

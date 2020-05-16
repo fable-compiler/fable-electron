@@ -4,13 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>5.4.0</Version>
+    <Version>5.5.0</Version>
     <Authors>Christer van der Meeren</Authors>
     <Description>Fable bindings and helpers for Electron.</Description>
     <PackageLicenseUrl>https://github.com/fable-compiler/fable-electron/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fable-compiler/fable-electron</PackageProjectUrl>
     <PackageTags>fable electron bindings</PackageTags>
-    <PackageReleaseNotes>Minor breaking fix based on updated docs: On TraceConfig, the properties included_categories, excluded_categories, and histogram_names are now string [] instead of string</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated for Electron 8.3</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -18,7 +18,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <NpmDependencies>
-      <NpmPackage Name="electron" Version="gte 8.2 lt 9" DevDependency="true" ResolutionStrategy="max" />
+      <NpmPackage Name="electron" Version="gte 8.3 lt 9" DevDependency="true" ResolutionStrategy="max" />
     </NpmDependencies>
   </PropertyGroup>
   <ItemGroup>

@@ -103,6 +103,10 @@ type KeyboardEvent =
   /// Whether an accelerator was used to trigger the event as opposed to another user gesture like mouse click
   abstract triggeredByAccelerator: bool
 
+type NewWindowEvent =
+  inherit Browser.Types.Event
+  abstract newGuest: BrowserWindow option
+
 type CommonInterface =
   /// Perform copy and paste operations on the system clipboard. On Linux, there
   /// is also a selection clipboard. To manipulate it you need to pass
@@ -353,6 +357,10 @@ type MoveToApplicationsFolderConflictType =
 
 type MoveToApplicationsFolderOptions =
   abstract conflictHandler: MoveToApplicationsFolderConflictType -> bool with get, set
+
+type FocusOptions =
+  /// Make the receiver the active app even if another app is currently active.
+  abstract steal: bool with get, set
 
 type App =
   inherit EventEmitter<App>
@@ -900,10 +908,11 @@ type App =
   /// used as a convenient alternative to checking app.isReady() and subscribing
   /// to the `ready` event if the app is not ready yet.
   abstract whenReady: unit -> Promise<unit>
-  /// On Linux, focuses on the first visible window. On macOS, makes the
-  /// application the active app. On Windows, focuses on the application's first
-  /// window.
-  abstract focus: unit -> unit
+  /// On Linux, focuses on the first visible window. On macOS, makes the application the
+  /// active app. On Windows, focuses on the application's first window.
+  ///
+  /// You should seek to use the `steal` option as sparingly as possible.
+  abstract focus: ?options: FocusOptions -> unit
   /// [macOS] Hides all application windows without minimizing them.
   abstract hide: unit -> unit
   /// [macOS] Shows application windows after they were hidden. Does not
@@ -6344,13 +6353,13 @@ type WebContents =
   ///   - options: The options which will be used for creating the new BrowserWindow
   ///   - additionalFeatures: The non-standard features (features not handled by Chromium or Electron) given to window.open()
   ///   - referrer: The referrer that will be passed to the new window. May or may not result in the Referer header being sent, depending on the referrer policy.
-  [<Emit "$0.on('new-window',$1)">] abstract onNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  [<Emit "$0.on('new-window',$1)">] abstract onNewWindow: listener: (NewWindowEvent -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
   /// See onNewWindow.
-  [<Emit "$0.once('new-window',$1)">] abstract onceNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  [<Emit "$0.once('new-window',$1)">] abstract onceNewWindow: listener: (NewWindowEvent -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
   /// See onNewWindow.
-  [<Emit "$0.addListener('new-window',$1)">] abstract addListenerNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  [<Emit "$0.addListener('new-window',$1)">] abstract addListenerNewWindow: listener: (NewWindowEvent -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
   /// See onNewWindow.
-  [<Emit "$0.removeListener('new-window',$1)">] abstract removeListenerNewWindow: listener: (Event -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
+  [<Emit "$0.removeListener('new-window',$1)">] abstract removeListenerNewWindow: listener: (NewWindowEvent -> string -> string -> WindowDisposition -> BrowserWindowOptions -> string [] -> Referrer -> unit) -> WebContents
   /// Emitted when a user or the page wants to start navigation. It can happen
   /// when the window.location object is changed or a user clicks a link in the
   /// page. The listener receives the URL.
@@ -9543,6 +9552,9 @@ type WebPreferences =
   abstract accessibleTitle: string with get, set
   /// Whether to enable the builtin spellchecker. Default is `false`.
   abstract spellcheck: bool with get, set
+  /// Whether to enable the [WebSQL api](https://www.w3.org/TR/webdatabase/). Default is
+  /// `true`.
+  abstract enableWebSQL: bool with get, set
 
 type DefaultFontFamily =
   /// Defaults to Times New Roman.
