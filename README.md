@@ -2,12 +2,21 @@
 
 Fable bindings for [Electron](https://electronjs.org/).
 
+Maintainer wanted!
+------------------
+
+**If you are actively using Fable.Electron or otherwise interested in seeing these bindings being kept up to date, please consider taking over this project!**
+
+I am not actively using Fable.Electron and will not be able to prioritize keeping it up to date with new Electron releases. I am therefore seeking a new maintainer.
+
+**Work involved:** The only thing I have been doing so far is using a website scanner (I use Wachete, but use whatever you want) to monitor [https://www.electronjs.org/docs/all](https://www.electronjs.org/docs/all) for changes, and update the bindings accordingly. Minor releases and documentation updates occur less than once a week and usually involve a few minutes to an hour of work, This while major Electron releases may take a handful of hours.
+
+This documentation-driven approach is slightly complicated by the fact that the docs may have bugs, i.e. something should be an array but is documented as a single value. Use your best judgement and search the [Electron source code](https://github.com/electron/electron/) if you’re unsure whether the docs are correct.
+
 Contributions are welcome!
 --------------------------
 
-Electron releases frequently, and I can make no promises to keep the bindings updated in a timely manner. **Pull requests are more than welcome**, whether it’s bindings for new APIs, new helpers, bugfixes, or just improving typos and formatting in the documentation. If you want to create a PR with non-trivial changes, consider opening an issue first so you don’t waste time and effort on something that might not be accepted or might already be underway.
-
-If you want to take over maintenance of Fable.Electron, let me know!
+**Pull requests are more than welcome**, whether it’s bindings for new APIs, new helpers, bugfixes, or just improving typos and formatting in the documentation. If you want to create a PR with non-trivial changes, consider opening an issue first so you don’t waste time and effort on something that might not be accepted or might already be underway.
 
 How to use the bindings
 ----------

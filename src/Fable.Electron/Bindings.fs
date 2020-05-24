@@ -70,7 +70,7 @@ type IpcMainEvent =
   /// the original message that you are currently handling. You should use this
   /// method to "reply" to the sent message in order to guarantee the reply will
   /// go to the correct process and frame.
-  abstract reply: [<ParamArray>] args: obj [] -> unit
+  abstract reply: channel: string * [<ParamArray>] args: obj [] -> unit
 
 type IpcMainInvokeEvent =
   inherit Browser.Types.Event
@@ -329,6 +329,8 @@ type AppPathName =
   | Logs
   /// Full path to the system version of the Pepper Flash plugin.
   | PepperFlashSystemPlugin
+  /// Directory where crash dumps are stored.
+  | CrashDumps
 
 [<StringEnum; RequireQualifiedAccess>]
 type SetJumpListResult =
@@ -362,6 +364,18 @@ type FocusOptions =
   /// Make the receiver the active app even if another app is currently active.
   abstract steal: bool with get, set
 
+[<StringEnum; RequireQualifiedAccess>]
+type ActivationPolicy =
+  /// The application is an ordinary app that appears in the Dock and may have a user
+  /// interface.
+  | Regular
+  /// The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may
+  /// be activated programmatically or by clicking on one of its windows.
+  | Accessory
+  /// The application doesn’t appear in the Dock and may not create windows or be
+  /// activated.
+  | Prohibited
+
 type App =
   inherit EventEmitter<App>
   /// Emitted when the application has finished basic startup. On Windows and
@@ -378,14 +392,13 @@ type App =
   [<Emit "$0.addListener('will-finish-launching',$1)">] abstract addListenerWillFinishLaunching: listener: (Event -> unit) -> App
   /// See onWillFinishLaunching.
   [<Emit "$0.removeListener('will-finish-launching',$1)">] abstract removeListenerWillFinishLaunching: listener: (Event -> unit) -> App
-  /// Emitted when Electron has finished initializing. You can call `app.isReady()` to
-  /// check if this event has already fired.
+  /// Emitted once, when Electron has finished initializing. You can also call
+  /// `app.isReady()` to check if this event has already fired and `app.whenReady()` to
+  /// get a Promise that is fulfilled when Electron is initialized.
   ///
   /// The second parameter is macOS only and holds the `userInfo` of the
   /// `NSUserNotification` that was used to open the application, if it was launched from
   /// Notification Center.
-  ///
-  /// You can call `app.isReady()` to check if this event has already fired.
   [<Emit "$0.on('ready',$1)">] abstract onReady: listener: (Event -> obj -> unit) -> App
   /// See onReady.
   [<Emit "$0.once('ready',$1)">] abstract onceReady: listener: (Event -> obj -> unit) -> App
@@ -858,23 +871,6 @@ type App =
   [<Emit "$0.addListener('remote-get-current-web-contents',$1)">] abstract addListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> App
   /// See onRemoteGetCurrentWebContents.
   [<Emit "$0.removeListener('remote-get-current-web-contents',$1)">] abstract removeListenerRemoteGetCurrentWebContents: listener: (ReturnValueEvent -> WebContents -> unit) -> App
-  /// Emitted when <webview>.getWebContents() is called in the renderer process
-  /// of `webContents`. Calling event.preventDefault() will prevent the object
-  /// from being returned. Custom value can be returned by setting
-  /// `event.returnValue`.
-  ///
-  /// Parameters:
-  ///
-  ///   - event
-  ///   - webContents
-  ///   - guestWebContents
-  [<Emit "$0.on('remote-get-guest-web-contents',$1)">] abstract onRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
-  /// See onRemoteGetGuestWebContents.
-  [<Emit "$0.once('remote-get-guest-web-contents',$1)">] abstract onceRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
-  /// See onRemoteGetGuestWebContents.
-  [<Emit "$0.addListener('remote-get-guest-web-contents',$1)">] abstract addListenerRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
-  /// See onRemoteGetGuestWebContents.
-  [<Emit "$0.removeListener('remote-get-guest-web-contents',$1)">] abstract removeListenerRemoteGetGuestWebContents: listener: (ReturnValueEvent -> WebContents -> WebContents -> unit) -> App
   /// Try to close all windows. The `before-quit` event will be emitted first.
   /// If all windows are successfully closed, the `will-quit` event will be
   /// emitted and by default the application will terminate.
@@ -903,6 +899,8 @@ type App =
   /// started after current instance exited.
   abstract relaunch: ?options: RelaunchOptions -> unit
   /// Returns true if Electron has finished initializing, false otherwise.
+  ///
+  /// See also `app.whenReady()`.
   abstract isReady: unit -> bool
   /// Returns a promise that is fulfilled when Electron is initialized. May be
   /// used as a convenient alternative to checking app.isReady() and subscribing
@@ -1142,6 +1140,8 @@ type App =
   /// Changes the Application User Model ID to `id`. More info:
   /// https://docs.microsoft.com/en-us/windows/desktop/shell/appids
   abstract setAppUserModelId: id: string -> unit
+  /// [macOS] Sets the activation policy for a given app.
+  abstract setActivationPolicy: policy: ActivationPolicy -> unit
   /// [Linux] Imports the certificate in pkcs12 format into the platform
   /// certificate store. `callback` is called with the result of import
   /// operation. A value of `0` indicates success while any other value
@@ -1291,7 +1291,7 @@ type App =
   abstract commandLine: CommandLine
   /// Allows you to perform actions on your app icon in the user's dock on
   /// macOS.
-  abstract dock: Dock
+  abstract dock: Dock option
   /// Returns true if the app is packaged, false otherwise. For many apps, this
   /// property can be used to distinguish development and production
   /// environments.
@@ -1856,7 +1856,8 @@ type BrowserWindow =
   /// A WebContents object this window owns. All web page related events and
   /// operations will be done via it.
   abstract webContents: WebContents
-  /// An integer representing the unique ID of the window.
+  /// An integer representing the unique ID of the window. Each ID is unique among all
+  /// BrowserWindow instances of the entire Electron application.
   abstract id: int
   /// Determines whether the window menu bar should hide itself automatically.
   /// Once set, the menu bar will only show when users press the single Alt key.
@@ -1864,6 +1865,35 @@ type BrowserWindow =
   /// If the menu bar is already visible, setting this property to true won't
   /// hide it immediately.
   abstract autoHideMenuBar: bool with get, set
+  /// Determines whether the window is in simple (pre-Lion) fullscreen mode.
+  abstract simpleFullScreen: bool with get, set
+  /// Determines whether the window is in fullscreen mode.
+  abstract fullScreen: bool with get, set
+  /// Determines whether the window is visible on all workspaces.
+  ///
+  /// **Note:** Always returns false on Windows.
+  abstract visibleOnAllWorkspaces: bool with get, set
+  /// Determines whether the window has a shadow.
+  abstract shadow: bool with get, set
+  /// [Windows, Linux] Determines whether the menu bar should be visible.
+  ///
+  /// **Note:** If the menu bar is auto-hide, users can still bring up the menu bar by
+  /// pressing the single Alt key.
+  abstract menuBarVisible: bool with get, set
+  /// Determines whether the window is in kiosk mode.
+  abstract kiosk: bool with get, set
+  /// [macOS] Specifies whether the window’s document has been edited.
+  ///
+  /// The icon in title bar will become gray when set to true.
+  abstract documentEdited: bool with get, set
+  /// [macOS] Determines the pathname of the file the window represents, and the icon of
+  /// the file will show in window's title bar.
+  abstract representedFilename: string with get, set
+  /// Determines the title of the native window.
+  ///
+  /// **Note:** The title of the web page can be different from the title of the native
+  /// window.
+  abstract title: string with get, set
   /// Determines whether the window can be manually minimized by user.
   ///
   /// On Linux the setter is a no-op, although the getter returns `true`.
@@ -1947,29 +1977,25 @@ type BrowserWindow =
   /// minimized, not in fullscreen mode).
   abstract isNormal: unit -> bool
   /// <summary>
-  ///   [macOS] This will make a window maintain an aspect ratio. The extra size
-  ///   allows a developer to have space, specified in pixels, not included
-  ///   within the aspect ratio calculations. This API already takes into
-  ///   account the difference between a window's size and its content size.
+  ///   [macOS, Linux] This will make a window maintain an aspect ratio. The extra size
+  ///   allows a developer to have space, specified in pixels, not included within the
+  ///   aspect ratio calculations. This API already takes into account the difference
+  ///   between a window's size and its content size.
   ///
-  ///   Consider a normal window with an HD video player and associated
-  ///   controls. Perhaps there are 15 pixels of controls on the left edge, 25
-  ///   pixels of controls on the right edge and 50 pixels of controls below the
-  ///   player. In order to maintain a 16:9 aspect ratio (standard aspect ratio
-  ///   for HD @1920x1080) within the player itself we would call this function
-  ///   with arguments of 16/9 and [ 40, 50 ]. The second argument doesn't care
-  ///   where the extra width and height are within the content view--only that
-  ///   they exist. Sum any extra width and height areas you have within the
-  ///   overall content view.
-  ///
-  ///   Calling this function with a value of 0 will remove any previously set
-  ///   aspect ratios.
+  ///   Consider a normal window with an HD video player and associated controls. Perhaps
+  ///   there are 15 pixels of controls on the left edge, 25 pixels of controls on the
+  ///   right edge and 50 pixels of controls below the player. In order to maintain a 16:9
+  ///   aspect ratio (standard aspect ratio for HD @1920x1080) within the player itself we
+  ///   would call this function with arguments of 16/9 and { width: 40, height: 50 }. The
+  ///   second argument doesn't care where the extra width and height are within the
+  ///   content view--only that they exist. Sum any extra width and height areas you have
+  ///   within the overall content view.
   /// </summary>
   /// <param name="aspectRatio">
   ///   The aspect ratio to maintain for some portion of the content view.
   /// </param>
   /// <param name="ertraSize">
-  ///   The extra size not to be included while maintaining the aspect ratio.
+  ///   [macOS] The extra size not to be included while maintaining the aspect ratio.
   /// </param>
   abstract setAspectRatio: aspectRatio: float * ?extraSize: Size -> unit
   /// Sets the background color of the window as a hexadecimal value, like
@@ -1998,6 +2024,9 @@ type BrowserWindow =
   abstract setBounds: bounds: Rectangle * ?animate: bool -> unit
   /// Returns the bounds of this BrowserView instance.
   abstract getBounds: unit -> Rectangle
+  /// Returns the background color of the window. See [Setting
+  /// `backgroundColor`](https://www.electronjs.org/docs/api/browser-window#setting-backgroundcolor).
+  abstract getBackgroundColor: unit -> string
   /// Resizes and moves the window's client area (e.g. the web page) to the
   /// supplied bounds. animate is macOS only.
   abstract setContentBounds: bounds: Rectangle * ?animate: bool -> unit
@@ -2034,10 +2063,10 @@ type BrowserWindow =
   /// Sets whether the window can be manually resized by user.
   [<Obsolete("Use the 'resizable' property.")>]
   abstract setResizable: resizable: bool -> unit
-  /// Indicates whether the window can be manually resized by user.
+  /// Indicates whether the window can be manually resized by the user.
   [<Obsolete("Use the 'resizable' property.")>]
   abstract isResizable: unit -> bool
-  /// [macOS, Windows] Sets whether the window can be moved by user. On Linux
+  /// [macOS, Windows] Sets whether the window can be moved by the user. On Linux
   /// does nothing.
   [<Obsolete("Use the 'movable' property.")>]
   abstract setMovable: movable: bool -> unit
@@ -2123,7 +2152,7 @@ type BrowserWindow =
   abstract flashFrame: flag: bool -> unit
   /// Makes the window not show in the taskbar.
   abstract setSkipTaskbar: skip: bool -> unit
-  /// Enters or leaves the kiosk mode.
+  /// Enters or leaves kiosk mode.
   abstract setKiosk: flag: bool -> unit
   /// Indicates whether the window is in kiosk mode.
   abstract isKiosk: unit -> bool
@@ -2283,7 +2312,7 @@ type BrowserWindow =
   /// [macOS, Linux] Sets whether the window should be visible on all workspaces.
   ///
   /// Note: This API does nothing on Windows.
-  abstract setVisibleOnAllWorkspaces: visible: bool * ?options: VisibleOnAllWorkspacesOptions -> unit
+  abstract setVisibleOnAllWorkspaces: visible: bool -> unit
   /// [macOS, Linux] Indicates whether the window is visible on all workspaces.
   ///
   /// Note: This API always returns false on Windows.
@@ -2385,17 +2414,20 @@ type BrowserWindowStatic =
   ///
   /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
+  [<Obsolete("Use Session.loadExtension(path) instead")>]
   abstract addExtension: path: string -> unit
   /// Remove a Chrome extension by name.
   ///
   /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
+  [<Obsolete("Use Session.removeExtension(extensionId) instead")>]
   abstract removeExtension: name: string -> unit
   /// Returns an object where the keys are the extension names and each value is
   /// an object containing `name` and `version` properties.
   ///
   /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
+  [<Obsolete("Use Session.getAllExtensions() instead")>]
   abstract getExtensions: unit -> obj
   /// Adds DevTools extension located at `path`, and returns extension's name.
   ///
@@ -2409,17 +2441,20 @@ type BrowserWindowStatic =
   ///
   /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
+  [<Obsolete("Use Session.loadExtension(path) instead")>]
   abstract addDevToolsExtension: path: string -> unit
   /// Remove a DevTools extension by name.
   ///
   /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
+  [<Obsolete("Use Session.removeExtension(extensionId) instead")>]
   abstract removeDevToolsExtension: name: string -> unit
   /// Returns an object where the keys are the extension names and each value is
   /// an object containing `name` and `version` properties.
   ///
   /// Note: This API cannot be called before the `ready` event of the app module
   /// is emitted.
+  [<Obsolete("Use Session.getAllExtensions() instead")>]
   abstract getDevToolsExtensions: unit -> obj
 
 type BrowserWindowProxy =
@@ -2762,12 +2797,15 @@ type TraceBufferUsage =
 
 type ContentTracing =
   inherit EventEmitter<ContentTracing>
-  /// Get a set of category groups. The category groups can change as new code
-  /// paths are reached. See also the [list of built-in tracing
+  /// Get a set of category groups. The category groups can change as new code paths are
+  /// reached. See also the [list of built-in tracing
   /// categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h).
   ///
-  /// The returned promise resolves with an array of category groups once all
-  /// child processes have acknowledged the getCategories request.
+  /// The returned promise resolves with an array of category groups once all child
+  /// processes have acknowledged the getCategories request.
+  ///
+  /// **NOTE:** Electron adds a non-default tracing category called `"electron"`. This
+  /// category can be used to capture Electron-specific tracing events.
   abstract getCategories: unit -> Promise<string []>
   /// Start recording on all processes.
   ///
@@ -2902,25 +2940,44 @@ type CrashReport =
 
 type CrashReporter =
   inherit EventEmitter<CrashReporter>
-  /// You are required to call this method before using any other crashReporter
-  /// APIs and in each process (main/renderer) from which you want to collect
-  /// crash reports. You can pass different options to crashReporter.start when
-  /// calling from different processes.
+  /// This method must be called before using any other `crashReporter` APIs. Once
+  /// initialized this way, the crashpad handler collects crashes from all subsequently
+  /// created processes. The crash reporter cannot be disabled once started.
   ///
-  /// For more information, see the Electron docs:
-  /// https://electronjs.org/docs/api/crash-reporter
+  /// This method should be called as early as possible in app startup, preferably before
+  /// `app.on('ready')`. If the crash reporter is not initialized at the time a renderer
+  /// process is created, then that renderer process will not be monitored by the crash
+  /// reporter.
+  ///
+  /// **Note:** You can test out the crash reporter by generating a crash using
+  /// `process.crash()`.
+  ///
+  /// **Note:** If you need to send additional/updated `extra` parameters after your first
+  /// call `start` you can call `addExtraParameter`.
+  ///
+  /// **Note:** Parameters passed in `extra`, `globalExtra` or set with
+  /// `addExtraParameter` have limits on the length of the keys and values. Key names must
+  /// be at most 39 bytes long, and values must be no longer than 127 bytes. Keys with
+  /// names longer than the maximum will be silently ignored. Key values longer than the
+  /// maximum length will be truncated.
+  ///
+  /// **Note:** Calling this method from the renderer process is deprecated.
   abstract start: options: CrashReporterStartOptions -> unit
-  /// Returns the date and ID of the last crash report. Only crash reports that
-  /// have been uploaded will be returned; even if a crash report is present on
-  /// disk it will not be returned until it is uploaded. In the case that there
-  /// are no uploaded reports, None is returned.
+  /// Returns the date and ID of the last crash report. Only crash reports that have been
+  /// uploaded will be returned; even if a crash report is present on disk it will not be
+  /// returned until it is uploaded. In the case that there are no uploaded reports, None
+  /// is returned.
+  ///
+  /// **Note:** Calling this method from the renderer process is deprecated.
   abstract getLastCrashReport: unit -> CrashReport option
   /// Returns all uploaded crash reports.
-  abstract getUploadedReports: unit -> CrashReport []
-  /// Returns a value indicating whether reports should be submitted to the
-  /// server. Set through the `start` method or `setUploadToServer`.
   ///
-  /// Note: This API can only be called from the main process.
+  /// **Note:** Calling this method from the renderer process is deprecated.
+  abstract getUploadedReports: unit -> CrashReport []
+  /// Returns a value indicating whether reports should be submitted to the server. Set
+  /// through the `start` method or `setUploadToServer`.
+  ///
+  /// **Note:** Calling this method from the renderer process is deprecated.
   abstract getUploadToServer: unit -> bool
   /// Sets whether reports should be submitted to the server.
   ///
@@ -2929,22 +2986,31 @@ type CrashReporter =
   ///
   /// Note: This API can only be called from the main process.
   abstract setUploadToServer: uploadToServer: bool -> unit
-  /// [macOS, Windows] Set an extra parameter to be sent with the crash report.
-  /// The values specified here will be sent in addition to any values set via
-  /// the `extra` option when `start` was called. This API is only available on
-  /// macOS and Windows, if you need to add/update extra parameters on Linux
-  /// after your first call to `start` you can call `start` again with the
-  /// updated `extra` options.
-  ///
-  /// Both `key` and `value` must be less than 64 characters long.
-  abstract addExtraParameter: key: string * value: string -> unit
-  /// [macOS, Windows] Remove a extra parameter from the current set of
-  /// parameters so that it will not be sent with the crash report.
-  abstract removeExtraParameter: key: string -> unit
-  /// See all of the current parameters being passed to the crash reporter.
-  abstract getParameters: unit -> obj
   /// Returns the directory where crashes are temporarily stored before being uploaded.
+  [<Obsolete("Use app.getPath(AppPathName.CrashDumps) instead")>]
   abstract getCrashesDirectory: unit -> string
+  /// Set an extra parameter to be sent with the crash report. The values specified here
+  /// will be sent in addition to any values set via the `extra` option when `start` was
+  /// called.
+  ///
+  /// Parameters added in this fashion (or via the `extra` parameter to
+  /// `crashReporter.start`) are specific to the calling process. Adding extra parameters
+  /// in the main process will not cause those parameters to be sent along with crashes
+  /// from renderer or other child processes. Similarly, adding extra parameters in a
+  /// renderer process will not result in those parameters being sent with crashes that
+  /// occur in other renderer processes or in the main process.
+  ///
+  /// **Note:** Parameters have limits on the length of the keys and values. Key names
+  /// must be no longer than 39 bytes, and values must be no longer than 127 bytes. Keys
+  /// with names longer than the maximum will be silently ignored. Key values longer than
+  /// the maximum length will be truncated.
+  abstract addExtraParameter: key: string * value: string -> unit
+  /// Remove a extra parameter from the current set of parameters. Future crashes will not
+  /// include this parameter.
+  abstract removeExtraParameter: key: string -> unit
+  /// Returns the current `extra` parameters of the crash reporter.
+  abstract getParameters: unit -> obj
+
 
 type CustomScheme =
   /// Custom schemes to be registered with options.
@@ -3397,6 +3463,14 @@ type InAppPurchase =
   abstract getProducts: productIDs: string [] -> Promise<Product []>
   /// Indicates whether a user can make a payment.
   abstract canMakePayments: unit -> bool
+  /// Restores finished transactions. This method can be called either to install
+  /// purchases on additional devices, or to restore purchases for an application that the
+  /// user deleted and reinstalled.
+  ///
+  /// The [payment queue](https://developer.apple.com/documentation/storekit/skpaymentqueue?language=objc)
+  /// delivers a new transaction for each previously completed transaction that can be
+  /// restored. Each transaction includes a copy of the original transaction.
+  abstract restoreCompletedTransactions: unit -> unit
   /// Returns the path to the receipt.
   abstract getReceiptURL: unit -> string
   /// Completes all pending transactions.
@@ -3713,7 +3787,7 @@ type MenuStatic =
 type MenuItem =
   /// The item's unique id, this property can be dynamically changed.
   abstract id: string option with get, set
-  /// The item's visible label, this property can be dynamically changed.
+  /// The item's visible label.
   abstract label: string option with get, set
   /// Fired when the MenuItem receives a click event. It can be called with
   /// menuItem.click(event, focusedWindow, focusedWebContents).
@@ -3728,7 +3802,7 @@ type MenuItem =
   abstract accelerator: string option with get, set
   /// The item's icon, if set.
   abstract icon: U2<NativeImage, string> option with get, set
-  /// The item's sublabel, this property can be dynamically changed.
+  /// The item's sublabel.
   abstract sublabel: string option with get, set
   /// [macOS] The item's hover text.
   abstract toolTip: string option with get, set
@@ -3750,8 +3824,8 @@ type MenuItem =
   ///
   /// You can add a `click` function for additional behavior.
   abstract ``checked``: bool option with get, set
-  /// Indicates if the accelerator should be registered with the system or just
-  /// displayed, this property can be dynamically changed.
+  /// Indicates if the accelerator should be registered with the system or just displayed.
+  /// This property can be dynamically changed.
   abstract registerAccelerator: bool option with get, set
   /// An item's sequential unique id.
   abstract commandId: int option with get, set
@@ -4195,10 +4269,21 @@ type PowerSaveBlocker =
   abstract isStarted: id: int -> bool
 
 type PrinterInfo =
+  /// The name of the printer as understood by the OS.
   abstract name: string
+  /// The name of the printer as shown in Print Preview.
+  abstract displayName: string
+  /// A longer description of the printer's type.
   abstract description: string
+  /// The current status of the printer. The number means different things on different
+  /// platforms: on Windows it's potential values can be found
+  /// [here](https://docs.microsoft.com/en-us/windows/win32/printdocs/printer-info-2), and
+  /// on Linux and macOS they can be found [here](https://www.cups.org/doc/cupspm.html).
   abstract status: int
+  /// Whether or not a given printer is set as the default printer on the OS.
   abstract isDefault: bool
+  /// An object containing a variable number of platform-specific printer information.
+  abstract options: obj
 
 [<StringEnum; RequireQualifiedAccess>]
 type ProcessType =
@@ -4247,10 +4332,6 @@ type Process =
   /// Setting this to true will silence deprecation warnings. This property is
   /// used instead of the --no-deprecation command line flag.
   abstract noDeprecation: bool with get, set
-  /// Controls whether or not deprecation warnings are printed to stderr when
-  /// formerly callback-based APIs converted to Promises are invoked using
-  /// callbacks. Setting this to true will enable deprecation warnings.
-  abstract enablePromiseAPIs: bool with get, set
   /// The path to the resources directory.
   abstract resourcesPath: string
   /// When the renderer process is sandboxed, this property is true, otherwise
@@ -4712,6 +4793,85 @@ type RemoveClientCertificate =
   abstract origin: string with get, set
 
 
+[<StringEnum; RequireQualifiedAccess>]
+type ServiceWorkerConsoleMessageSource =
+  | Javascript
+  | Xml
+  | Network
+  | [<CompiledName("console-api")>] ConsoleApi
+  | Storage
+  | [<CompiledName("app-cache")>] AppCache
+  | Rendering
+  | Security
+  | Deprecation
+  | Worker
+  | Violation
+  | Intervention
+  | Recommendation
+  | Other
+
+
+type ServiceWorkerConsoleMessageDetails =
+  /// The actual console message
+  abstract message: string
+  /// The version ID of the service worker that sent the log message
+  abstract versionId: int
+  /// The type of source for this message.
+  abstract source: ServiceWorkerConsoleMessageSource
+  /// The log level, from 0 to 3. In order it matches verbose, info, warning and error.
+  abstract level: int
+  /// The URL the message came from
+  abstract sourceUrl: string
+  /// The line number of the source that triggered this console message
+  abstract lineNumber: int
+
+
+type ServiceWorkerInfo =
+  /// The full URL to the script that this service worker runs
+  abstract scriptUrl: string
+  /// The base URL that this service worker is active for.
+  abstract scope: string
+  /// The virtual ID of the process that this service worker is running in. This is not an
+  /// OS level PID. This aligns with the ID set used for `webContents.getProcessId()`.
+  abstract renderProcessId: int
+
+
+type ServiceWorkers =
+  inherit EventEmitter<ServiceWorkers>
+  /// Emitted when Electron is about to download item in webContents.
+  ///
+  /// Calling event.preventDefault() will cancel the download and the
+  /// DownloadItem will not be available from next tick of the process.
+  [<Emit "$0.on('console-message',$1)">] abstract onConsoleMessage: listener: (Event -> ServiceWorkerConsoleMessageDetails -> unit) -> ServiceWorkers
+  /// See onConsoleMessage.
+  [<Emit "$0.once('console-message',$1)">] abstract onceConsoleMessage: listener: (Event -> ServiceWorkerConsoleMessageDetails -> unit) -> ServiceWorkers
+  /// See onConsoleMessage.
+  [<Emit "$0.addListener('console-message',$1)">] abstract addListenerConsoleMessage: listener: (Event -> ServiceWorkerConsoleMessageDetails -> unit) -> ServiceWorkers
+  /// See onConsoleMessage.
+  [<Emit "$0.removeListener('console-message',$1)">] abstract removeListenerConsoleMessage: listener: (Event -> ServiceWorkerConsoleMessageDetails -> unit) -> ServiceWorkers
+  /// Returns an object where the keys are the service worker version ID (int) and the
+  /// values are `ServiceWorkerInfo` objects.
+  abstract getAllRunning: unit -> obj
+  /// Returns information about a service worker.
+  ///
+  /// If the service worker does not exist or is not running this method will throw an
+  /// exception.
+  abstract getFromVersionID: versionId: int -> ServiceWorkerInfo
+
+
+type Extension =
+  abstract id: string
+  /// Copy of the extension's manifest data.
+  abstract manifest: obj option
+  abstract name: string
+  /// The extension's file path.
+  abstract path: string
+  abstract version: string
+  /// The extension's `chrome-extension://` URL.
+  abstract url: string
+
+
+
 type Session =
   inherit EventEmitter<Session>
   /// Emitted when Electron is about to download item in webContents.
@@ -4926,18 +5086,59 @@ type Session =
   /// **Note:** On macOS the OS spellchecker is used and therefore we do not download any
   /// dictionary files. This API is a no-op on macOS.
   abstract setSpellCheckerDictionaryDownloadURL: url: string -> unit
+  /// Returns an array of all words in app's custom dictionary. Resolves when the full
+  /// dictionary is loaded from disk.
+  abstract listWordsInSpellCheckerDictionary: unit -> Promise<string []>
   /// Adds a word to the custom dictionary and returns a value indicating whether the word
-  /// was successfully written.
+  /// was successfully written. This API will not work on non-persistent (in-memory)
+  /// sessions.
   ///
   /// **Note:** On macOS and Windows 10 this word will be written to the OS custom
   /// dictionary as well.
   abstract addWordToSpellCheckerDictionary: word: string -> bool
+  /// Removes a word from the custom dictionary and returns a value indicating whether the
+  /// word was successfully removed. This API will not work on non-persistent (in-memory)
+  /// sessions.
+  ///
+  /// **Note:** On macOS and Windows 10 this word will be written to the OS custom
+  /// dictionary as well.
+  abstract removeWordFromSpellCheckerDictionary: word: string -> bool
+  /// Returns a promise that resolves when the extension is loaded.
+  ///
+  /// This method will raise an exception if the extension could not be loaded. If there
+  /// are warnings when installing the extension (e.g. if the extension requests an API
+  /// that Electron does not support) then they will be logged to the console.
+  ///
+  /// Note that Electron does not support the full range of Chrome extensions APIs.
+  ///
+  /// Note that in previous versions of Electron, extensions that were loaded would be
+  /// remembered for future runs of the application. This is no longer the case:
+  /// loadExtension must be called on every boot of your app if you want the extension to
+  /// be loaded.
+  abstract loadExtension: path: string -> Promise<Extension>
+  /// Unloads an extension.
+  ///
+  /// **Note:** This API cannot be called before the `ready` event of the `app` module is
+  /// emitted.
+  abstract removeExtension: extensionId: string -> unit
+  /// Returns the loaded extension with the given ID.
+  ///
+  /// **Note:** This API cannot be called before the `ready` event of the `app` module is
+  /// emitted.
+  abstract getExtension: extensionId: string -> Extension option
+  /// Returns a list of all loaded extensions.
+  ///
+  /// **Note:** This API cannot be called before the `ready` event of the `app` module is
+  /// emitted.
+  abstract getAllExtensions: unit -> Extension []
   /// Gets all the known available spell checker languages. Providing a language code to
   /// the `setSpellCheckerLanaguages` API that isn't in this array will result in an
   /// error.
   abstract availableSpellCheckerLanguages: string []
   /// A Cookies object for this session.
   abstract cookies: Cookies
+  /// A ServiceWorkers object for this session.
+  abstract serviceWorkers: ServiceWorkers
   /// A WebRequest object for this session.
   abstract webRequest: WebRequest
   /// A Protocol object for this session.
@@ -4974,9 +5175,10 @@ type WriteShortcutLinkOperation =
 type Shell =
   /// Show the given file in a file manager. If possible, select the file.
   abstract showItemInFolder: fullPath: string -> unit
-  /// Open the given file in the desktop's default manner. Returns a value
-  /// indicating whether the item was successfully opened.
-  abstract openItem: fullPath: string -> bool
+  /// Open the given file in the desktop's default manner. The returned promise resolves
+  /// with an string containing the error message corresponding to the failure if a
+  /// failure occurred, otherwise "".
+  abstract openPath: path: string -> Promise<string>
   /// Open the given external protocol URL in the desktop's default manner. (For
   /// example, mailto: URLs in the user's default mail agent).
   abstract openExternal: url: string * ?options: OpenExternalOptions -> Promise<unit>
@@ -5386,12 +5588,12 @@ type SystemPreferences =
   /// [macOS] Gets the macOS appearance setting that you have declared you want
   /// for your application, maps to NSApplication.appearance. You can use the
   /// setAppLevelAppearance API to set this value.
-  [<Obsolete("use the 'allLevelAppearance' property.")>]
+  [<Obsolete("use the 'appLevelAppearance' property.")>]
   abstract getAppLevelAppearance: unit -> GetAppearance option
   /// [macOS] Sets the appearance setting for your application, this should
   /// override the system default and override the value of
   /// getEffectiveAppearance.
-  [<Obsolete("use the 'allLevelAppearance' property.")>]
+  [<Obsolete("use the 'appLevelAppearance' property.")>]
   abstract setAppLevelAppearance: appearance: SetAppearance option -> unit
   /// [macOS] Returns a value indicating whether or not this device has the
   /// ability to use Touch ID.
@@ -5545,6 +5747,8 @@ type TouchBarButton =
   /// The button's current icon. Changing this value immediately updates the
   /// button in the touch bar.
   abstract icon: NativeImage with get, set
+  /// Whether the button is in an enabled state.
+  abstract enabled: bool with get, set
 
 type TouchBarButtonStatic =
   [<EmitConstructor>] abstract Create: options: TouchBarButtonOptions -> TouchBarButton
@@ -5904,6 +6108,25 @@ type Tray =
   [<Emit "$0.addListener('drag-end',$1)">] abstract addListenerDragEnd: listener: (unit -> unit) -> Tray
   /// See onDragEnd.
   [<Emit "$0.removeListener('drag-end',$1)">] abstract removeListenerDragEnd: listener: (unit -> unit) -> Tray
+  /// [macOS] Emitted when the mouse is released from clicking the tray icon.
+  ///
+  /// *Note:* This will not be emitted if you have set a context menu for your Tray using
+  /// `tray.setContextMenu`, as a result of macOS-level constraints.
+  [<Emit "$0.on('mouse-up',$1)">] abstract onMouseUp: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// See onMouseUp.
+  [<Emit "$0.once('mouse-up',$1)">] abstract onceMouseUp: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// See onMouseUp.
+  [<Emit "$0.addListener('mouse-up',$1)">] abstract addListenerMouseUp: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// See onMouseUp.
+  [<Emit "$0.removeListener('mouse-up',$1)">] abstract removeListenerMouseUp: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// [macOS] Emitted when the mouse clicks the tray icon.
+  [<Emit "$0.on('mouse-down',$1)">] abstract onMouseDown: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// See onMouseDown.
+  [<Emit "$0.once('mouse-down',$1)">] abstract onceMouseDown: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// See onMouseDown.
+  [<Emit "$0.addListener('mouse-down',$1)">] abstract addListenerMouseDown: listener: (KeyboardEvent -> Point -> unit) -> Tray
+  /// See onMouseDown.
+  [<Emit "$0.removeListener('mouse-down',$1)">] abstract removeListenerMouseDown: listener: (KeyboardEvent -> Point -> unit) -> Tray
   /// [macOS] Emitted when the mouse enters the tray icon. The listener receives
   /// the position of the event.
   [<Emit "$0.on('mouse-enter',$1)">] abstract onMouseEnter: listener: (KeyboardEvent -> Point -> unit) -> Tray
@@ -5972,6 +6195,8 @@ type Tray =
   ///
   /// The `position` is only available on Windows, and it is (0, 0) by default.
   abstract popUpContextMenu: ?menu: Menu * ?position: Point -> unit
+  /// [macOS, Windows] Closes an open context menu, as set by `tray.setContextMenu()`.
+  abstract closeContextMenu: unit -> unit
   /// Sets the context menu for this icon.
   abstract setContextMenu: menu: Menu option -> unit
   /// [macOS, Windows] Returns the bounds of this tray icon.
@@ -5981,9 +6206,31 @@ type Tray =
 
 type TrayStatic =
   /// Creates a new tray icon associated with the image.
-  [<EmitConstructor>] abstract Create: image: NativeImage -> Tray
+  ///
+  /// Specifying `guid` assigns a GUID to the tray icon. If the executable is signed and
+  /// the signature contains an organization in the subject line then the GUID is
+  /// permanently associated with that signature. OS level settings like the position of
+  /// the tray icon in the system tray will persist even if the path to the executable
+  /// changes. If the executable is not code-signed then the GUID is permanently
+  /// associated with the path to the executable. Changing the path to the executable will
+  /// break the creation of the tray icon and a new GUID must be used. However, it is
+  /// highly recommended to use the GUID parameter only in conjunction with code-signed
+  /// executable. If an App defines multiple tray icons then each icon must use a separate
+  /// GUID.
+  [<EmitConstructor>] abstract Create: image: NativeImage * ?guid: Guid -> Tray
   /// Creates a new tray icon associated with the image.
-  [<EmitConstructor>] abstract Create: image: string -> Tray
+  ///
+  /// Specifying `guid` assigns a GUID to the tray icon. If the executable is signed and
+  /// the signature contains an organization in the subject line then the GUID is
+  /// permanently associated with that signature. OS level settings like the position of
+  /// the tray icon in the system tray will persist even if the path to the executable
+  /// changes. If the executable is not code-signed then the GUID is permanently
+  /// associated with the path to the executable. Changing the path to the executable will
+  /// break the creation of the tray icon and a new GUID must be used. However, it is
+  /// highly recommended to use the GUID parameter only in conjunction with code-signed
+  /// executable. If an App defines multiple tray icons then each icon must use a separate
+  /// GUID.
+  [<EmitConstructor>] abstract Create: image: string * ?guid: Guid -> Tray
 
 type UploadBlob =
   /// blob.
@@ -7033,9 +7280,6 @@ type WebContents =
   /// Note: Visual zoom is disabled by default in Electron. To re-enable it,
   /// call contents.setVisualZoomLevelLimits(1, 3)
   abstract setVisualZoomLevelLimits: minimumLevel: float * maximumLevel: float -> Promise<unit>
-  /// Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-  [<Obsolete>]
-  abstract setLayoutZoomLevelLimits: minimumLevel: float * maximumLevel: float -> Promise<unit>
   /// Executes the editing command undo in web page.
   abstract undo: unit -> unit
   /// Executes the editing command redo in web page.
@@ -7281,7 +7525,8 @@ type WebContents =
   /// Sets the frame rate of the web contents to the specified number. Only values between
   /// 1 and 60 are accepted.
   abstract frameRate: int with get, set
-  /// The unique ID of this WebContents.
+  /// The unique ID of this WebContents. Each ID is unique among all WebContents instances
+  /// of the entire Electron application.
   abstract id: int
   /// A Session used by this webContents.
   abstract session: Session
@@ -7341,33 +7586,38 @@ type WebFrame =
   abstract insertText: text: string -> unit
   /// Evaluates `code` in page.
   ///
-  /// Returns a promise that resolves with the result of the executed code or is
-  /// rejected if the result of the code is a rejected promise.
+  /// Returns a promise that resolves with the result of the executed code or is rejected
+  /// if execution throws or results in a rejected promise.
   ///
-  /// In the browser window some HTML APIs like requestFullScreen can only be
-  /// invoked by a gesture from the user. Setting userGesture to true will
-  /// remove this limitation.
-  abstract executeJavaScript: code: string * ?userGesture: bool -> Promise<obj option>
+  /// In the browser window some HTML APIs like requestFullScreen can only be invoked by a
+  /// gesture from the user. Setting userGesture to true will remove this limitation.
+  ///
+  /// The callback is called after script has been executed. Unless the frame is suspended
+  /// (e.g. showing a modal alert), execution will be synchronous and the callback will be
+  /// invoked before the method returns. Parameters: result, error
+  abstract executeJavaScript: code: string * ?userGesture: bool * ?callback: (obj option -> Error -> unit) -> Promise<obj option>
   /// <summary>
-  ///   Work like executeJavaScript but evaluates scripts in an isolated
-  ///   context.
+  ///   Work like executeJavaScript but evaluates scripts in an isolated context.
   ///
-  ///   Returns a promise that resolves with the result of the executed code or
-  ///   is rejected if the result of the code is a rejected promise.
+  ///   Returns a promise that resolves with the result of the executed code or is
+  ///   rejected if execution throws or results in a rejected promise.
   ///
-  ///   In the browser window some HTML APIs like requestFullScreen can only be
-  ///   invoked by a gesture from the user. Setting userGesture to true will
-  ///   remove this limitation.
+  ///   In the browser window some HTML APIs like requestFullScreen can only be invoked by
+  ///   a gesture from the user. Setting userGesture to true will remove this limitation.
   /// </summary>
   /// <param name="worldId">
-  ///   The ID of the world to run the javascript in, 0 is the default world,
-  ///   999 is the world used by Electrons contextIsolation feature. Chrome
-  ///   extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can
-  ///   provide any integer here.
+  ///   The ID of the world to run the javascript in, 0 is the default world, 999 is the
+  ///   world used by Electrons contextIsolation feature. Chrome extensions reserve the
+  ///   range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
   /// </param>
   /// <param name="scripts"></param>
   /// <param name="userGesture">Default is false</param>
-  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool -> Promise<obj option>
+  /// <param name="callback">
+  ///   Called after script has been executed. Unless the frame is suspended (e.g. showing
+  ///   a modal alert), execution will be synchronous and the callback will be invoked
+  ///   before the method returns. Parameters: result, error
+  /// </param>
+  abstract executeJavaScriptInIsolatedWorld: worldId: int * scripts: WebSource [] * ?userGesture: bool * ?callback: (obj option -> Error -> unit) -> Promise<obj option>
   /// <summary>
   ///   Set the security origin, content security policy and name of the
   ///   isolated world.
@@ -7687,7 +7937,7 @@ type BrowserWindowOptions =
   abstract simpleFullscreen: bool with get, set
   /// Whether to show the window in taskbar. Default is false.
   abstract skipTaskbar: bool with get, set
-  /// The kiosk mode. Default is false.
+  /// Whether the window is in kiosk mode. Default is false.
   abstract kiosk: bool with get, set
   /// Default window title. Default is "Electron". If the HTML tag `<title>` is
   /// defined in the HTML file loaded by loadURL(), this property will be
@@ -7780,6 +8030,7 @@ type CertificateTrustDialogOptions =
 type CertificateVerifyProcRequest =
   abstract hostname: string with get, set
   abstract certificate: Certificate with get, set
+  abstract validatedCertificate: Certificate with get, set
   /// Verification result from chromium.
   abstract verificationResult: string with get, set
   /// Error code.
@@ -7806,9 +8057,9 @@ type StorageQuota =
 type ClearStorageDataOptions =
   /// Should follow window.location.origin’s representation scheme://host:port.
   abstract origin: string with get, set
-  /// The types of storages to clear.
+  /// The types of storages to clear. If not specified, clear all storage types.
   abstract storages: StorageType [] with get, set
-  /// The types of quotas to clear.
+  /// The types of quotas to clear. If not specified, clear all quotas.
   abstract quotas: StorageQuota [] with get, set
 
 type CommandLine =
@@ -7816,7 +8067,7 @@ type CommandLine =
   ///   Append a switch (with optional value) to Chromium's command line.
   ///
   ///   Note: This will not affect process.argv. The intended usage of this
-  ///   function is to↵ control Chromium's behaviors.
+  ///   function is to control Chromium's behaviors.
   /// </summary>
   /// <param name="switch">A command-line switch, without the leading --</param>
   /// <param name="value"></param>
@@ -7931,23 +8182,37 @@ type ContextMenuParams =
   abstract editFlags: ContextMenuEditFlags
 
 type CrashReporterStartOptions =
-  abstract companyName: string with get, set
   /// URL that crash reports will be sent to as POST.
   abstract submitURL: string with get, set
   /// Defaults to `app.name`.
   abstract productName: string with get, set
-  /// Whether crash reports should be sent to the server Default is true.
+  [<Obsolete("Alias for `{ globalExtra: { _companyName: ... } }`")>]
+  abstract companyName: string with get, set
+  /// Whether crash reports should be sent to the server. If false, crash reports will be
+  /// collected and stored in the crashes directory, but not uploaded. Default is true.
   abstract uploadToServer: bool with get, set
-  /// Default is false.
+  /// If true, crashes generated in the main process will not be forwarded to the system
+  /// crash handler. Default is false.
   abstract ignoreSystemCrashHandler: bool with get, set
-  /// An object you can define that will be sent along with the report. Only
-  /// string properties are sent correctly. Nested objects are not supported.
-  /// When using Windows, the property names and values must be fewer than 64
-  /// characters.
+  /// [macOS, Windows] If true, limit the number of crashes uploaded to 1/hour. Default is
+  /// false.
+  abstract rateLimit: bool with get, set
+  /// If true, crash reports will be compressed and uploaded with `Content-Encoding:
+  /// gzip`. Not all collection servers support compressed payloads. Default is false.
+  abstract compress: bool with get, set
+  /// Extra string key/value annotations that will be sent along with crash reports that
+  /// are generated in the main process. Only string values are supported. Crashes
+  /// generated in child processes will not contain these extra parameters to crash
+  /// reports generated from child processes, call `addExtraParameter` from the child
+  /// process.
   abstract extra: obj with get, set
-  /// Directory to store the crashreports temporarily (only used when the crash
-  /// reporter is started via process.crashReporter.start).
-  abstract crashesDirectory: string with get, set
+  /// Extra string key/value annotations that will be sent along with any crash reports
+  /// generated in any process. These annotations cannot be changed once the crash
+  /// reporter has been started. If a key is present in both the global extra parameters
+  /// and the process-specific extra parameters, then the global one will take precedence.
+  /// By default, `productName` and the app version are included, as well as the Electron
+  /// version.
+  abstract globalExtra: obj with get, set
 
 type NativeImageFromBufferOptions =
   /// Required for bitmap buffers.
@@ -8315,10 +8580,6 @@ type MenuItemRole =
   | PasteAndMatchStyle
   | SelectAll
   | Delete
-  /// Minimize current window.
-  | Minimize
-  /// Close current window.
-  | Close
   /// Quit the application.
   | Quit
   /// Reload the current window.
@@ -8931,10 +9192,24 @@ type PrintToPDFSize =
   | [<CompiledName("Letter")>] Letter
   | [<CompiledName("Tabloid")>] Tabloid
 
+
+type PrintToPDFOptionsHeaderFooter =
+  /// The title for the PDF header.
+  abstract title: string with get, set
+  /// The url for the PDF footer.
+  abstract url: string with get, set
+
 type PrintToPDFOptions =
+  abstract headerFooter: PrintToPDFOptionsHeaderFooter with get, set
+  /// `true` for landscape,`false` for portrait.
+  abstract landscape: bool with get, set
   /// Specifies the type of margins to use. Uses 0 for default margin, 1 for no
   /// margin, and 2 for minimum margin. Default 0.
   abstract marginsType: int with get, set
+  /// The scale factor of the web page. Can range from 0 to 100.
+  abstract scaleFactor: float with get, set
+  /// The page ranges to print.
+  abstract pageRanges: PageRange []
   /// Specify page size of the generated PDF. Can be A3, A4, A5, Legal, Letter,
   /// Tabloid or an object containing height and width in microns.
   abstract pageSize: U2<PrintToPDFSize, Size> with get, set
@@ -8942,8 +9217,6 @@ type PrintToPDFOptions =
   abstract printBackground: bool with get, set
   /// Whether to print selection only. Default false.
   abstract printSelectionOnly: bool with get, set
-  /// true for landscape, false for portrait. Default false.
-  abstract landscape: bool with get, set
 
 type CustomSchemePrivileges =
   /// Default false.
@@ -9201,6 +9474,8 @@ type TouchBarButtonOptions =
   abstract iconPosition: TouchBarButtonIconPosition with get, set
   /// Function to call when the button is clicked.
   abstract click: (unit -> unit) with get, set
+  /// Whether the button is in an enabled state. Default is true.
+  abstract enabled: bool with get, set
 
 type TouchBarColorPickerOptions =
   /// Array of hex color strings to appear as possible colors to select.
@@ -9355,11 +9630,6 @@ type UploadProgress =
   /// The number of bytes that will be uploaded this request
   abstract total: int
 
-type VisibleOnAllWorkspacesOptions =
-  /// Sets whether the window should be visible above fullscreen windows
-  [<Obsolete>]
-  abstract visibleOnFullScreen: bool with get, set
-
 type ContextMenuEditFlags =
   /// Whether the renderer believes it can undo.
   abstract canUndo: bool
@@ -9457,6 +9727,7 @@ type WebPreferences =
   /// you specified different values for them, including but not limited to
   /// preload, sandbox and nodeIntegration. So it is suggested to use exact same
   /// webPreferences for web pages with the same affinity.
+  [<Obsolete("")>]
   abstract affinity: string with get, set
   /// The default zoom factor of the page, 3.0 represents 300%. Default is 1.0.
   abstract zoomFactor: float with get, set
