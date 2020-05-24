@@ -9,7 +9,7 @@ Maintainer wanted!
 
 I am not actively using Fable.Electron and will not be able to prioritize keeping it up to date with new Electron releases. I am therefore seeking a new maintainer.
 
-**Work involved:** The only thing I have been doing so far is using a website scanner (I use Wachete, but use whatever you want) to monitor [https://www.electronjs.org/docs/all](https://www.electronjs.org/docs/all) for changes, and update the bindings accordingly. Minor releases and documentation updates occur less than once a week and usually involve a few minutes to an hour of work, This while major Electron releases may take a handful of hours.
+**Work involved:** The only thing I have been doing so far is using a website scanner (I use Wachete, but use whatever you want) to monitor [https://www.electronjs.org/docs/all](https://www.electronjs.org/docs/all) for changes, and update the bindings accordingly. Minor releases and relevant documentation updates occur at most once a week (often less) and usually involve 15m to an hour of work (including deployment), while major Electron releases may take a several hours.
 
 This documentation-driven approach is slightly complicated by the fact that the docs may have bugs, i.e. something should be an array but is documented as a single value. Use your best judgement and search the [Electron source code](https://github.com/electron/electron/) if you’re unsure whether the docs are correct.
 
